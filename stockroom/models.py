@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
 class Employee(models.Model):
     employee_id = models.CharField(
@@ -314,3 +315,125 @@ class Loan(models.Model):
 
     def __str__(self):
         return f"{self.tool.tool_code} - {self.employee.employee_id}"
+
+class QuantityIssue(models.Model):
+    stock = models.ForeignKey(
+        QuantityStock,
+        on_delete=models.PROTECT,
+        verbose_name="Existencias del artículo",
+        related_name="issues",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        verbose_name="Trabajador",
+        related_name="quantity_issues",
+    )
+    quantity = models.PositiveIntegerField(
+        "Cantidad entregada",
+        validators=[MinValueValidator(1)],
+    )
+    returned_quantity = models.PositiveIntegerField(
+        "Cantidad devuelta acumulada",
+        default=0,
+        editable=False,
+    )
+    issued_at = models.DateTimeField(
+        "Fecha de entrega",
+        default=timezone.now,
+    )
+    requires_return = models.BooleanField(
+        "Requiere devolución",
+        default=True,
+        editable=False,
+    )
+    notes = models.TextField(
+        "Observaciones",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Entrega por cantidad"
+        verbose_name_plural = "Entregas por cantidad"
+        ordering = ["-issued_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1),
+                name="quantity_issue_quantity_gte_1",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    returned_quantity__lte=models.F("quantity")
+                ),
+                name="quantity_issue_returned_lte_quantity",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.stock.article.article_code} — "
+            f"{self.employee.employee_id} — "
+            f"{self.quantity} piezas"
+        )
+
+class QuantityReturn(models.Model):
+    class Condition(models.TextChoices):
+        GOOD = "good", "Buen estado"
+        WORN = "worn", "Desgaste"
+        DAMAGED = "damaged", "Daño"
+
+    issue = models.ForeignKey(
+        QuantityIssue,
+        on_delete=models.PROTECT,
+        verbose_name="Entrega original",
+        related_name="returns",
+    )
+    quantity = models.PositiveIntegerField(
+        "Cantidad devuelta",
+        validators=[MinValueValidator(1)],
+    )
+    condition = models.CharField(
+        "Condición al regresar",
+        max_length=20,
+        choices=Condition.choices,
+    )
+    returned_at = models.DateTimeField(
+        "Fecha de devolución",
+        default=timezone.now,
+    )
+    reason = models.CharField(
+        "Motivo del desgaste o daño",
+        max_length=200,
+        blank=True,
+    )
+    notes = models.TextField(
+        "Observaciones",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Devolución por cantidad"
+        verbose_name_plural = "Devoluciones por cantidad"
+        ordering = ["-returned_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1),
+                name="quantity_return_quantity_gte_1",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.condition in (
+            self.Condition.WORN,
+            self.Condition.DAMAGED,
+        ) and not self.reason.strip():
+            raise ValidationError({
+                "reason": "Indica el motivo del desgaste o daño.",
+            })
+
+    def __str__(self):
+        return (
+            f"Entrega #{self.issue_id} — "
+            f"Devolución de {self.quantity} piezas"
+        )
