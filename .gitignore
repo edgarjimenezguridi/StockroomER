@@ -1,0 +1,20 @@
+# Entorno de Python
+.venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+
+# Base de datos local
+db.sqlite3
+db.sqlite3-*
+
+# Configuración privada
+.env
+.env.*
+!.env.example
+
+# Archivos de registro
+*.log
+
+config/local_settings.py
