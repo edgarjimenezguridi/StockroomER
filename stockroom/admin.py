@@ -308,6 +308,24 @@ class ArticleAdmin(admin.ModelAdmin):
             obj, "scrapped_quantity", "scrapped_units"
         )
 
+    def get_readonly_fields(self, request, obj=None):
+        readonly = tuple(
+            super().get_readonly_fields(request, obj)
+        )
+
+        if obj is not None:
+            has_stock = QuantityStock.objects.filter(
+                article_id=obj.pk,
+            ).exists()
+            has_tools = Tool.objects.filter(
+                article_id=obj.pk,
+            ).exists()
+
+            if has_stock or has_tools:
+                return readonly + ("tracking_mode",)
+
+        return readonly
+
     def get_inlines(self, request, obj=None):
         if obj is None:
             return []
@@ -648,7 +666,9 @@ class QuantityReturnForm(forms.ModelForm):
 class QuantityReturnAdmin(admin.ModelAdmin):
     form = QuantityReturnForm
     list_display = (
+        "id",
         "issue",
+        "worker",
         "quantity",
         "condition",
         "returned_at",
@@ -661,7 +681,12 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         "issue__employee__first_name",
         "issue__employee__last_name",
     )
-    list_filter = ("condition", "issue__employee")
+    list_filter = (
+        "condition",
+        "issue__employee",
+        "returned_at",
+    )
+    date_hierarchy = "returned_at"
     list_select_related = (
         "issue__stock__article",
         "issue__employee",
@@ -674,6 +699,14 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         "reason",
         "notes",
     )
+    @admin.display(
+        description="Trabajador",
+        ordering="issue__employee__last_name",
+    )
+    
+    def worker(self, obj):
+        return str(obj.issue.employee)
+
     def get_fields(self, request, obj=None):
         if obj is None:
             return (
