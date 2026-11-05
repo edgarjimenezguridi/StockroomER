@@ -18,6 +18,90 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.employee_id} - {self.first_name} {self.last_name}"
+    
+class ToolCategory(models.Model):
+    name = models.CharField(
+        "Nombre de la categoría",
+        max_length=100,
+        unique=True,
+    )
+    description = models.TextField(
+        "Descripción",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Categoría de herramienta"
+        verbose_name_plural = "Categorías de herramientas"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+    
+class ToolType(models.Model):
+    category = models.ForeignKey(
+        ToolCategory,
+        on_delete=models.PROTECT,
+        verbose_name="Categoría",
+        related_name="tool_types",
+    )
+    name = models.CharField(
+        "Nombre del tipo",
+        max_length=100,
+    )
+
+    class Meta:
+        verbose_name = "Tipo de herramienta"
+        verbose_name_plural = "Tipos de herramientas"
+        ordering = ["category__name", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["category", "name"],
+                name="unique_tool_type_per_category",
+                violation_error_message=(
+                    "Este tipo de herramienta ya existe en esta categoría."
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.category.name} → {self.name}"
+    
+
+class ToolSpecification(models.Model):
+    tool_type = models.ForeignKey(
+        ToolType,
+        on_delete=models.PROTECT,
+        verbose_name="Tipo de herramienta",
+        related_name="specifications",
+    )
+    name = models.CharField(
+        "Especificación",
+        max_length=150,
+        help_text="Ejemplos: M6 × 1.0, diámetro 10 mm o rango 0–25 mm.",
+    )
+    description = models.TextField(
+        "Descripción",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Especificación de herramienta"
+        verbose_name_plural = "Especificaciones de herramientas"
+        ordering = ["tool_type__name", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tool_type", "name"],
+                name="unique_specification_per_tool_type",
+                violation_error_message=(
+                    "Esta especificación ya existe para este tipo de herramienta."
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.tool_type} → {self.name}"
+
 
 class Tool(models.Model):
     tool_code = models.CharField(
@@ -26,6 +110,14 @@ class Tool(models.Model):
         unique=True,
     )
     name = models.CharField("Nombre", max_length=100)
+    specification = models.ForeignKey(
+        ToolSpecification,
+        on_delete=models.PROTECT,
+        verbose_name="Especificación",
+        related_name="tools",
+        null=True,
+        blank=True,
+    )
     brand = models.CharField("Marca", max_length=100, blank=True)
     serial_number = models.CharField(
         "Número de serie",
