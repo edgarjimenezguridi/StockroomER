@@ -232,6 +232,21 @@ class StockEntry(models.Model):
 
     
 class Tool(models.Model):
+
+    class InventoryStatus(models.TextChoices):
+        AVAILABLE = "available", "Disponible"
+        LOANED = "loaned", "Prestada"
+        QUARANTINE = "quarantine", "Dañada / en revisión"
+        CONSUMED = "consumed", "Entregada sin devolución"
+
+    inventory_status = models.CharField(
+        "Estado de inventario",
+        max_length=20,
+        choices=InventoryStatus.choices,
+        default=InventoryStatus.AVAILABLE,
+        editable=False,
+    )
+
     article = models.ForeignKey(
         Article,
         on_delete=models.PROTECT,
@@ -317,11 +332,31 @@ class Loan(models.Model):
         return f"{self.tool.tool_code} - {self.employee.employee_id}"
 
 class QuantityIssue(models.Model):
+    
+    legacy_loan = models.OneToOneField(
+        Loan,
+        on_delete=models.PROTECT,
+        verbose_name="Préstamo de origen",
+        related_name="unified_issue",
+        null=True,
+        blank=True,
+        editable=False,
+    )
     stock = models.ForeignKey(
         QuantityStock,
         on_delete=models.PROTECT,
         verbose_name="Existencias del artículo",
         related_name="issues",
+        null=True,
+        blank=True,
+    )
+    tool = models.ForeignKey(
+        Tool,
+        on_delete=models.PROTECT,
+        verbose_name="Pieza individual",
+        related_name="issues",
+        null=True,
+        blank=True,
     )
     employee = models.ForeignKey(
         Employee,
@@ -353,8 +388,8 @@ class QuantityIssue(models.Model):
     )
 
     class Meta:
-        verbose_name = "Entrega por cantidad"
-        verbose_name_plural = "Entregas por cantidad"
+        verbose_name = "Entrega"
+        verbose_name_plural = "Entregas"
         ordering = ["-issued_at", "-pk"]
         constraints = [
             models.CheckConstraint(
@@ -367,20 +402,51 @@ class QuantityIssue(models.Model):
                 ),
                 name="quantity_issue_returned_lte_quantity",
             ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(stock__isnull=False, tool__isnull=True)
+                    | models.Q(stock__isnull=True, tool__isnull=False)
+                ),
+                name="issue_stock_or_tool",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(tool__isnull=True)
+                    | models.Q(quantity=1)
+                ),
+                name="issue_individual_quantity_one",
+            ),
+            models.UniqueConstraint(
+                fields=["tool"],
+                condition=models.Q(
+                    tool__isnull=False,
+                    requires_return=True,
+                    returned_quantity=0,
+                ),
+                name="unique_open_issue_per_tool",
+                violation_error_message=(
+                    "Esta pieza ya tiene una entrega pendiente."
+                ),
+            ),
         ]
 
     def __str__(self):
+        if self.tool_id:
+            reference = self.tool.tool_code
+        elif self.stock_id:
+            reference = self.stock.article.article_code
+        else:
+            reference = "Sin artículo"
+
         return (
-            f"{self.stock.article.article_code} — "
-            f"{self.employee.employee_id} — "
-            f"{self.quantity} piezas"
+            f"Entrega #{self.pk} — {reference} — "
+            f"Trabajador {self.employee.employee_id}"
         )
 
 class QuantityReturn(models.Model):
     class Condition(models.TextChoices):
         GOOD = "good", "Buen estado"
-        WORN = "worn", "Desgaste"
-        DAMAGED = "damaged", "Daño"
+        DAMAGED = "damaged", "Dañada"
 
     issue = models.ForeignKey(
         QuantityIssue,
@@ -402,7 +468,7 @@ class QuantityReturn(models.Model):
         default=timezone.now,
     )
     reason = models.CharField(
-        "Motivo del desgaste o daño",
+        "Motivo del daño",
         max_length=200,
         blank=True,
     )
@@ -412,8 +478,8 @@ class QuantityReturn(models.Model):
     )
 
     class Meta:
-        verbose_name = "Devolución por cantidad"
-        verbose_name_plural = "Devoluciones por cantidad"
+        verbose_name = "Devolución"
+        verbose_name_plural = "Devoluciones"
         ordering = ["-returned_at", "-pk"]
         constraints = [
             models.CheckConstraint(
@@ -424,12 +490,12 @@ class QuantityReturn(models.Model):
 
     def clean(self):
         super().clean()
-        if self.condition in (
-            self.Condition.WORN,
-            self.Condition.DAMAGED,
-        ) and not self.reason.strip():
+        if (
+            self.condition == self.Condition.DAMAGED
+            and not self.reason.strip()
+        ):
             raise ValidationError({
-                "reason": "Indica el motivo del desgaste o daño.",
+                "reason": "Indica el motivo del daño.",
             })
 
     def __str__(self):

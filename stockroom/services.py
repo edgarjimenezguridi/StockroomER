@@ -5,6 +5,8 @@ from django.db.models import F
 from .models import (
     Article,
     Employee,
+    Tool,
+    Loan,
     QuantityStock,
     QuantityIssue,
     QuantityReturn,
@@ -43,6 +45,8 @@ def register_quantity_issue(issue):
         raise ValidationError(
             "Solo se pueden registrar entregas nuevas."
         )
+    if issue.tool_id:
+        return register_individual_issue(issue)
 
     with transaction.atomic():
         issue.full_clean()
@@ -126,6 +130,27 @@ def register_quantity_return(return_record):
                 "que intentas devolver supera las piezas pendientes."
             )
 
+        if issue.tool_id:
+            new_status = (
+                Tool.InventoryStatus.AVAILABLE
+                if return_record.condition == QuantityReturn.Condition.GOOD
+                else Tool.InventoryStatus.QUARANTINE
+            )
+
+            updated_tool = Tool.objects.filter(
+                pk=issue.tool_id,
+                inventory_status=Tool.InventoryStatus.LOANED,
+            ).update(inventory_status=new_status)
+
+            if updated_tool != 1:
+                raise ValidationError(
+                    "La pieza no figura como prestada. "
+                    "Revisa su historial antes de registrar la devolución."
+                )
+
+            return_record.save(force_insert=True)
+            return return_record
+
         changes = {
             "loaned_quantity": (
                 F("loaned_quantity") - return_record.quantity
@@ -155,3 +180,74 @@ def register_quantity_return(return_record):
         return_record.save(force_insert=True)
 
     return return_record
+
+def register_individual_issue(issue):
+    if issue.pk is not None or not issue._state.adding:
+        raise ValidationError(
+            "Solo se pueden registrar entregas nuevas."
+        )
+
+    with transaction.atomic():
+        tool = Tool.objects.select_related("article").filter(
+            pk=issue.tool_id,
+        ).first()
+
+        if tool is None or tool.article_id is None:
+            raise ValidationError(
+                "Selecciona una pieza vinculada a un artículo."
+            )
+
+        article = tool.article
+        issue.requires_return = (
+            article.return_mode == Article.ReturnMode.RETURNABLE
+        )
+        issue.full_clean()
+
+        if issue.returned_quantity != 0:
+            raise ValidationError(
+                "Una entrega nueva no puede tener piezas ya devueltas."
+            )
+
+        if not Employee.objects.filter(
+            pk=issue.employee_id,
+            is_active=True,
+        ).exists():
+            raise ValidationError(
+                "El trabajador debe estar activo."
+            )
+
+        if Loan.objects.filter(
+            tool_id=tool.pk,
+            returned_at__isnull=True,
+            unified_issue__isnull=True,
+        ).exists():
+            raise ValidationError(
+                "Esta pieza tiene un préstamo anterior pendiente."
+            )
+
+        new_status = (
+            Tool.InventoryStatus.LOANED
+            if issue.requires_return
+            else Tool.InventoryStatus.CONSUMED
+        )
+
+        updated = Tool.objects.filter(
+            pk=tool.pk,
+            is_active=True,
+            inventory_status=Tool.InventoryStatus.AVAILABLE,
+            article_id=article.pk,
+            article__is_active=True,
+            article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+            article__return_mode=article.return_mode,
+        ).update(inventory_status=new_status)
+
+        if updated != 1:
+            raise ValidationError(
+                "La pieza no está disponible o su artículo no está "
+                "activo y configurado para control individual. "
+                "Recarga el formulario y verifica sus datos."
+            )
+
+        issue.save(force_insert=True)
+
+    return issue

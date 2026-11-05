@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
+from django.db.models import F, Q, Sum
+from django.urls import reverse
+from django.utils.html import format_html
 
 
 
@@ -27,9 +30,40 @@ from .services import (
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ("employee_id", "first_name", "last_name", "is_active")
+    list_display = (
+        "employee_id",
+        "first_name",
+        "last_name",
+        "damaged_pieces",
+        "is_active",
+    )
     search_fields = ("employee_id", "first_name", "last_name")
     list_filter = ("is_active",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            damaged_total=Sum(
+                "quantity_issues__returns__quantity",
+                filter=Q(
+                    quantity_issues__returns__condition="damaged"
+                ),
+                default=0,
+            )
+        )
+
+    @admin.display(
+        description="Piezas devueltas dañadas",
+        ordering="damaged_total",
+    )
+    def damaged_pieces(self, obj):
+        url = reverse("admin:stockroom_quantityreturn_changelist")
+        return format_html(
+            '<a href="{}?condition=damaged&issue__employee__id__exact={}">'
+            "{}</a>",
+            url,
+            obj.pk,
+            obj.damaged_total,
+        )
 
 
 @admin.register(Tool)
@@ -62,6 +96,16 @@ class ToolAdmin(admin.ModelAdmin):
         "specification__tool_type__category",
     )
 
+
+
+    
+    def get_model_perms(self, request):
+        return {}
+
+
+
+
+
 @admin.register(Loan)
 class LoanAdmin(admin.ModelAdmin):
     list_display = ("employee", "tool", "borrowed_at", "returned_at", "status")
@@ -73,7 +117,7 @@ class LoanAdmin(admin.ModelAdmin):
         "tool__name",
     )
     list_filter = ("returned_at",)
-    actions = ["register_return"]
+    actions = None
 
     @admin.action(
         description="Registrar devolución",
@@ -92,6 +136,19 @@ class LoanAdmin(admin.ModelAdmin):
     @admin.display(description="Estado")
     def status(self, obj):
         return "Pendiente" if obj.returned_at is None else "Devuelto"
+    
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
+    def get_model_perms(self, request):
+        return {}
+
 
 @admin.register(ToolCategory)
 class ToolCategoryAdmin(admin.ModelAdmin):
@@ -113,6 +170,25 @@ class ToolSpecificationAdmin(admin.ModelAdmin):
         "tool_type__category__name",
     )
     list_filter = ("tool_type__category", "tool_type")
+
+class ToolInline(admin.TabularInline):
+    model = Tool
+    fk_name = "article"
+    verbose_name = "Pieza individual"
+    verbose_name_plural = "Piezas individuales"
+    fields = (
+        "tool_code",
+        "name",
+        "serial_number",
+        "location",
+        "inventory_status",
+        "is_active",
+    )
+    readonly_fields = ("inventory_status",)
+    extra = 0
+    can_delete = False
+
+
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
@@ -140,6 +216,14 @@ class ArticleAdmin(admin.ModelAdmin):
     list_select_related = (
         "specification__tool_type__category",
     )
+
+    def get_inlines(self, request, obj=None):
+        if (
+            obj is not None
+            and obj.tracking_mode == Article.TrackingMode.INDIVIDUAL
+        ):
+            return [ToolInline]
+        return []
 
 @admin.register(QuantityStock)
 class QuantityStockAdmin(admin.ModelAdmin):
@@ -213,30 +297,85 @@ class StockEntryAdmin(admin.ModelAdmin):
 @admin.register(QuantityIssue)
 class QuantityIssueAdmin(admin.ModelAdmin):
     list_display = (
-        "stock",
+        "id",
+        "item",
         "employee",
         "quantity",
+        "returned_quantity",
+        "pending_quantity",
+        "status",
         "issued_at",
-        "requires_return",
     )
     search_fields = (
         "stock__article__article_code",
         "stock__article__name",
+        "tool__tool_code",
+        "tool__name",
+        "tool__serial_number",
         "employee__employee_id",
         "employee__first_name",
         "employee__last_name",
     )
     list_filter = ("requires_return",)
-    list_select_related = ("stock__article", "employee")
+    list_select_related = (
+        "stock__article",
+        "tool__article",
+        "employee",
+    )
     fields = (
         "stock",
+        "tool",
         "employee",
         "quantity",
         "issued_at",
         "requires_return",
+        "returned_quantity",
+        "pending_quantity",
+        "status",
+        "legacy_loan",
         "notes",
     )
-    readonly_fields = ("requires_return",)
+    readonly_fields = (
+        "requires_return",
+        "returned_quantity",
+        "pending_quantity",
+        "status",
+        "legacy_loan",
+    )
+
+    @admin.display(description="Artículo / pieza")
+    def item(self, obj):
+        if obj.tool_id:
+            return str(obj.tool)
+        return str(obj.stock.article)
+
+    @admin.display(description="Pendientes")
+    def pending_quantity(self, obj):
+        if not obj.requires_return:
+            return 0
+        return obj.quantity - obj.returned_quantity
+
+    @admin.display(description="Estado")
+    def status(self, obj):
+        if not obj.requires_return:
+            return "Sin devolución"
+        if obj.returned_quantity == obj.quantity:
+            return "Devuelta"
+        if obj.returned_quantity:
+            return "Devolución parcial"
+        return "Pendiente"
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return (
+                "stock",
+                "tool",
+                "employee",
+                "quantity",
+                "issued_at",
+                "notes",
+            )
+        return self.fields
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "stock":
@@ -245,20 +384,20 @@ class QuantityIssueAdmin(admin.ModelAdmin):
                 article__tracking_mode=Article.TrackingMode.QUANTITY,
             ).select_related("article")
 
+        elif db_field.name == "tool":
+            kwargs["queryset"] = Tool.objects.filter(
+                is_active=True,
+                inventory_status=Tool.InventoryStatus.AVAILABLE,
+                article__is_active=True,
+                article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+            ).select_related("article")
+
         elif db_field.name == "employee":
             kwargs["queryset"] = Employee.objects.filter(is_active=True)
 
         return super().formfield_for_foreignkey(
             db_field, request, **kwargs
         )
-
-    def get_fields(self, request, obj=None):
-        if obj is None:
-            return tuple(
-                field for field in self.fields
-                if field != "requires_return"
-            )
-        return self.fields
 
     def save_model(self, request, obj, form, change):
         register_quantity_issue(obj)
@@ -300,7 +439,7 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         "issue__employee__first_name",
         "issue__employee__last_name",
     )
-    list_filter = ("condition",)
+    list_filter = ("condition", "issue__employee")
     list_select_related = (
         "issue__stock__article",
         "issue__employee",
@@ -318,7 +457,12 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         if db_field.name == "issue":
             kwargs["queryset"] = QuantityIssue.objects.filter(
                 requires_return=True,
-            ).select_related("stock__article", "employee")
+                returned_quantity__lt=F("quantity"),
+            ).select_related(
+                "stock__article",
+                "tool",
+                "employee",
+            )
 
         return super().formfield_for_foreignkey(
             db_field, request, **kwargs
