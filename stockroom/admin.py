@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
-from django.db.models import F, Q, Sum
+from django.db.models import Count, F, Q, Sum
 from django.urls import reverse
 from django.utils.html import format_html
 from django import forms
@@ -190,16 +190,31 @@ class ToolInline(admin.TabularInline):
     extra = 0
     can_delete = False
 
+class QuantityStockInline(admin.StackedInline):
+    model = QuantityStock
+    fk_name = "article"
+    verbose_name_plural = "Existencias"
+    fields = (
+        "available_quantity",
+        "loaned_quantity",
+        "quarantine_quantity",
+    )
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
 
+    def has_add_permission(self, request, obj=None):
+        return False
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     list_display = (
         "article_code",
         "name",
-        "specification",
-        "brand",
         "tracking_mode",
+        "available",
+        "loaned",
+        "quarantine",
         "return_mode",
         "is_active",
     )
@@ -217,15 +232,79 @@ class ArticleAdmin(admin.ModelAdmin):
     )
     list_select_related = (
         "specification__tool_type__category",
+        "quantity_stock",
     )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            available_units=Count(
+                "individual_tools",
+                filter=Q(
+                    individual_tools__inventory_status=(
+                        Tool.InventoryStatus.AVAILABLE
+                    ),
+                    individual_tools__is_active=True,
+                ),
+            ),
+            loaned_units=Count(
+                "individual_tools",
+                filter=Q(
+                    individual_tools__inventory_status=(
+                        Tool.InventoryStatus.LOANED
+                    ),
+                ),
+            ),
+            quarantine_units=Count(
+                "individual_tools",
+                filter=Q(
+                    individual_tools__inventory_status=(
+                        Tool.InventoryStatus.QUARANTINE
+                    ),
+                ),
+            ),
+        )
+
+    def stock_value(self, obj, quantity_field, individual_field):
+        if obj.tracking_mode == Article.TrackingMode.INDIVIDUAL:
+            return getattr(obj, individual_field)
+
+        stock = getattr(obj, "quantity_stock", None)
+        if stock is None:
+            return "Sin registro"
+        return getattr(stock, quantity_field)
+
+    @admin.display(description="Disponibles")
+    def available(self, obj):
+        return self.stock_value(
+            obj, "available_quantity", "available_units"
+        )
+
+    @admin.display(description="Prestadas")
+    def loaned(self, obj):
+        return self.stock_value(
+            obj, "loaned_quantity", "loaned_units"
+        )
+
+    @admin.display(description="Dañadas / en revisión")
+    def quarantine(self, obj):
+        return self.stock_value(
+            obj, "quarantine_quantity", "quarantine_units"
+        )
+
     def get_inlines(self, request, obj=None):
-        if (
-            obj is not None
-            and obj.tracking_mode == Article.TrackingMode.INDIVIDUAL
-        ):
+        if obj is None:
+            return []
+
+        if obj.tracking_mode == Article.TrackingMode.INDIVIDUAL:
             return [ToolInline]
-        return []
+
+        return [QuantityStockInline]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        if obj.tracking_mode == Article.TrackingMode.QUANTITY:
+            QuantityStock.objects.get_or_create(article=obj)
 
 @admin.register(QuantityStock)
 class QuantityStockAdmin(admin.ModelAdmin):
@@ -253,6 +332,9 @@ class QuantityStockAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def get_model_perms(self, request):
+        return {}
 
 @admin.register(StockEntry)
 class StockEntryAdmin(admin.ModelAdmin):
