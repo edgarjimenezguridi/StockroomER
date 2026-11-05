@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 from django.db.models import F, Q, Sum
 from django.urls import reverse
 from django.utils.html import format_html
+from django import forms
 
 
 
@@ -26,6 +27,7 @@ from .services import (
     register_stock_entry,
     register_quantity_issue,
     register_quantity_return,
+    register_return_and_exchange,
 )
 
 @admin.register(Employee)
@@ -333,6 +335,7 @@ class QuantityIssueAdmin(admin.ModelAdmin):
         "pending_quantity",
         "status",
         "legacy_loan",
+        "replacement_for",
         "notes",
     )
     readonly_fields = (
@@ -341,6 +344,7 @@ class QuantityIssueAdmin(admin.ModelAdmin):
         "pending_quantity",
         "status",
         "legacy_loan",
+        "replacement_for",
     )
 
     @admin.display(description="Artículo / pieza")
@@ -423,8 +427,90 @@ class QuantityIssueAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+class QuantityReturnForm(forms.ModelForm):
+    operation = forms.ChoiceField(
+        label="Operación",
+        choices=[
+            ("return_only", "Solo devolución"),
+            ("exchange", "Devolución y cambio"),
+        ],
+        initial="return_only",
+    )
+    replacement_tool = forms.ModelChoiceField(
+        label="Pieza individual de reemplazo",
+        queryset=Tool.objects.none(),
+        required=False,
+        help_text=(
+            "Solo para cambios de piezas individuales. "
+            "Debe pertenecer al mismo artículo que la pieza devuelta."
+        ),
+    )
+
+    class Meta:
+        model = QuantityReturn
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["replacement_tool"].queryset = (
+            Tool.objects.filter(
+                is_active=True,
+                inventory_status=Tool.InventoryStatus.AVAILABLE,
+                article__is_active=True,
+                article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+                article__return_mode=Article.ReturnMode.RETURNABLE,
+            ).select_related("article")
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        operation = cleaned.get("operation")
+        replacement = cleaned.get("replacement_tool")
+        issue = cleaned.get("issue")
+
+        if operation == "return_only":
+            if replacement:
+                self.add_error(
+                    "replacement_tool",
+                    "Para solo devolución, deja este campo vacío.",
+                )
+            return cleaned
+
+        if operation != "exchange":
+            return cleaned
+
+        if cleaned.get("condition") != QuantityReturn.Condition.DAMAGED:
+            self.add_error(
+                "condition",
+                "El cambio requiere una pieza dañada.",
+            )
+
+        if issue:
+            if issue.tool_id:
+                if replacement is None:
+                    self.add_error(
+                        "replacement_tool",
+                        "Selecciona la pieza de reemplazo.",
+                    )
+                elif (
+                    replacement.pk == issue.tool_id
+                    or replacement.article_id != issue.tool.article_id
+                ):
+                    self.add_error(
+                        "replacement_tool",
+                        "Selecciona otra pieza del mismo artículo.",
+                    )
+            elif replacement:
+                self.add_error(
+                    "replacement_tool",
+                    "Para artículos por cantidad, deja este campo vacío.",
+                )
+
+        return cleaned
+
 @admin.register(QuantityReturn)
 class QuantityReturnAdmin(admin.ModelAdmin):
+    form = QuantityReturnForm
     list_display = (
         "issue",
         "quantity",
@@ -452,6 +538,19 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         "reason",
         "notes",
     )
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return (
+                "issue",
+                "quantity",
+                "condition",
+                "returned_at",
+                "reason",
+                "notes",
+                "operation",
+                "replacement_tool",
+            )
+        return self.fields
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "issue":
@@ -469,7 +568,17 @@ class QuantityReturnAdmin(admin.ModelAdmin):
         )
 
     def save_model(self, request, obj, form, change):
-        register_quantity_return(obj)
+        if form.cleaned_data["operation"] == "exchange":
+            replacement_tool = form.cleaned_data.get("replacement_tool")
+
+            register_return_and_exchange(
+                obj,
+                replacement_tool_id=(
+                    replacement_tool.pk if replacement_tool else None
+                ),
+            )
+        else:
+            register_quantity_return(obj)
 
     def changeform_view(
         self, request, object_id=None, form_url="", extra_context=None

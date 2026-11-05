@@ -332,6 +332,16 @@ class Loan(models.Model):
         return f"{self.tool.tool_code} - {self.employee.employee_id}"
 
 class QuantityIssue(models.Model):
+
+    replacement_for = models.OneToOneField(
+        "QuantityReturn",
+        on_delete=models.PROTECT,
+        verbose_name="Devolución que origina el cambio",
+        related_name="replacement_issue",
+        null=True,
+        blank=True,
+        editable=False,
+    )
     
     legacy_loan = models.OneToOneField(
         Loan,

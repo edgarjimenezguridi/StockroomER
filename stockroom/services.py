@@ -251,3 +251,80 @@ def register_individual_issue(issue):
         issue.save(force_insert=True)
 
     return issue
+
+def register_return_and_exchange(
+    return_record,
+    replacement_tool_id=None,
+):
+    with transaction.atomic():
+        return_record.full_clean()
+
+        if return_record.condition != QuantityReturn.Condition.DAMAGED:
+            raise ValidationError(
+                "El cambio requiere una devolución de piezas dañadas."
+            )
+
+        original_issue = QuantityIssue.objects.select_related(
+            "stock__article",
+            "tool__article",
+        ).get(pk=return_record.issue_id)
+
+        replacement = QuantityIssue(
+            employee_id=original_issue.employee_id,
+            quantity=return_record.quantity,
+            issued_at=return_record.returned_at,
+        )
+
+        if original_issue.tool_id:
+            original_tool = original_issue.tool
+
+            if original_tool.article_id is None:
+                raise ValidationError(
+                    "La pieza original debe estar vinculada a un artículo."
+                )
+
+            replacement_tool = Tool.objects.filter(
+                pk=replacement_tool_id,
+                article_id=original_tool.article_id,
+            ).first()
+
+            if replacement_tool is None:
+                raise ValidationError(
+                    "Selecciona una pieza de reemplazo del mismo artículo."
+                )
+
+            if replacement_tool.pk == original_tool.pk:
+                raise ValidationError(
+                    "La pieza dañada no puede ser su propio reemplazo."
+                )
+
+            article = original_tool.article
+            replacement.tool = replacement_tool
+
+        else:
+            if replacement_tool_id is not None:
+                raise ValidationError(
+                    "Un artículo por cantidad no requiere seleccionar "
+                    "una pieza individual de reemplazo."
+                )
+
+            article = original_issue.stock.article
+            replacement.stock_id = original_issue.stock_id
+
+        if article.return_mode != Article.ReturnMode.RETURNABLE:
+            raise ValidationError(
+                "El artículo debe estar configurado con devolución "
+                "para realizar este cambio."
+            )
+
+        register_quantity_return(return_record)
+
+        replacement.replacement_for = return_record
+        replacement.notes = (
+            f"Reemplazo por la devolución #{return_record.pk}. "
+            f"Motivo: {return_record.reason}"
+        )
+
+        register_quantity_issue(replacement)
+
+    return replacement
