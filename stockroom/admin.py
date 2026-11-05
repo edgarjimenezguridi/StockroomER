@@ -395,6 +395,43 @@ class StockEntryAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+class IssueStatusFilter(admin.SimpleListFilter):
+    title = "Estado de entrega"
+    parameter_name = "issue_status"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("pending", "Con piezas pendientes"),
+            ("partial", "Devolución parcial"),
+            ("returned", "Devuelta"),
+            ("no_return", "Sin devolución"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "pending":
+            return queryset.filter(
+                requires_return=True,
+                returned_quantity__lt=F("quantity"),
+            )
+
+        if self.value() == "partial":
+            return queryset.filter(
+                requires_return=True,
+                returned_quantity__gt=0,
+                returned_quantity__lt=F("quantity"),
+            )
+
+        if self.value() == "returned":
+            return queryset.filter(
+                requires_return=True,
+                returned_quantity=F("quantity"),
+            )
+
+        if self.value() == "no_return":
+            return queryset.filter(requires_return=False)
+
+        return queryset
+
 @admin.register(QuantityIssue)
 class QuantityIssueAdmin(admin.ModelAdmin):
     list_display = (
@@ -417,7 +454,7 @@ class QuantityIssueAdmin(admin.ModelAdmin):
         "employee__first_name",
         "employee__last_name",
     )
-    list_filter = ("requires_return",)
+    list_filter = (IssueStatusFilter, "employee")
     list_select_related = (
         "stock__article",
         "tool__article",
