@@ -10,6 +10,7 @@ from .models import (
     QuantityStock,
     QuantityIssue,
     QuantityReturn,
+    DamageResolution,
 )
 
 
@@ -328,3 +329,100 @@ def register_return_and_exchange(
         register_quantity_issue(replacement)
 
     return replacement
+
+def register_damage_resolution(resolution):
+    if resolution.pk is not None or not resolution._state.adding:
+        raise ValidationError(
+            "Solo se pueden registrar resoluciones nuevas."
+        )
+
+    with transaction.atomic():
+        resolution.full_clean()
+
+        if not resolution.reason.strip():
+            raise ValidationError(
+                "Indica el motivo de la resolución."
+            )
+
+        source = QuantityReturn.objects.select_related(
+            "issue",
+        ).get(pk=resolution.source_return_id)
+
+        if resolution.resolved_at < source.returned_at:
+            raise ValidationError(
+                "La resolución no puede ser anterior a la devolución."
+            )
+
+        updated_return = QuantityReturn.objects.filter(
+            pk=source.pk,
+            condition=QuantityReturn.Condition.DAMAGED,
+            resolved_quantity__lte=(
+                F("quantity") - resolution.quantity
+            ),
+        ).update(
+            resolved_quantity=(
+                F("resolved_quantity") + resolution.quantity
+            )
+        )
+
+        if updated_return != 1:
+            raise ValidationError(
+                "La devolución no corresponde a piezas dañadas "
+                "o la cantidad supera las piezas pendientes de revisión."
+            )
+
+        issue = source.issue
+        restored = (
+            resolution.outcome == DamageResolution.Outcome.RESTORED
+        )
+
+        if issue.tool_id:
+            if resolution.quantity != 1:
+                raise ValidationError(
+                    "Para una pieza individual, la cantidad debe ser 1."
+                )
+
+            changes = {
+                "inventory_status": (
+                    Tool.InventoryStatus.AVAILABLE
+                    if restored
+                    else Tool.InventoryStatus.SCRAPPED
+                ),
+            }
+
+            if not restored:
+                changes["is_active"] = False
+
+            updated_inventory = Tool.objects.filter(
+                pk=issue.tool_id,
+                inventory_status=Tool.InventoryStatus.QUARANTINE,
+            ).update(**changes)
+
+        else:
+            destination = (
+                "available_quantity"
+                if restored
+                else "scrapped_quantity"
+            )
+
+            updated_inventory = QuantityStock.objects.filter(
+                pk=issue.stock_id,
+                quarantine_quantity__gte=resolution.quantity,
+            ).update(
+                quarantine_quantity=(
+                    F("quarantine_quantity") - resolution.quantity
+                ),
+                **{
+                    destination: F(destination) + resolution.quantity,
+                },
+            )
+
+        if updated_inventory != 1:
+            raise ValidationError(
+                "El inventario en revisión no coincide con la resolución. "
+                "Revisa el historial antes de continuar."
+            )
+
+        resolution.save(force_insert=True)
+
+    return resolution

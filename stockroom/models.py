@@ -180,6 +180,11 @@ class QuantityStock(models.Model):
         "Dañadas / en revisión",
         default=0,
     )
+    scrapped_quantity = models.PositiveIntegerField(
+        "Bajas definitivas acumuladas",
+        default=0,
+        editable=False,
+    )
 
     class Meta:
         verbose_name = "Existencia por cantidad"
@@ -238,6 +243,7 @@ class Tool(models.Model):
         LOANED = "loaned", "Prestada"
         QUARANTINE = "quarantine", "Dañada / en revisión"
         CONSUMED = "consumed", "Entregada sin devolución"
+        SCRAPPED = "scrapped", "Baja definitiva"
 
     inventory_status = models.CharField(
         "Estado de inventario",
@@ -468,6 +474,11 @@ class QuantityReturn(models.Model):
         "Cantidad devuelta",
         validators=[MinValueValidator(1)],
     )
+    resolved_quantity = models.PositiveIntegerField(
+        "Cantidad resuelta acumulada",
+        default=0,
+        editable=False,
+    )
     condition = models.CharField(
         "Condición al regresar",
         max_length=20,
@@ -496,6 +507,12 @@ class QuantityReturn(models.Model):
                 condition=models.Q(quantity__gte=1),
                 name="quantity_return_quantity_gte_1",
             ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    resolved_quantity__lte=models.F("quantity")
+                ),
+                name="quantity_return_resolved_lte_quantity",
+            ),
         ]
 
     def clean(self):
@@ -512,4 +529,55 @@ class QuantityReturn(models.Model):
         return (
             f"Entrega #{self.issue_id} — "
             f"Devolución de {self.quantity} piezas"
+        )
+
+class DamageResolution(models.Model):
+    class Outcome(models.TextChoices):
+        RESTORED = "restored", "Regresar a disponibles"
+        SCRAPPED = "scrapped", "Baja definitiva"
+
+    source_return = models.ForeignKey(
+        QuantityReturn,
+        on_delete=models.PROTECT,
+        verbose_name="Devolución por daño",
+        related_name="resolutions",
+        limit_choices_to={"condition": "damaged"},
+    )
+    quantity = models.PositiveIntegerField(
+        "Cantidad revisada",
+        validators=[MinValueValidator(1)],
+    )
+    outcome = models.CharField(
+        "Resultado",
+        max_length=20,
+        choices=Outcome.choices,
+    )
+    resolved_at = models.DateTimeField(
+        "Fecha de resolución",
+        default=timezone.now,
+    )
+    reason = models.CharField(
+        "Motivo de la resolución",
+        max_length=200,
+    )
+    notes = models.TextField(
+        "Observaciones",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Resolución de daño"
+        verbose_name_plural = "Resoluciones de daños"
+        ordering = ["-resolved_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1),
+                name="damage_resolution_quantity_gte_1",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Devolución #{self.source_return_id} — "
+            f"{self.get_outcome_display()} — {self.quantity}"
         )

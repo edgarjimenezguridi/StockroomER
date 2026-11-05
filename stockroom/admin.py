@@ -20,6 +20,7 @@ from .models import (
     StockEntry,
     QuantityIssue,
     QuantityReturn,
+    DamageResolution,
 )
 
 from django.utils import timezone
@@ -28,6 +29,7 @@ from .services import (
     register_quantity_issue,
     register_quantity_return,
     register_return_and_exchange,
+    register_damage_resolution,
 )
 
 @admin.register(Employee)
@@ -198,6 +200,7 @@ class QuantityStockInline(admin.StackedInline):
         "available_quantity",
         "loaned_quantity",
         "quarantine_quantity",
+        "scrapped_quantity",
     )
     readonly_fields = fields
     extra = 0
@@ -215,6 +218,7 @@ class ArticleAdmin(admin.ModelAdmin):
         "available",
         "loaned",
         "quarantine",
+        "scrapped",
         "return_mode",
         "is_active",
     )
@@ -262,6 +266,14 @@ class ArticleAdmin(admin.ModelAdmin):
                     ),
                 ),
             ),
+            scrapped_units=Count(
+                "individual_tools",
+                filter=Q(
+                    individual_tools__inventory_status=(
+                        Tool.InventoryStatus.SCRAPPED
+                    ),
+                ),
+            ),
         )
 
     def stock_value(self, obj, quantity_field, individual_field):
@@ -289,6 +301,11 @@ class ArticleAdmin(admin.ModelAdmin):
     def quarantine(self, obj):
         return self.stock_value(
             obj, "quarantine_quantity", "quarantine_units"
+        )
+    @admin.display(description="Bajas acumuladas")
+    def scrapped(self, obj):
+        return self.stock_value(
+            obj, "scrapped_quantity", "scrapped_units"
         )
 
     def get_inlines(self, request, obj=None):
@@ -661,6 +678,76 @@ class QuantityReturnAdmin(admin.ModelAdmin):
             )
         else:
             register_quantity_return(obj)
+
+    def changeform_view(
+        self, request, object_id=None, form_url="", extra_context=None
+    ):
+        try:
+            return super().changeform_view(
+                request, object_id, form_url, extra_context
+            )
+        except ValidationError as exc:
+            self.message_user(
+                request,
+                " ".join(exc.messages),
+                level="error",
+            )
+            return redirect(request.path)
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(DamageResolution)
+class DamageResolutionAdmin(admin.ModelAdmin):
+    list_display = (
+        "source_return",
+        "quantity",
+        "outcome",
+        "resolved_at",
+        "reason",
+    )
+    search_fields = (
+        "source_return__issue__stock__article__article_code",
+        "source_return__issue__stock__article__name",
+        "source_return__issue__tool__tool_code",
+        "source_return__issue__tool__name",
+        "reason",
+    )
+    list_filter = ("outcome",)
+    list_select_related = (
+        "source_return__issue__stock__article",
+        "source_return__issue__tool",
+        "source_return__issue__employee",
+    )
+    fields = (
+        "source_return",
+        "quantity",
+        "outcome",
+        "resolved_at",
+        "reason",
+        "notes",
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "source_return":
+            kwargs["queryset"] = QuantityReturn.objects.filter(
+                condition=QuantityReturn.Condition.DAMAGED,
+                resolved_quantity__lt=F("quantity"),
+            ).select_related(
+                "issue__stock__article",
+                "issue__tool",
+                "issue__employee",
+            )
+
+        return super().formfield_for_foreignkey(
+            db_field, request, **kwargs
+        )
+
+    def save_model(self, request, obj, form, change):
+        register_damage_resolution(obj)
 
     def changeform_view(
         self, request, object_id=None, form_url="", extra_context=None
