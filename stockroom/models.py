@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 class Employee(models.Model):
     employee_id = models.CharField(
@@ -102,8 +103,143 @@ class ToolSpecification(models.Model):
     def __str__(self):
         return f"{self.tool_type} → {self.name}"
 
+class Article(models.Model):
+    class TrackingMode(models.TextChoices):
+        QUANTITY = "quantity", "Por cantidad"
+        INDIVIDUAL = "individual", "Por pieza individual"
 
+    class ReturnMode(models.TextChoices):
+        RETURNABLE = "returnable", "Con devolución"
+        CONSUMABLE = "consumable", "Consumible sin devolución"
+
+    article_code = models.CharField(
+        "Código de artículo",
+        max_length=30,
+        unique=True,
+    )
+    name = models.CharField(
+        "Nombre del artículo",
+        max_length=150,
+    )
+    specification = models.ForeignKey(
+        ToolSpecification,
+        on_delete=models.PROTECT,
+        verbose_name="Especificación",
+        related_name="articles",
+        null=True,
+        blank=True,
+    )
+    brand = models.CharField(
+        "Marca",
+        max_length=100,
+        blank=True,
+    )
+    tracking_mode = models.CharField(
+        "Forma de control",
+        max_length=20,
+        choices=TrackingMode.choices,
+        default=TrackingMode.INDIVIDUAL,
+    )
+    return_mode = models.CharField(
+        "Modalidad de devolución",
+        max_length=20,
+        choices=ReturnMode.choices,
+        default=ReturnMode.RETURNABLE,
+    )
+    is_active = models.BooleanField(
+        "Activo",
+        default=True,
+    )
+
+    class Meta:
+        verbose_name = "Artículo"
+        verbose_name_plural = "Artículos"
+        ordering = ["article_code"]
+
+    def __str__(self):
+        return f"{self.article_code} - {self.name}"
+
+class QuantityStock(models.Model):
+    article = models.OneToOneField(
+        Article,
+        on_delete=models.PROTECT,
+        verbose_name="Artículo",
+        related_name="quantity_stock",
+        limit_choices_to={"tracking_mode": "quantity"},
+    )
+    available_quantity = models.PositiveIntegerField(
+        "Disponibles",
+        default=0,
+    )
+    loaned_quantity = models.PositiveIntegerField(
+        "Prestadas",
+        default=0,
+    )
+    quarantine_quantity = models.PositiveIntegerField(
+        "Dañadas / en revisión",
+        default=0,
+    )
+
+    class Meta:
+        verbose_name = "Existencia por cantidad"
+        verbose_name_plural = "Existencias por cantidad"
+
+    def __str__(self):
+        return f"Existencias de {self.article}"
+
+
+class StockEntry(models.Model):
+    stock = models.ForeignKey(
+        QuantityStock,
+        on_delete=models.PROTECT,
+        verbose_name="Existencias del artículo",
+        related_name="entries",
+    )
+    quantity = models.PositiveIntegerField(
+        "Cantidad recibida",
+        validators=[MinValueValidator(1)],
+    )
+    received_at = models.DateTimeField(
+        "Fecha de entrada",
+        default=timezone.now,
+    )
+    reference = models.CharField(
+        "Referencia",
+        max_length=150,
+        blank=True,
+        help_text="Número de factura, compra o inventario inicial.",
+    )
+    notes = models.TextField(
+        "Observaciones",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Entrada de almacén"
+        verbose_name_plural = "Entradas de almacén"
+        ordering = ["-received_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1),
+                name="stock_entry_quantity_gte_1",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.stock.article.article_code} — Entrada de {self.quantity}"
+
+
+    
 class Tool(models.Model):
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.PROTECT,
+        verbose_name="Artículo",
+        related_name="individual_tools",
+        limit_choices_to={"tracking_mode": "individual"},
+        null=True,
+        blank=True,
+    )
     tool_code = models.CharField(
         "Código de herramienta",
         max_length=30,

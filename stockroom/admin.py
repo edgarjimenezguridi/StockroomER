@@ -6,7 +6,11 @@ from .models import (
     ToolCategory,
     ToolType,
     ToolSpecification,
+    Article,
+    QuantityStock,
+    StockEntry,
 )
+from .services import register_stock_entry
 from django.utils import timezone
 
 @admin.register(Employee)
@@ -21,6 +25,7 @@ class ToolAdmin(admin.ModelAdmin):
     list_display = (
         "tool_code",
         "name",
+        "article",
         "specification",
         "brand",
         "location",
@@ -96,3 +101,100 @@ class ToolSpecificationAdmin(admin.ModelAdmin):
         "tool_type__category__name",
     )
     list_filter = ("tool_type__category", "tool_type")
+
+@admin.register(Article)
+class ArticleAdmin(admin.ModelAdmin):
+    list_display = (
+        "article_code",
+        "name",
+        "specification",
+        "brand",
+        "tracking_mode",
+        "return_mode",
+        "is_active",
+    )
+    search_fields = (
+        "article_code",
+        "name",
+        "brand",
+        "specification__name",
+        "specification__tool_type__name",
+    )
+    list_filter = (
+        "tracking_mode",
+        "return_mode",
+        "is_active",
+    )
+    list_select_related = (
+        "specification__tool_type__category",
+    )
+
+@admin.register(QuantityStock)
+class QuantityStockAdmin(admin.ModelAdmin):
+    list_display = (
+        "article",
+        "available_quantity",
+        "loaned_quantity",
+        "quarantine_quantity",
+    )
+    search_fields = (
+        "article__article_code",
+        "article__name",
+    )
+    list_select_related = ("article",)
+    readonly_fields = (
+        "available_quantity",
+        "loaned_quantity",
+        "quarantine_quantity",
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return self.readonly_fields + ("article",)
+        return self.readonly_fields
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(StockEntry)
+class StockEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "stock",
+        "quantity",
+        "received_at",
+        "reference",
+    )
+    search_fields = (
+        "stock__article__article_code",
+        "stock__article__name",
+        "reference",
+    )
+    list_select_related = ("stock__article",)
+    fields = (
+        "stock",
+        "quantity",
+        "received_at",
+        "reference",
+        "notes",
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "stock":
+            kwargs["queryset"] = QuantityStock.objects.filter(
+                article__is_active=True,
+                article__tracking_mode=Article.TrackingMode.QUANTITY,
+            ).select_related("article")
+
+        return super().formfield_for_foreignkey(
+            db_field, request, **kwargs
+        )
+
+    def save_model(self, request, obj, form, change):
+        register_stock_entry(obj)
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
