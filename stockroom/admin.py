@@ -543,12 +543,28 @@ class QuantityIssueAdmin(admin.ModelAdmin):
             ).select_related("article")
 
         elif db_field.name == "tool":
-            kwargs["queryset"] = Tool.objects.filter(
-                is_active=True,
-                inventory_status=Tool.InventoryStatus.AVAILABLE,
-                article__is_active=True,
-                article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
-            ).select_related("article")
+            piezas_con_pendiente = QuantityIssue.objects.filter(
+                tool__isnull=False,
+                requires_return=True,
+                returned_quantity__lt=F("quantity"),
+            ).values("tool_id")
+
+            prestamos_sin_importar = Loan.objects.filter(
+                returned_at__isnull=True,
+                unified_issue__isnull=True,
+            ).values("tool_id")
+
+            kwargs["queryset"] = (
+                Tool.objects.filter(
+                    is_active=True,
+                    inventory_status=Tool.InventoryStatus.AVAILABLE,
+                    article__is_active=True,
+                    article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+                )
+                .exclude(pk__in=piezas_con_pendiente)
+                .exclude(pk__in=prestamos_sin_importar)
+                .select_related("article")
+            )
 
         elif db_field.name == "employee":
             kwargs["queryset"] = Employee.objects.filter(is_active=True)
