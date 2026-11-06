@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum
 
 from .models import (
     Article,
@@ -11,6 +11,7 @@ from .models import (
     QuantityIssue,
     QuantityReturn,
     DamageResolution,
+    StockEntryCorrection,
 )
 
 
@@ -426,3 +427,43 @@ def register_damage_resolution(resolution):
         resolution.save(force_insert=True)
 
     return resolution
+
+def register_stock_entry_correction(correction, *, user):
+    if correction.pk is not None or not correction._state.adding:
+        raise ValidationError("Solo se pueden registrar correcciones nuevas.")
+
+    correction.recorded_by = user
+    correction.reason = correction.reason.strip()
+    correction.full_clean()
+
+    delta = correction.quantity_delta
+
+    with transaction.atomic():
+        stock = QuantityStock.objects.filter(entries__pk=correction.entry_id)
+
+        if delta < 0:
+            stock = stock.filter(available_quantity__gte=-delta)
+
+        updated = stock.update(
+            available_quantity=F("available_quantity") + delta
+        )
+        if updated != 1:
+            raise ValidationError(
+                "No hay suficientes piezas disponibles para aplicar el ajuste."
+            )
+
+        entry = correction.entry
+        previous_delta = entry.corrections.aggregate(
+            total=Sum("quantity_delta", default=0)
+        )["total"]
+        corrected_quantity = entry.quantity + previous_delta + delta
+
+        if corrected_quantity < 0:
+            raise ValidationError(
+                "La corrección dejaría la cantidad de esta entrada "
+                "por debajo de cero."
+            )
+
+        correction.save(force_insert=True)
+
+    return correction

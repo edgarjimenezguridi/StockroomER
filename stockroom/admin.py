@@ -18,6 +18,7 @@ from .models import (
     QuantityIssue,
     QuantityReturn,
     DamageResolution,
+    StockEntryCorrection,
 )
 from django.utils import timezone
 from .services import (
@@ -26,6 +27,7 @@ from .services import (
     register_quantity_return,
     register_return_and_exchange,
     register_damage_resolution,
+    register_stock_entry_correction,
 )
 
 def piezas_individuales_disponibles():
@@ -843,6 +845,69 @@ class DamageResolutionAdmin(admin.ModelAdmin):
                 " ".join(exc.messages),
                 level="error",
             )
+            return redirect(request.path)
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(StockEntryCorrection)
+class StockEntryCorrectionAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "entry",
+        "quantity_delta",
+        "reason",
+        "recorded_by",
+        "created_at",
+    )
+    list_select_related = ("entry__stock__article", "recorded_by")
+    search_fields = (
+        "entry__stock__article__article_code",
+        "entry__stock__article__name",
+        "entry__reference",
+        "reason",
+    )
+    readonly_fields = ("recorded_by", "created_at")
+
+    def get_fields(self, request, obj=None):
+        fields = ("entry", "quantity_delta", "reason")
+        if obj is None:
+            return fields
+        return fields + self.readonly_fields
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "entry":
+            kwargs["queryset"] = StockEntry.objects.select_related(
+                "stock__article"
+            ).order_by("-received_at", "-pk")
+
+        field = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == "entry":
+            field.label_from_instance = self.entry_label
+        return field
+
+    @staticmethod
+    def entry_label(entry):
+        return (
+            f"Entrada #{entry.pk} | {entry.stock.article} | "
+            f"{entry.quantity} piezas | {entry.reference or 'Sin referencia'}"
+        )
+
+    def save_model(self, request, obj, form, change):
+        register_stock_entry_correction(obj, user=request.user)
+
+    def changeform_view(
+        self, request, object_id=None, form_url="", extra_context=None
+    ):
+        try:
+            return super().changeform_view(
+                request, object_id, form_url, extra_context
+            )
+        except ValidationError as exc:
+            self.message_user(request, " ".join(exc.messages), level="error")
             return redirect(request.path)
 
     def has_change_permission(self, request, obj=None):

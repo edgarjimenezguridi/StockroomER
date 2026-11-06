@@ -2,6 +2,8 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from django.conf import settings
+
 
 class Employee(models.Model):
     employee_id = models.CharField(
@@ -234,8 +236,44 @@ class StockEntry(models.Model):
     def __str__(self):
         return f"{self.stock.article.article_code} — Entrada de {self.quantity}"
 
+class StockEntryCorrection(models.Model):
+    entry = models.ForeignKey(
+        StockEntry,
+        on_delete=models.PROTECT,
+        related_name="corrections",
+        verbose_name="Entrada original",
+    )
+    quantity_delta = models.IntegerField(
+        "Ajuste en piezas",
+        help_text="Ejemplo: si registraste 10 y recibiste 8, escribe -2.",
+    )
+    reason = models.CharField("Motivo de la corrección", max_length=200)
+    created_at = models.DateTimeField(
+        "Fecha de registro",
+        auto_now_add=True,
+    )
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        verbose_name="Registrada por",
+        editable=False,
+    )
 
-    
+    class Meta:
+        verbose_name = "Corrección de entrada"
+        verbose_name_plural = "Correcciones de entradas"
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(quantity_delta=0),
+                name="entry_correction_nonzero_delta",
+                violation_error_message="El ajuste debe ser distinto de cero.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Entrada #{self.entry_id} — ajuste de {self.quantity_delta:+d}"
+
 class Tool(models.Model):
 
     class InventoryStatus(models.TextChoices):
