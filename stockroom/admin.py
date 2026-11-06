@@ -5,9 +5,6 @@ from django.db.models import Count, F, Q, Sum
 from django.urls import reverse
 from django.utils.html import format_html
 from django import forms
-
-
-
 from .models import (
     Employee,
     Tool,
@@ -22,7 +19,6 @@ from .models import (
     QuantityReturn,
     DamageResolution,
 )
-
 from django.utils import timezone
 from .services import (
     register_stock_entry,
@@ -31,6 +27,30 @@ from .services import (
     register_return_and_exchange,
     register_damage_resolution,
 )
+
+def piezas_individuales_disponibles():
+    piezas_con_pendiente = QuantityIssue.objects.filter(
+        tool__isnull=False,
+        requires_return=True,
+        returned_quantity__lt=F("quantity"),
+    ).values("tool_id")
+
+    prestamos_sin_importar = Loan.objects.filter(
+        returned_at__isnull=True,
+        unified_issue__isnull=True,
+    ).values("tool_id")
+
+    return (
+        Tool.objects.filter(
+            is_active=True,
+            inventory_status=Tool.InventoryStatus.AVAILABLE,
+            article__is_active=True,
+            article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+        )
+        .exclude(pk__in=piezas_con_pendiente)
+        .exclude(pk__in=prestamos_sin_importar)
+        .select_related("article")
+    )
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -543,28 +563,7 @@ class QuantityIssueAdmin(admin.ModelAdmin):
             ).select_related("article")
 
         elif db_field.name == "tool":
-            piezas_con_pendiente = QuantityIssue.objects.filter(
-                tool__isnull=False,
-                requires_return=True,
-                returned_quantity__lt=F("quantity"),
-            ).values("tool_id")
-
-            prestamos_sin_importar = Loan.objects.filter(
-                returned_at__isnull=True,
-                unified_issue__isnull=True,
-            ).values("tool_id")
-
-            kwargs["queryset"] = (
-                Tool.objects.filter(
-                    is_active=True,
-                    inventory_status=Tool.InventoryStatus.AVAILABLE,
-                    article__is_active=True,
-                    article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
-                )
-                .exclude(pk__in=piezas_con_pendiente)
-                .exclude(pk__in=prestamos_sin_importar)
-                .select_related("article")
-            )
+            kwargs["queryset"] = piezas_individuales_disponibles()
 
         elif db_field.name == "employee":
             kwargs["queryset"] = Employee.objects.filter(is_active=True)
@@ -623,13 +622,9 @@ class QuantityReturnForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["replacement_tool"].queryset = (
-            Tool.objects.filter(
-                is_active=True,
-                inventory_status=Tool.InventoryStatus.AVAILABLE,
-                article__is_active=True,
-                article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
+            piezas_individuales_disponibles().filter(
                 article__return_mode=Article.ReturnMode.RETURNABLE,
-            ).select_related("article")
+            )
         )
 
     def clean(self):
