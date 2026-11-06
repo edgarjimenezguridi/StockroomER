@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.conf import settings
+import uuid
 
 
 class Employee(models.Model):
@@ -22,6 +23,44 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.employee_id} - {self.first_name} {self.last_name}"
+    
+class EmployeeCredential(models.Model):
+    employee = models.OneToOneField(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="credential",
+        verbose_name="Trabajador",
+    )
+    barcode = models.UUIDField(
+        "Código de credencial",
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
+    is_active = models.BooleanField("Credencial activa", default=True)
+    
+    pin_hash = models.CharField(
+        "NIP verificado mediante hash",
+        max_length=255,
+        blank=True,
+        default="",
+        editable=False,
+    )
+    pin_fingerprint = models.CharField(
+        "Huella de unicidad del NIP",
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    class Meta:
+        verbose_name = "Credencial de empleado"
+        verbose_name_plural = "Credenciales de empleados"
+
+    def __str__(self):
+        return f"Credencial de {self.employee}"
     
 class ToolCategory(models.Model):
     name = models.CharField(

@@ -5,6 +5,8 @@ from django.db.models import Count, F, Q, Sum
 from django.urls import reverse
 from django.utils.html import format_html
 from django import forms
+from django.contrib.auth import logout
+from .credentials import authorize_pin_setup
 from .models import (
     Employee,
     Tool,
@@ -19,7 +21,9 @@ from .models import (
     QuantityReturn,
     DamageResolution,
     StockEntryCorrection,
+    EmployeeCredential,
 )
+
 from django.utils import timezone
 from .services import (
     register_stock_entry,
@@ -912,6 +916,61 @@ class StockEntryCorrectionAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(EmployeeCredential)
+class EmployeeCredentialAdmin(admin.ModelAdmin):
+    actions = ["autorizar_alta_nip"]
+    list_display = ("employee", "is_active", "pin_configurado")
+    search_fields = (
+        "employee__employee_id",
+        "employee__first_name",
+        "employee__last_name",
+    )
+    list_filter = ("is_active",)
+    list_select_related = ("employee",)
+    fields = ("employee", "barcode", "is_active", "pin_configurado")
+    readonly_fields = ("barcode", "pin_configurado")
+
+    @admin.display(boolean=True, description="NIP configurado")
+    def pin_configurado(self, obj):
+        return bool(obj.pin_hash)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is not None:
+            return self.readonly_fields + ("employee",)
+        return self.readonly_fields
+        
+
+    @admin.action(
+        description="Autorizar NIP y cerrar mi sesión",
+        permissions=["change"],
+    )
+    def autorizar_alta_nip(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Selecciona una sola credencial para activar su NIP.",
+                level="error",
+            )
+            return
+
+        credential = queryset.select_related("employee").get()
+
+        try:
+            authorization = authorize_pin_setup(
+                credential=credential,
+                operator=request.user,
+            )
+        except ValidationError as exc:
+            self.message_user(request, " ".join(exc.messages), level="error")
+            return
+
+        logout(request)
+        request.session["pin_setup_authorization"] = authorization
+        return redirect("activar_nip", barcode=credential.barcode)
 
     def has_delete_permission(self, request, obj=None):
         return False

@@ -2,11 +2,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from .models import (
+from stockroom.models import (
     Article, Employee, QuantityIssue, QuantityStock,
     StockEntry, StockEntryCorrection,
 )
-from .services import (
+from stockroom.services import (
     register_quantity_issue,
     register_stock_entry,
     register_stock_entry_correction,

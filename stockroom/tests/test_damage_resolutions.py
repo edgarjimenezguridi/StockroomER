@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from .models import (
+from stockroom.models import (
     Article,
     DamageResolution,
     Employee,
@@ -10,7 +10,7 @@ from .models import (
     QuantityStock,
     Tool,
 )
-from .services import (
+from stockroom.services import (
     register_damage_resolution,
     register_quantity_issue,
     register_quantity_return,

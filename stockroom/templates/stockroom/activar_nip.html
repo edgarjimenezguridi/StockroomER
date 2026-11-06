@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activar NIP | StockroomER</title>
+</head>
+<body>
+    <main>
+        <h1>Activa tu NIP personal</h1>
+        <p><strong>Trabajador:</strong> {{ credential.employee.first_name }} {{ credential.employee.last_name }}</p>
+        <p><strong>Número de empleado:</strong> {{ credential.employee.employee_id }}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Activar mi NIP</button>
+        </form>
+    </main>
+</body>
+</html>
