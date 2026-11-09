@@ -25,3 +25,47 @@ class PinSetupForm(forms.Form):
             "autocomplete": "new-password",
         }),
     )
+
+class CredentialScanForm(forms.Form):
+    barcode = forms.UUIDField(
+        label="Credencial de empleado",
+        error_messages={
+            "required": "Escanea tu credencial.",
+            "invalid": "El código de la credencial no es válido.",
+        },
+        widget=forms.TextInput(attrs={
+            "autofocus": True,
+            "autocomplete": "off",
+            "spellcheck": "false",
+            "placeholder": "Escanea tu credencial aquí",
+        }),
+    )
+
+class EmployeeNumberAccessForm(forms.Form):
+    employee_id = forms.CharField(
+        label="Número de empleado",
+        max_length=20,
+        strip=True,
+        error_messages={
+            "required": "Escribe tu número de empleado.",
+        },
+        widget=forms.TextInput(attrs={
+            "autofocus": True,
+            "autocomplete": "off",
+            "spellcheck": "false",
+            "placeholder": "Ejemplo: 0001",
+        }),
+    )
+
+class EmployeePinForm(forms.Form):
+    pin = forms.CharField(
+        label="NIP personal",
+        strip=False,
+        max_length=128,
+        widget=forms.PasswordInput(attrs={
+            "autofocus": True,
+            "inputmode": "numeric",
+            "autocomplete": "current-password",
+            "placeholder": "Escribe tu NIP de 6 dígitos",
+        }),
+    )

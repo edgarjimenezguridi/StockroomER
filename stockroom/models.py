@@ -54,6 +54,18 @@ class EmployeeCredential(models.Model):
         blank=True,
         editable=False,
     )
+    
+    failed_pin_attempts = models.PositiveIntegerField(
+        "Intentos de NIP fallidos",
+        default=0,
+        editable=False,
+    )
+    pin_locked_until = models.DateTimeField(
+        "NIP bloqueado hasta",
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     class Meta:
         verbose_name = "Credencial de empleado"

@@ -16,11 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from stockroom.views import activar_nip
+from stockroom.views import activar_nip, acceso_empleado
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+    path("trabajadores/acceso/", acceso_empleado, name="acceso_empleado"),
     path(
         "credenciales/<uuid:barcode>/activar/",
         activar_nip,
