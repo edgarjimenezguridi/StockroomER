@@ -411,11 +411,32 @@ def confirmar_recibido(request, request_id):
 
     if request.method == "POST" and form.is_valid():
         try:
+            expected_version = int(
+                request.POST.get("preparation_version", "")
+            )
+        except (TypeError, ValueError):
+            messages.error(
+                request,
+                "No se pudo validar la versión de la solicitud. "
+                "Ábrela nuevamente.",
+            )
+            return redirect("panel_empleado")
+
+        if expected_version != solicitud.preparation_version:
+            messages.error(
+                request,
+                "El almacenista cambió la preparación. "
+                "Revisa las cantidades actuales antes de confirmar.",
+            )
+            return redirect("panel_empleado")
+
+        try:
             confirm_request_receipt(
                 request_id=solicitud.pk,
                 employee_id=credential.employee_id,
                 credential_id=credential.pk,
                 pin=form.cleaned_data["pin"],
+                expected_version=expected_version,
             )
         except ValidationError as exc:
             form.add_error(None, exc)

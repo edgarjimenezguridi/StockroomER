@@ -737,6 +737,11 @@ class MaterialRequest(models.Model):
         blank=True,
         editable=False,
     )
+    preparation_version = models.PositiveIntegerField(
+        "Versión de preparación",
+        default=0,
+        editable=False,
+    )
 
     class Meta:
         verbose_name = "Solicitud de materiales"

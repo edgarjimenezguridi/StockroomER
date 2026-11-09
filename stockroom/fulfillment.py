@@ -1,6 +1,7 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.db.models import F
 
 from .models import (
     Article,
@@ -137,6 +138,7 @@ def finish_request_preparation(*, request_id, operator):
             status=MaterialRequest.Status.PREPARED,
             prepared_by=operator,
             prepared_at=now,
+            preparation_version=F("preparation_version") + 1,
             updated_at=now,
         )
 
@@ -220,6 +222,7 @@ def confirm_request_receipt(
     employee_id,
     credential_id,
     pin,
+    expected_version,
 ):
     credential = EmployeeCredential.objects.filter(
         pk=credential_id,
@@ -235,9 +238,11 @@ def confirm_request_receipt(
         pk=request_id,
         employee_id=employee_id,
         status=MaterialRequest.Status.PREPARED,
+        preparation_version=expected_version,
     ).exists():
         raise ValidationError(
-            "La solicitud no está pendiente de tu confirmación."
+            "La solicitud cambió o ya no está pendiente. "
+            "Vuelve al panel y revisa las cantidades actuales."
         )
 
     # Fuera de la transacción de inventario:
@@ -255,6 +260,7 @@ def confirm_request_receipt(
             employee_id=employee.pk,
             employee__is_active=True,
             status=MaterialRequest.Status.PREPARED,
+            preparation_version=expected_version,
         ).update(
             status=MaterialRequest.Status.CLOSED,
             closed_at=now,
@@ -263,7 +269,8 @@ def confirm_request_receipt(
 
         if updated != 1:
             raise ValidationError(
-                "La solicitud ya fue confirmada o dejó de estar disponible."
+                "La solicitud cambió o ya no está pendiente. "
+                "Vuelve al panel y revisa las cantidades actuales."
             )
 
         if QuantityIssue.objects.filter(
@@ -348,5 +355,44 @@ def confirm_request_receipt(
                         request_line=line,
                     )
                 )
+
+        return MaterialRequest.objects.get(pk=request_id)
+
+def reopen_request_preparation(*, request_id, operator):
+    if not (
+        operator.is_active
+        and operator.is_staff
+        and operator.has_perm("stockroom.change_materialrequest")
+    ):
+        raise PermissionDenied(
+            "No tienes permiso para corregir preparaciones."
+        )
+
+    with transaction.atomic():
+        updated = MaterialRequest.objects.filter(
+            pk=request_id,
+            status=MaterialRequest.Status.PREPARED,
+            closed_at__isnull=True,
+        ).update(
+            status=MaterialRequest.Status.SUBMITTED,
+            preparation_version=F("preparation_version") + 1,
+            prepared_by=None,
+            prepared_at=None,
+            updated_at=timezone.now(),
+        )
+
+        if updated != 1:
+            raise ValidationError(
+                "Solo puedes reabrir una preparación pendiente "
+                "de confirmar recibido."
+            )
+
+        if QuantityIssue.objects.filter(
+            request_line__request_id=request_id,
+        ).exists():
+            raise ValidationError(
+                "Esta solicitud ya tiene entregas registradas. "
+                "No se puede reabrir."
+            )
 
         return MaterialRequest.objects.get(pk=request_id)

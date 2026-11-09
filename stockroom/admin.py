@@ -12,6 +12,8 @@ from .models import MaterialRequestPiece
 from .fulfillment import (
     prepare_request_line,
     finish_request_preparation,
+    reopen_request_preparation,
+
 )
 from .models import (
     Employee,
@@ -1026,7 +1028,10 @@ class MaterialRequestAdmin(admin.ModelAdmin):
     )
     readonly_fields = fields
     inlines = (MaterialRequestLineInline,)
-    actions = ["terminar_preparacion"]
+    actions = [
+        "terminar_preparacion",
+        "reabrir_preparacion",
+    ]
     
     def get_queryset(self, request):
         return super().get_queryset(request).exclude(
@@ -1080,6 +1085,39 @@ class MaterialRequestAdmin(admin.ModelAdmin):
                 level="success",
             )
 
+    @admin.action(
+        description="Reabrir preparación para corregir",
+        permissions=["prepare"],
+    )
+    def reabrir_preparacion(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Selecciona una sola solicitud.",
+                level="error",
+            )
+            return
+
+        solicitud = queryset.get()
+
+        try:
+            reopen_request_preparation(
+                request_id=solicitud.pk,
+                operator=request.user,
+            )
+        except ValidationError as exc:
+            self.message_user(
+                request,
+                " ".join(exc.messages),
+                level="error",
+            )
+        else:
+            self.message_user(
+                request,
+                f"Solicitud #{solicitud.pk} reabierta. "
+                "Corrige sus artículos y termina nuevamente la preparación.",
+                level="success",
+            )
     
 
 class PrepareRequestLineForm(forms.ModelForm):

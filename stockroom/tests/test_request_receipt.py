@@ -7,6 +7,8 @@ from stockroom.fulfillment import (
     prepare_request_line,
     finish_request_preparation,
     confirm_request_receipt,
+    reopen_request_preparation,
+
 )
 from stockroom.models import (
     Article,
@@ -63,6 +65,7 @@ class RequestReceiptTests(TestCase):
             request_id=request.pk,
             operator=operator,
         )
+        request.refresh_from_db()
 
         # Preparar todavía no entrega ni descuenta piezas.
         stock.refresh_from_db()
@@ -71,6 +74,7 @@ class RequestReceiptTests(TestCase):
         self.assertEqual(QuantityIssue.objects.count(), 0)
 
         confirm_request_receipt(
+            expected_version=request.preparation_version,
             request_id=request.pk,
             employee_id=employee.pk,
             credential_id=credential.pk,
@@ -96,6 +100,7 @@ class RequestReceiptTests(TestCase):
         # Repetir la confirmación debe rechazarse.
         with self.assertRaises(ValidationError):
             confirm_request_receipt(
+                expected_version=request.preparation_version,
                 request_id=request.pk,
                 employee_id=employee.pk,
                 credential_id=credential.pk,
@@ -151,6 +156,7 @@ class RequestReceiptTests(TestCase):
 
         with self.assertRaisesMessage(ValidationError, "NIP incorrecto"):
             confirm_request_receipt(
+                expected_version=request.preparation_version,
                 request_id=request.pk,
                 employee_id=employee.pk,
                 credential_id=credential.pk,
@@ -182,6 +188,7 @@ class RequestReceiptTests(TestCase):
 
         with self.assertRaises(ValidationError):
             confirm_request_receipt(
+                expected_version=request.preparation_version,
                 request_id=request.pk,
                 employee_id=employee.pk,
                 credential_id=credential.pk,
@@ -201,3 +208,153 @@ class RequestReceiptTests(TestCase):
         self.assertEqual(stocks[0].loaned_quantity, 0)
         self.assertEqual(stocks[1].available_quantity, 1)
         self.assertEqual(stocks[1].loaned_quantity, 0)
+
+    def test_old_preparation_version_cannot_confirm(self):
+        employee, credential, request, stocks = (
+            self.crear_solicitud_preparada()
+        )
+
+        old_version = request.preparation_version
+
+        # Simula que el trabajador tiene abierta una versión anterior.
+        MaterialRequest.objects.filter(pk=request.pk).update(
+            preparation_version=old_version + 1,
+        )
+
+        with self.assertRaisesMessage(ValidationError, "La solicitud cambió"):
+            confirm_request_receipt(
+                request_id=request.pk,
+                employee_id=employee.pk,
+                credential_id=credential.pk,
+                pin="012345",
+                expected_version=old_version,
+            )
+
+        request.refresh_from_db()
+        credential.refresh_from_db()
+
+        self.assertEqual(
+            request.status,
+            MaterialRequest.Status.PREPARED,
+        )
+        self.assertIsNone(request.closed_at)
+        self.assertEqual(QuantityIssue.objects.count(), 0)
+        self.assertEqual(credential.failed_pin_attempts, 0)
+
+        for stock in stocks:
+            stock.refresh_from_db()
+            self.assertEqual(stock.available_quantity, 5)
+            self.assertEqual(stock.loaned_quantity, 0)
+
+        # Después de revisar la versión actual, sí puede confirmar.
+        confirm_request_receipt(
+            request_id=request.pk,
+            employee_id=employee.pk,
+            credential_id=credential.pk,
+            pin="012345",
+            expected_version=request.preparation_version,
+        )
+
+        request.refresh_from_db()
+        self.assertEqual(request.status, MaterialRequest.Status.CLOSED)
+        self.assertEqual(QuantityIssue.objects.count(), 2)
+
+        for stock in stocks:
+            stock.refresh_from_db()
+            self.assertEqual(stock.available_quantity, 3)
+            self.assertEqual(stock.loaned_quantity, 2)
+
+    def test_reopened_request_requires_the_new_version(self):
+        employee, credential, request, stocks = (
+            self.crear_solicitud_preparada()
+        )
+        operator = get_user_model().objects.create_superuser(
+            username="admin_correccion",
+            password="solo-para-prueba",
+        )
+        old_version = request.preparation_version
+
+        reopen_request_preparation(
+            request_id=request.pk,
+            operator=operator,
+        )
+
+        request.refresh_from_db()
+        self.assertEqual(
+            request.status,
+            MaterialRequest.Status.SUBMITTED,
+        )
+        self.assertGreater(request.preparation_version, old_version)
+
+        line = request.lines.get(article_id=stocks[0].article_id)
+        prepare_request_line(
+            line_id=line.pk,
+            quantity=1,
+            operator=operator,
+        )
+        finish_request_preparation(
+            request_id=request.pk,
+            operator=operator,
+        )
+
+        request.refresh_from_db()
+        self.assertEqual(
+            request.status,
+            MaterialRequest.Status.PREPARED,
+        )
+        self.assertEqual(request.prepared_by_id, operator.pk)
+        self.assertIsNotNone(request.prepared_at)
+
+        # La pantalla anterior ya no puede autorizar la entrega.
+        with self.assertRaises(ValidationError):
+            confirm_request_receipt(
+                request_id=request.pk,
+                employee_id=employee.pk,
+                credential_id=credential.pk,
+                pin="012345",
+                expected_version=old_version,
+            )
+
+        self.assertEqual(QuantityIssue.objects.count(), 0)
+
+        for stock in stocks:
+            stock.refresh_from_db()
+            self.assertEqual(stock.available_quantity, 5)
+            self.assertEqual(stock.loaned_quantity, 0)
+
+        # La versión actual entrega las cantidades corregidas.
+        confirm_request_receipt(
+            request_id=request.pk,
+            employee_id=employee.pk,
+            credential_id=credential.pk,
+            pin="012345",
+            expected_version=request.preparation_version,
+        )
+
+        request.refresh_from_db()
+        self.assertEqual(request.status, MaterialRequest.Status.CLOSED)
+
+        stocks[0].refresh_from_db()
+        stocks[1].refresh_from_db()
+
+        self.assertEqual(stocks[0].available_quantity, 4)
+        self.assertEqual(stocks[0].loaned_quantity, 1)
+        self.assertEqual(stocks[1].available_quantity, 3)
+        self.assertEqual(stocks[1].loaned_quantity, 2)
+
+        self.assertEqual(
+            QuantityIssue.objects.get(request_line=line).quantity,
+            1,
+        )
+        self.assertEqual(QuantityIssue.objects.count(), 2)
+
+        # Una solicitud ya entregada no se puede reabrir.
+        with self.assertRaises(ValidationError):
+            reopen_request_preparation(
+                request_id=request.pk,
+                operator=operator,
+            )
+
+        request.refresh_from_db()
+        self.assertEqual(request.status, MaterialRequest.Status.CLOSED)
+        self.assertEqual(QuantityIssue.objects.count(), 2)

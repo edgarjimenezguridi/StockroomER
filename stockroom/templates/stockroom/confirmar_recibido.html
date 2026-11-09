@@ -88,6 +88,11 @@
 
         <form method="post">
             {% csrf_token %}
+            <input
+                type="hidden"
+                name="preparation_version"
+                value="{{ solicitud.preparation_version }}"
+            >
             {{ form.as_p }}
             <button type="submit">Confirmar que recibí estas piezas</button>
         </form>
