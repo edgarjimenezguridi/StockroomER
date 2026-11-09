@@ -7,6 +7,12 @@ from django.utils.html import format_html
 from django import forms
 from django.contrib.auth import logout
 from .credentials import authorize_pin_setup
+from .selectors import piezas_individuales_disponibles
+from .models import MaterialRequestPiece
+from .fulfillment import (
+    prepare_request_line,
+    finish_request_preparation,
+)
 from .models import (
     Employee,
     Tool,
@@ -22,6 +28,8 @@ from .models import (
     DamageResolution,
     StockEntryCorrection,
     EmployeeCredential,
+    MaterialRequest,
+    MaterialRequestLine,
 )
 
 from django.utils import timezone
@@ -974,3 +982,219 @@ class EmployeeCredentialAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+class MaterialRequestLineInline(admin.TabularInline):
+    model = MaterialRequestLine
+    fields = (
+        "article",
+        "requested_quantity",
+        "prepared_quantity",
+    )
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(MaterialRequest)
+class MaterialRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "employee",
+        "status",
+        "submitted_at",
+        "closed_at",
+    )
+    list_display_links = ("id", "employee")
+    search_fields = (
+        "employee__employee_id",
+        "employee__first_name",
+        "employee__last_name",
+    )
+    list_filter = ("status", "submitted_at")
+    list_select_related = ("employee",)
+    ordering = ("-submitted_at", "-pk")
+    fields = (
+        "id",
+        "employee",
+        "status",
+        "created_at",
+        "submitted_at",
+        "closed_at",
+    )
+    readonly_fields = fields
+    inlines = (MaterialRequestLineInline,)
+    actions = ["terminar_preparacion"]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).exclude(
+            status=MaterialRequest.Status.DRAFT,
+        )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+    def has_prepare_permission(self, request):
+        return request.user.has_perm(
+            "stockroom.change_materialrequest"
+        )
+
+    @admin.action(
+        description="Terminar preparación",
+        permissions=["prepare"],
+    )
+    def terminar_preparacion(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Selecciona una sola solicitud.",
+                level="error",
+            )
+            return
+
+        solicitud = queryset.get()
+
+        try:
+            finish_request_preparation(
+                request_id=solicitud.pk,
+                operator=request.user,
+            )
+        except ValidationError as exc:
+            self.message_user(
+                request,
+                " ".join(exc.messages),
+                level="error",
+            )
+        else:
+            self.message_user(
+                request,
+                f"Solicitud #{solicitud.pk} preparada. "
+                "Falta la confirmación de recibido del trabajador.",
+                level="success",
+            )
+
+    
+
+class PrepareRequestLineForm(forms.ModelForm):
+    quantity_to_prepare = forms.IntegerField(
+        label="Cantidad que entregarás",
+        min_value=0,
+        help_text="Escribe 0 si no surtirás este artículo.",
+    )
+    tools_to_prepare = forms.ModelMultipleChoiceField(
+        label="Piezas individuales",
+        queryset=Tool.objects.none(),
+        required=False,
+        help_text=(
+            "Solo para artículos por pieza individual. "
+            "Selecciona tantas piezas como cantidad entregarás."
+        ),
+    )
+
+    class Meta:
+        model = MaterialRequestLine
+        fields = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance.pk:
+            self.fields["quantity_to_prepare"].initial = (
+                self.instance.prepared_quantity
+            )
+            self.fields["quantity_to_prepare"].max_value = (
+                self.instance.requested_quantity
+            )
+
+            self.fields["tools_to_prepare"].queryset = (
+                piezas_individuales_disponibles().filter(
+                    article_id=self.instance.article_id,
+                )
+            )
+            self.fields["tools_to_prepare"].initial = (
+                self.instance.selected_pieces.values_list(
+                    "tool_id", flat=True
+                )
+            )
+
+
+@admin.register(MaterialRequestLine)
+class MaterialRequestLineAdmin(admin.ModelAdmin):
+    form = PrepareRequestLineForm
+    list_display = (
+        "id",
+        "request",
+        "article",
+        "requested_quantity",
+        "prepared_quantity",
+    )
+    list_select_related = ("request__employee", "article")
+    fields = (
+        "request",
+        "article",
+        "requested_quantity",
+        "prepared_quantity",
+        "quantity_to_prepare",
+        "tools_to_prepare",
+    )
+    readonly_fields = (
+        "request",
+        "article",
+        "requested_quantity",
+        "prepared_quantity",
+    )
+    actions = None
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(
+            request__status=MaterialRequest.Status.SUBMITTED,
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_perm("stockroom.view_materialrequest")
+
+    def has_change_permission(self, request, obj=None):
+        permitted = request.user.has_perm(
+            "stockroom.change_materialrequest"
+        )
+        return permitted and (
+            obj is None
+            or obj.request.status == MaterialRequest.Status.SUBMITTED
+        )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        prepare_request_line(
+            line_id=obj.pk,
+            quantity=form.cleaned_data["quantity_to_prepare"],
+            tool_ids=[
+                tool.pk
+                for tool in form.cleaned_data["tools_to_prepare"]
+            ],
+            operator=request.user,
+        )
+
+    def changeform_view(
+        self, request, object_id=None, form_url="", extra_context=None
+    ):
+        try:
+            return super().changeform_view(
+                request, object_id, form_url, extra_context
+            )
+        except ValidationError as exc:
+            self.message_user(
+                request, " ".join(exc.messages), level="error"
+            )
+            return redirect(request.path)

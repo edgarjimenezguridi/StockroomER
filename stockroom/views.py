@@ -5,6 +5,13 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 from django.core import signing
+from .selectors import catalogo_articulos
+from django.contrib import messages
+from .cart import set_cart_quantity, submit_cart
+from .models import MaterialRequestLine
+from .models import MaterialRequest
+from django.shortcuts import get_object_or_404
+from .fulfillment import confirm_request_receipt
 
 from .credentials import (
     activate_pin,
@@ -128,10 +135,7 @@ def acceso_empleado(request):
                     request.session["worker_credential_id"] = credential.pk
                     request.session.set_expiry(10 * 60)
 
-                    return HttpResponse(
-                        "NIP verificado. Acceso de trabajador iniciado. "
-                        "El panel de pedidos se conectará en el siguiente paso."
-                    )
+                    return redirect("panel_empleado")
 
         elif method in ("barcode", "employee_id"):
             request.session.pop("pending_worker", None)
@@ -191,4 +195,239 @@ def acceso_empleado(request):
             "pin_form": pin_form,
             "credential": credential,
         },
+    )
+
+@never_cache
+@require_http_methods(["GET"])
+def panel_empleado(request):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.select_related(
+        "employee"
+    ).filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    search = request.GET.get("q", "").strip()
+
+    cart_lines = MaterialRequestLine.objects.filter(
+        request__employee_id=credential.employee_id,
+        request__status=MaterialRequest.Status.DRAFT,
+    ).select_related("article")
+
+    my_requests = (
+        MaterialRequest.objects.filter(
+            employee_id=credential.employee_id,
+        )
+        .exclude(status=MaterialRequest.Status.DRAFT)
+        .prefetch_related("lines__article")
+        .order_by("-created_at", "-pk")[:10]
+    )
+
+    return render(
+        request,
+        "stockroom/panel_empleado.html",
+        {
+            "employee": credential.employee,
+            "articles": catalogo_articulos(search),
+            "search": search,
+            "cart_lines": cart_lines,
+            "my_requests": my_requests,
+        },
+    )
+
+@never_cache
+@require_http_methods(["POST"])
+def salir_empleado(request):
+    request.session.flush()
+    return redirect("acceso_empleado")
+
+@never_cache
+@require_http_methods(["POST"])
+def guardar_articulo_carrito(request, article_id):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    try:
+        quantity = int(request.POST.get("quantity", ""))
+    except (TypeError, ValueError):
+        messages.error(request, "Escribe una cantidad entera válida.")
+        return redirect("panel_empleado")
+
+    try:
+        line = set_cart_quantity(
+            employee_id=credential.employee_id,
+            article_id=article_id,
+            quantity=quantity,
+        )
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        messages.success(
+            request,
+            f"Carrito actualizado: {line.article.name}, "
+            f"{line.requested_quantity} piezas en total.",
+        )
+
+    return redirect("panel_empleado")
+
+@never_cache
+@require_http_methods(["POST"])
+def quitar_articulo_carrito(request, line_id):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    deleted, _ = MaterialRequestLine.objects.filter(
+        pk=line_id,
+        request__employee_id=credential.employee_id,
+        request__status="draft",
+    ).delete()
+
+    if deleted:
+        messages.success(request, "Artículo retirado del carrito.")
+    else:
+        messages.error(
+            request,
+            "El artículo ya no está en tu carrito abierto.",
+        )
+
+    return redirect("panel_empleado")
+
+@never_cache
+@require_http_methods(["POST"])
+def enviar_solicitud(request, cart_id):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    try:
+        material_request = submit_cart(
+            employee_id=credential.employee_id,
+            cart_id=cart_id,
+        )
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        messages.success(
+            request,
+            f"Solicitud #{material_request.pk} enviada al almacén. "
+            "Todavía no se ha registrado ninguna entrega.",
+        )
+
+    return redirect("panel_empleado")
+
+@never_cache
+@sensitive_post_parameters("pin")
+@require_http_methods(["GET", "POST"])
+def confirmar_recibido(request, request_id):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    solicitud = get_object_or_404(
+        MaterialRequest.objects.prefetch_related(
+            "lines__article",
+            "lines__selected_pieces__tool",
+        ),
+        pk=request_id,
+        employee_id=credential.employee_id,
+    )
+
+    if solicitud.status != MaterialRequest.Status.PREPARED:
+        messages.error(
+            request,
+            "Esta solicitud no está pendiente de confirmar recibido.",
+        )
+        return redirect("panel_empleado")
+
+    form = EmployeePinForm(
+        request.POST if request.method == "POST" else None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            confirm_request_receipt(
+                request_id=solicitud.pk,
+                employee_id=credential.employee_id,
+                credential_id=credential.pk,
+                pin=form.cleaned_data["pin"],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            messages.success(
+                request,
+                f"Recibido confirmado. Solicitud #{solicitud.pk} cerrada.",
+            )
+            return redirect("panel_empleado")
+
+    return render(
+        request,
+        "stockroom/confirmar_recibido.html",
+        {"solicitud": solicitud, "form": form},
     )

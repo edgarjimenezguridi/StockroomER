@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mi panel | StockroomER</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f1f5f9;
+            font-family: Arial, sans-serif;
+            color: #172033;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 32px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .identidad {
+            padding: 20px;
+            background: #e8f1f8;
+            border-radius: 10px;
+        }
+
+        button {
+            margin-top: 24px;
+            padding: 14px 24px;
+            border: 0;
+            border-radius: 8px;
+            background: #174e77;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+                input[type="search"] {
+            box-sizing: border-box;
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .catalogo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .articulo {
+            padding: 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .articulo h3 {
+            margin-top: 0;
+        }
+
+        .disponible {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .agotado {
+            color: #9a3412;
+            font-weight: bold;
+        }
+    
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Mi panel de almacén</h1>
+        {% if messages %}
+            <div role="status">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="identidad">
+            <h2>
+                {{ employee.first_name }}
+                {{ employee.last_name }}
+            </h2>
+            <p>Número de empleado: <strong>{{ employee.employee_id }}</strong></p>
+        </section>
+                <section aria-labelledby="cart-title">
+            <h2 id="cart-title">Mi carrito</h2>
+            <p>
+                Revisa las cantidades antes de enviar tu solicitud.
+                Estos artículos todavía no están reservados ni entregados.
+            </p>
+
+            {% for line in cart_lines %}
+                <article class="articulo">
+                    <h3>{{ line.article.name }}</h3>
+                    <p>Código: {{ line.article.article_code }}</p>
+
+                    <form
+                        method="post"
+                        action="{% url 'guardar_articulo_carrito' line.article_id %}"
+                    >
+                        {% csrf_token %}
+
+                        <label for="cart-quantity-{{ line.pk }}">
+                            Cantidad solicitada
+                        </label>
+                        <input
+                            id="cart-quantity-{{ line.pk }}"
+                            type="number"
+                            name="quantity"
+                            min="1"
+                            step="1"
+                            value="{{ line.requested_quantity }}"
+                            required
+                        >
+
+                        <button type="submit">Actualizar cantidad</button>
+                    </form>
+                                        <form
+                        method="post"
+                        action="{% url 'quitar_articulo_carrito' line.pk %}"
+                    >
+                        {% csrf_token %}
+                        <button type="submit">Quitar del carrito</button>
+                    </form>
+                </article>
+                        {% empty %}
+                <p>Tu carrito está vacío. Selecciona artículos del catálogo.</p>
+            {% endfor %}
+
+            {% if cart_lines %}
+                <form
+                    method="post"
+                    action="{% url 'enviar_solicitud' cart_lines.0.request_id %}"
+                >
+                    {% csrf_token %}
+                    <p>
+                        Al enviar, estas cantidades quedarán solicitadas
+                        al almacén y ya no podrás editarlas desde el carrito.
+                    </p>
+                    <button type="submit">Enviar solicitud</button>
+                </form>
+            {% endif %}
+        </section>
+
+        <hr>
+                <section aria-labelledby="requests-title">
+            <h2 id="requests-title">Mis solicitudes</h2>
+            <p>Últimas 10 solicitudes enviadas.</p>
+
+            {% for solicitud in my_requests %}
+                <details class="articulo">
+                    <summary>
+                        <strong>Solicitud #{{ solicitud.pk }}</strong>
+                        — {{ solicitud.get_status_display }}
+                    </summary>
+
+                    <p>
+                        Enviada:
+                        {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
+                    </p>
+
+                    <ul>
+                        {% for line in solicitud.lines.all %}
+                            <li>
+                                {{ line.article.article_code }}
+                                — {{ line.article.name }}
+                                — Cantidad solicitada:
+                                <strong>{{ line.requested_quantity }}</strong>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if solicitud.status == "prepared" %}
+                        <p>
+                            <a href="{% url 'confirmar_recibido' solicitud.pk %}">
+                                Revisar y confirmar recibido
+                            </a>
+                        </p>
+                    {% endif %}
+                </details>
+            {% empty %}
+                <p>Todavía no tienes solicitudes enviadas.</p>
+            {% endfor %}
+        </section>
+
+        <hr>
+
+                <h2>Catálogo del almacén</h2>
+
+        <form method="get" action="{% url 'panel_empleado' %}">
+            <label for="catalog-search">Buscar artículo</label>
+            <input
+                id="catalog-search"
+                type="search"
+                name="q"
+                value="{{ search }}"
+                placeholder="Código, nombre, marca o especificación"
+            >
+            <button type="submit">Buscar</button>
+            <a href="{% url 'panel_empleado' %}">Ver todos</a>
+        </form>
+
+        <p>
+            Las existencias pueden cambiar.
+            Consultar el catálogo no reserva piezas.
+        </p>
+
+        <div class="catalogo">
+            {% for article in articles %}
+                <article class="articulo">
+                    <h3>{{ article.name }}</h3>
+                    <p><strong>Código:</strong> {{ article.article_code }}</p>
+
+                    {% if article.brand %}
+                        <p><strong>Marca:</strong> {{ article.brand }}</p>
+                    {% endif %}
+
+                    {% if article.specification %}
+                        <p>
+                            <strong>Especificación:</strong>
+                            {{ article.specification }}
+                        </p>
+                    {% endif %}
+
+                    <p>
+                        <strong>Modalidad:</strong>
+                        {{ article.get_return_mode_display }}
+                    </p>
+
+                    {% if article.available_quantity > 0 %}
+                        <p class="disponible">
+                            Disponibles: {{ article.available_quantity }}
+                        </p>
+                    {% else %}
+                        <p class="agotado">Sin existencias disponibles</p>
+                    {% endif %}
+                                        {% if article.available_quantity > 0 %}
+                        <form
+                            method="post"
+                            action="{% url 'guardar_articulo_carrito' article.pk %}"
+                        >
+                            {% csrf_token %}
+                            <label for="quantity-{{ article.pk }}">
+                                Cantidad total que deseas
+                            </label>
+                            <input
+                                id="quantity-{{ article.pk }}"
+                                type="number"
+                                name="quantity"
+                                min="1"
+                                max="{{ article.available_quantity }}"
+                                step="1"
+                                value="1"
+                                required
+                            >
+                            <button type="submit">Guardar en carrito</button>
+                        </form>
+                    {% endif %}
+                </article>
+            {% empty %}
+                <p>No se encontraron artículos.</p>
+            {% endfor %}
+        </div>
+
+        <form method="post" action="{% url 'salir_empleado' %}">
+            {% csrf_token %}
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    </main>
+    <script>
+(() => {
+    const input = document.getElementById("catalog-search");
+    const form = input.form;
+    const catalog = document.querySelector(".catalogo");
+
+    let timer;
+    let controller;
+    let latestRequest = 0;
+
+    catalog.setAttribute("aria-live", "polite");
+
+    const status = document.createElement("p");
+    status.setAttribute("role", "status");
+    catalog.before(status);
+
+    async function updateCatalog(requestId) {
+        controller = new AbortController();
+
+        const url = new URL(form.action, window.location.href);
+        const search = input.value.trim();
+
+        if (search) {
+            url.searchParams.set("q", search);
+        } else {
+            url.searchParams.delete("q");
+        }
+
+        status.textContent = "Buscando…";
+
+        try {
+            const response = await fetch(url, {
+                signal: controller.signal,
+                credentials: "same-origin",
+                cache: "no-store",
+            });
+
+            if (requestId !== latestRequest) return;
+
+            if (response.redirected) {
+                window.location.assign(response.url);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error("No se pudo consultar el catálogo.");
+            }
+
+            const html = await response.text();
+
+            if (requestId !== latestRequest) return;
+
+            const page = new DOMParser().parseFromString(
+                html, "text/html"
+            );
+            const updatedCatalog = page.querySelector(".catalogo");
+
+            if (!updatedCatalog) {
+                throw new Error("No se encontró el catálogo.");
+            }
+
+            catalog.replaceChildren(
+                ...Array.from(updatedCatalog.childNodes)
+            );
+            window.history.replaceState(null, "", url);
+            status.textContent = "";
+        } catch (error) {
+            if (
+                error.name === "AbortError" ||
+                requestId !== latestRequest
+            ) return;
+
+            status.textContent =
+                "No se pudo actualizar la lista. Intenta de nuevo o pulsa Buscar.";
+        }
+    }
+
+    function scheduleSearch(delay) {
+        clearTimeout(timer);
+
+        if (controller) {
+            controller.abort();
+        }
+
+        const requestId = ++latestRequest;
+        timer = setTimeout(() => updateCatalog(requestId), delay);
+    }
+
+    input.addEventListener("input", () => {
+        scheduleSearch(250);
+    });
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        scheduleSearch(0);
+    });
+})();
+</script>
+</body>
+</html>

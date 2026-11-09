@@ -16,7 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from stockroom.views import activar_nip, acceso_empleado
+from stockroom.views import (
+    activar_nip,
+    acceso_empleado,
+    panel_empleado,
+    salir_empleado,
+    guardar_articulo_carrito,
+    quitar_articulo_carrito,
+    enviar_solicitud,
+    confirmar_recibido,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,6 +34,28 @@ urlpatterns = [
         "credenciales/<uuid:barcode>/activar/",
         activar_nip,
         name="activar_nip",
+    ),
+    path("trabajadores/panel/", panel_empleado, name="panel_empleado"),
+    path("trabajadores/salir/", salir_empleado, name="salir_empleado"),
+    path(
+        "trabajadores/carrito/articulo/<int:article_id>/",
+        guardar_articulo_carrito,
+        name="guardar_articulo_carrito",
+    ),
+    path(
+        "trabajadores/carrito/quitar/<int:line_id>/",
+        quitar_articulo_carrito,
+        name="quitar_articulo_carrito",
+    ),
+        path(
+        "trabajadores/carrito/<int:cart_id>/enviar/",
+        enviar_solicitud,
+        name="enviar_solicitud",
+    ),
+    path(
+        "trabajadores/solicitudes/<int:request_id>/confirmar/",
+        confirmar_recibido,
+        name="confirmar_recibido",
     ),
 
 ]

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirmar recibido | StockroomER</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #172033;
+            margin: 0;
+            padding: 24px;
+        }
+        main {
+            max-width: 760px;
+            margin: 32px auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+        }
+        .tabla { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        input {
+            padding: 12px;
+            font-size: 18px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 14px 20px;
+            background: #174e77;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            font-size: 17px;
+            cursor: pointer;
+        }
+        .errorlist { color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Confirmar recibido</h1>
+        <h2>Solicitud #{{ solicitud.pk }}</h2>
+
+        <p>Revisa las cantidades y las piezas que tienes frente a ti.</p>
+
+        <div class="tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Solicitadas</th>
+                        <th>Por recibir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in solicitud.lines.all %}
+                        <tr>
+                            <td>
+                                {{ line.article.article_code }}
+                                — {{ line.article.name }}
+
+                                {% for selection in line.selected_pieces.all %}
+                                    <br>
+                                    Pieza: {{ selection.tool.tool_code }}
+                                {% endfor %}
+                            </td>
+                            <td>{{ line.requested_quantity }}</td>
+                            <td><strong>{{ line.prepared_quantity }}</strong></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            Confirma únicamente si estas cantidades coinciden con lo
+            que recibes. Si hay diferencias, solicita al almacenista
+            que las revise antes de continuar.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Confirmar que recibí estas piezas</button>
+        </form>
+
+        <p>
+            <a href="{% url 'panel_empleado' %}">
+                Volver sin confirmar
+            </a>
+        </p>
+    </main>
+</body>
+</html>

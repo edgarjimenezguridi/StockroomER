@@ -428,6 +428,16 @@ class Loan(models.Model):
 
 class QuantityIssue(models.Model):
 
+    request_line = models.ForeignKey(
+        "MaterialRequestLine",
+        on_delete=models.PROTECT,
+        verbose_name="Artículo de la solicitud de origen",
+        related_name="deliveries",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    
     replacement_for = models.OneToOneField(
         "QuantityReturn",
         on_delete=models.PROTECT,
@@ -669,4 +679,165 @@ class DamageResolution(models.Model):
         return (
             f"Devolución #{self.source_return_id} — "
             f"{self.get_outcome_display()} — {self.quantity}"
+        )
+    
+class MaterialRequest(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Carrito"
+        SUBMITTED = "submitted", "Enviada al almacén"
+        PREPARED = "prepared", "Pendiente de confirmar recibido"
+        CLOSED = "closed", "Cerrada"
+        CANCELLED = "cancelled", "Cancelada"
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="material_requests",
+        verbose_name="Trabajador",
+    )
+    status = models.CharField(
+        "Estado",
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        editable=False,
+    )
+    created_at = models.DateTimeField(
+        "Fecha de creación",
+        auto_now_add=True,
+    )
+    updated_at = models.DateTimeField(
+        "Última modificación",
+        auto_now=True,
+    )
+    submitted_at = models.DateTimeField(
+        "Fecha de envío",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    closed_at = models.DateTimeField(
+        "Fecha de cierre",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    prepared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        verbose_name="Preparada por",
+        related_name="prepared_material_requests",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    prepared_at = models.DateTimeField(
+        "Fecha de preparación",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    class Meta:
+        verbose_name = "Solicitud de materiales"
+        verbose_name_plural = "Solicitudes de materiales"
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee"],
+                condition=models.Q(status="draft"),
+                name="unique_draft_request_per_employee",
+                violation_error_message=(
+                    "Este trabajador ya tiene un carrito abierto."
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Solicitud #{self.pk} — "
+            f"{self.employee.employee_id}"
+        )
+
+class MaterialRequestLine(models.Model):
+    request = models.ForeignKey(
+        MaterialRequest,
+        on_delete=models.PROTECT,
+        related_name="lines",
+        verbose_name="Solicitud",
+    )
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.PROTECT,
+        related_name="request_lines",
+        verbose_name="Artículo",
+    )
+    requested_quantity = models.PositiveIntegerField(
+        "Cantidad solicitada",
+        validators=[MinValueValidator(1)],
+    )
+    prepared_quantity = models.PositiveIntegerField(
+        "Cantidad preparada",
+        default=0,
+        editable=False,
+    )
+
+    class Meta:
+        verbose_name = "Artículo solicitado"
+        verbose_name_plural = "Artículos solicitados"
+        ordering = ["pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["request", "article"],
+                name="unique_article_per_material_request",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(requested_quantity__gte=1),
+                name="request_line_quantity_gte_1",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    prepared_quantity__lte=models.F(
+                        "requested_quantity"
+                    )
+                ),
+                name="request_line_prepared_lte_requested",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Solicitud #{self.request_id} — "
+            f"{self.article.article_code} — "
+            f"{self.requested_quantity} solicitadas"
+        )
+
+class MaterialRequestPiece(models.Model):
+    line = models.ForeignKey(
+        MaterialRequestLine,
+        on_delete=models.PROTECT,
+        related_name="selected_pieces",
+        verbose_name="Artículo solicitado",
+    )
+    tool = models.ForeignKey(
+        Tool,
+        on_delete=models.PROTECT,
+        related_name="request_selections",
+        verbose_name="Pieza individual seleccionada",
+    )
+
+    class Meta:
+        verbose_name = "Pieza preparada"
+        verbose_name_plural = "Piezas preparadas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["line", "tool"],
+                name="unique_piece_per_request_line",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Solicitud #{self.line.request_id} — "
+            f"{self.tool.tool_code}"
         )
