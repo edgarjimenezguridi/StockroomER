@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Escanear comanda | StockroomER</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f1f5f9;
+            color: #172033;
+            font-family: Arial, sans-serif;
+        }
+
+        main {
+            max-width: 520px;
+            margin: 48px auto;
+            padding: 32px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 14px;
+            font-size: 20px;
+        }
+
+        button {
+            padding: 14px 20px;
+            background: #174e77;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .errorlist {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Escanear comanda</h1>
+        <p>Escanea el código o escribe el folio impreso.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Abrir solicitud</button>
+        </form>
+
+        <p>
+            <a href="{% url 'admin:stockroom_materialrequest_changelist' %}">
+                Ver solicitudes
+            </a>
+        </p>
+    </main>
+</body>
+</html>

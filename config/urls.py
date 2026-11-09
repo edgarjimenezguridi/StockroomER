@@ -16,6 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from stockroom.warehouse_views import (
+    WarehouseLoginView,
+    panel_almacen,
+    detalle_solicitud_almacen,
+    preparar_articulo_almacen,
+    terminar_preparacion_almacen,
+    confirmar_entrega_almacen,
+)
+
 from stockroom.views import (
     activar_nip,
     acceso_empleado,
@@ -25,6 +34,9 @@ from stockroom.views import (
     quitar_articulo_carrito,
     enviar_solicitud,
     confirmar_recibido,
+    comanda_empleado,
+    escanear_comanda,
+
 )
 
 urlpatterns = [
@@ -56,6 +68,46 @@ urlpatterns = [
         "trabajadores/solicitudes/<int:request_id>/confirmar/",
         confirmar_recibido,
         name="confirmar_recibido",
+    ),
+    path(
+        "trabajadores/solicitudes/<int:request_id>/comanda/",
+        comanda_empleado,
+        name="comanda_empleado",
+    ),
+    path(
+        "almacen/escanear/",
+        escanear_comanda,
+        name="escanear_comanda",
+    ),
+    path(
+        "almacen/acceso/",
+        WarehouseLoginView.as_view(),
+        name="acceso_almacen",
+    ),
+    path(
+        "almacen/panel/",
+        panel_almacen,
+        name="panel_almacen",
+    ),
+    path(
+        "almacen/solicitudes/<int:request_id>/",
+        detalle_solicitud_almacen,
+        name="detalle_solicitud_almacen",
+    ),
+    path(
+        "almacen/solicitudes/<int:request_id>/articulos/<int:line_id>/preparar/",
+        preparar_articulo_almacen,
+        name="preparar_articulo_almacen",
+    ),
+    path(
+        "almacen/solicitudes/<int:request_id>/terminar-preparacion/",
+        terminar_preparacion_almacen,
+        name="terminar_preparacion_almacen",
+    ),
+    path(
+        "almacen/solicitudes/<int:request_id>/confirmar-entrega/",
+        confirmar_entrega_almacen,
+        name="confirmar_entrega_almacen",
     ),
 
 ]

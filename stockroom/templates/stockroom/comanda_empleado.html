@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Comanda {{ solicitud.pk }} | StockroomER</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            color: #172033;
+            background: #f1f5f9;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 24px auto;
+            padding: 28px;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+            overflow-wrap: anywhere;
+        }
+
+        .folio {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .acciones {
+            margin-top: 24px;
+        }
+
+        button {
+            padding: 12px 20px;
+            cursor: pointer;
+        }
+        .codigo-comanda {
+            margin: 20px 0;
+            background: white;
+        }
+
+        .codigo-comanda img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+                color: black;
+            }
+
+            main {
+                margin: 0;
+                padding: 0;
+                max-width: none;
+            }
+
+            .acciones {
+                display: none;
+            }
+
+            tr {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>StockroomER — Solicitud de materiales</h1>
+        <p class="folio">Folio #{{ solicitud.pk }}</p>
+        <div class="codigo-comanda">
+            <img
+                src="{{ barcode_image }}"
+                alt="Código de barras {{ barcode_value }}"
+            >
+        </div>
+
+        <p>
+            <strong>Trabajador:</strong>
+            {{ solicitud.employee.first_name }}
+            {{ solicitud.employee.last_name }}
+        </p>
+        <p>
+            <strong>Número de empleado:</strong>
+            {{ solicitud.employee.employee_id }}
+        </p>
+        <p>
+            <strong>Solicitada:</strong>
+            {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
+        </p>
+        <p>
+            <strong>Estado al consultar:</strong>
+            {{ solicitud.get_status_display }}
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Artículo</th>
+                    <th>Cantidad solicitada</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in solicitud.lines.all %}
+                    <tr>
+                        <td>{{ line.article.article_code }}</td>
+                        <td>{{ line.article.name }}</td>
+                        <td>{{ line.requested_quantity }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p>
+            Esta comanda muestra lo solicitado; no acredita la entrega.
+            Las cantidades recibidas se registran al confirmar con NIP.
+        </p>
+
+        <div class="acciones">
+            <button type="button" onclick="window.print()">
+                Imprimir comanda
+            </button>
+            <p>
+                <a href="{% url 'panel_empleado' %}">Volver a mi panel</a>
+            </p>
+        </div>
+    </main>
+</body>
+</html>

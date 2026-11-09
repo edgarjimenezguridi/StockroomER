@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Preparar artículo | StockroomER</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f0f5fa;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+        main {
+            max-width: 720px;
+            margin: auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+        }
+        a { color: #195578; }
+        input[type="number"] {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            font-size: 18px;
+        }
+        label { line-height: 1.8; }
+        button {
+            padding: 14px 24px;
+            border: 0;
+            border-radius: 8px;
+            background: #195578;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .errorlist { color: #a31919; }
+        .helptext {
+            display: block;
+            margin-top: 8px;
+            color: #526174;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a href="{% url 'detalle_solicitud_almacen' linea.request_id %}">
+            ← Volver a la solicitud
+        </a>
+
+        <h1>Preparar artículo</h1>
+        <p><strong>Solicitud:</strong> #{{ linea.request_id }}</p>
+        <p><strong>Trabajador:</strong> {{ linea.request.employee }}</p>
+        <p>
+            <strong>Artículo:</strong>
+            {{ linea.article.article_code }} — {{ linea.article.name }}
+        </p>
+        <p>
+            <strong>Cantidad solicitada:</strong>
+            {{ linea.requested_quantity }}
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Guardar preparación</button>
+        </form>
+
+        <p>
+            Guardar la preparación no reserva ni descuenta existencias.
+            La entrega se registrará al confirmar recibido.
+        </p>
+    </main>
+</body>
+</html>

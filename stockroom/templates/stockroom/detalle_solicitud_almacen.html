@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Solicitud #{{ solicitud.pk }} | StockroomER</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f0f5fa;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+        main {
+            max-width: 1100px;
+            margin: auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+        }
+        a { color: #195578; }
+        .tabla { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        th, td {
+            padding: 14px;
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid #dbe3ec;
+        }
+        th { background: #e8f2f8; }
+        .aviso {
+            padding: 16px;
+            background: #e8f2f8;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a href="{% url 'panel_almacen' %}">← Volver al panel</a>
+
+        <h1>Solicitud #{{ solicitud.pk }}</h1>
+        {% for message in messages %}
+            <p role="status">{{ message }}</p>
+        {% endfor %}
+
+        <p><strong>Trabajador:</strong> {{ solicitud.employee }}</p>
+        <p><strong>Estado:</strong> {{ solicitud.get_status_display }}</p>
+        <p>
+            <strong>Enviada:</strong>
+            {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
+        </p>
+
+        <div class="tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Solicitado</th>
+                        <th>Preparado</th>
+                        <th>Piezas individuales seleccionadas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for linea in solicitud.lines.all %}
+                        <tr>
+                            <td>
+                                {{ linea.article.article_code }}<br>
+                                {{ linea.article.name }}
+                            </td>
+                            <td>{{ linea.requested_quantity }}</td>
+                            <td>
+                                {{ linea.prepared_quantity }}
+
+                                {% if solicitud.status == "submitted" and perms.stockroom.change_materialrequest %}
+                                    <br>
+                                    <a href="{% url 'preparar_articulo_almacen' solicitud.pk linea.pk %}">
+                                        Preparar artículo
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for seleccion in linea.selected_pieces.all %}
+                                    {{ seleccion.tool.tool_code }}<br>
+                                {% empty %}
+                                    —
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4">
+                                Esta solicitud no tiene artículos.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="aviso">
+            {% if solicitud.status == "closed" %}
+                El trabajador confirmó recibido.
+                Las entregas de esta solicitud ya fueron registradas.
+            {% elif solicitud.status == "cancelled" %}
+                Esta solicitud está cancelada.
+            {% else %}
+                La cantidad preparada indica lo que el almacén propone entregar.
+                La entrega se registra cuando el trabajador confirma recibido.
+            {% endif %}
+        </p>
+        {% if solicitud.status == "submitted" and perms.stockroom.change_materialrequest %}
+    <form
+        method="post"
+        action="{% url 'terminar_preparacion_almacen' solicitud.pk %}"
+    >
+        {% csrf_token %}
+        <p>
+            Revisa las cantidades preparadas antes de continuar.
+            Los artículos con cantidad 0 no se entregarán.
+        </p>
+        <button type="submit" style="
+            padding: 14px 24px;
+            border: 0;
+            border-radius: 8px;
+            background: #195578;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        ">
+            Terminar preparación
+        </button>
+    </form>
+{% endif %}
+{% if solicitud.status == "prepared" and perms.stockroom.change_materialrequest and perms.stockroom.add_quantityissue %}
+    <section>
+        <h2>Confirmación del trabajador</h2>
+
+        <p>
+            <strong>{{ solicitud.employee }}</strong>,
+            revisa las cantidades preparadas y las piezas seleccionadas
+            de la tabla. Introduce tu NIP solamente si coinciden con
+            lo que estás recibiendo.
+        </p>
+
+        <form
+            method="post"
+            action="{% url 'confirmar_entrega_almacen' solicitud.pk %}"
+        >
+            {% csrf_token %}
+
+            <input
+                type="hidden"
+                name="preparation_version"
+                value="{{ solicitud.preparation_version }}"
+            >
+
+            <p>
+                <label for="receipt-pin">
+                    <strong>NIP del trabajador:</strong>
+                </label>
+            </p>
+
+            <input
+                id="receipt-pin"
+                type="password"
+                name="pin"
+                inputmode="numeric"
+                pattern="[0-9]{6}"
+                minlength="6"
+                maxlength="6"
+                autocomplete="off"
+                required
+                style="
+                    padding: 12px;
+                    max-width: 100%;
+                    font-size: 20px;
+                    border: 1px solid #94a3b8;
+                    border-radius: 8px;
+                "
+            >
+
+            <p>
+                <button type="submit" style="
+                    padding: 14px 24px;
+                    border: 0;
+                    border-radius: 8px;
+                    background: #195578;
+                    color: white;
+                    font-size: 18px;
+                    cursor: pointer;
+                ">
+                    Confirmar que recibí estas piezas
+                </button>
+            </p>
+        </form>
+    </section>
+{% endif %}
+    </main>
+</body>
+</html>

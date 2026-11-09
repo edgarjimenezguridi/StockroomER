@@ -193,6 +193,11 @@
                             </a>
                         </p>
                     {% endif %}
+                    <p>
+                        <a href="{% url 'comanda_empleado' solicitud.pk %}">
+                            Ver / imprimir comanda
+                        </a>
+                    </p>
                 </details>
             {% empty %}
                 <p>Todavía no tienes solicitudes enviadas.</p>
@@ -200,7 +205,47 @@
         </section>
 
         <hr>
+        <section aria-labelledby="pending-title">
+            <h2 id="pending-title">Mis pendientes de devolución</h2>
+            <p>
+                Estas piezas siguen registradas a tu nombre.
+                Lleva las devoluciones al almacenista para que las registre.
+            </p>
 
+            {% for issue in pending_issues %}
+                <article class="articulo">
+                    {% if issue.tool_id %}
+                        <h3>{{ issue.tool.name }}</h3>
+                        <p>
+                            Pieza individual:
+                            <strong>{{ issue.tool.tool_code }}</strong>
+                        </p>
+                        {% if issue.tool.serial_number %}
+                            <p>Número de serie: {{ issue.tool.serial_number }}</p>
+                        {% endif %}
+                    {% else %}
+                        <h3>{{ issue.stock.article.name }}</h3>
+                        <p>Artículo: {{ issue.stock.article.article_code }}</p>
+                    {% endif %}
+
+                    <p>
+                        <strong>Pendientes: {{ issue.pending_quantity }}</strong>
+                    </p>
+                    <p>
+                        Entregadas: {{ issue.quantity }}
+                        · Devueltas: {{ issue.returned_quantity }}
+                    </p>
+                    <p>
+                        Entrega #{{ issue.pk }}
+                        · {{ issue.issued_at|date:"d/m/Y H:i" }}
+                    </p>
+                </article>
+            {% empty %}
+                <p>No tienes piezas pendientes de devolución.</p>
+            {% endfor %}
+        </section>
+
+        <hr>
                 <h2>Catálogo del almacén</h2>
 
         <form method="get" action="{% url 'panel_empleado' %}">

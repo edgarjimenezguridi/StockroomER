@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel del almacén | StockroomER</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f0f5fa;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+        main {
+            max-width: 1100px;
+            margin: auto;
+        }
+        header, section {
+            background: white;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+        }
+        h1 { margin-top: 0; }
+        .tablas { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #dbe3ec;
+        }
+        th { background: #e8f2f8; }
+        .vacio { color: #526174; }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Panel del almacén</h1>
+            <p>Bienvenido, {{ request.user.get_username }}.</p>
+            <p>
+                Consulta las solicitudes pendientes y las preparaciones
+                que esperan confirmación de recibido.
+            </p>
+        </header>
+
+        <section>
+            <h2>Por preparar</h2>
+
+            {% if por_preparar %}
+                <div class="tablas">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Solicitud</th>
+                                <th>Trabajador</th>
+                                <th>Fecha de envío</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for solicitud in por_preparar %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'detalle_solicitud_almacen' solicitud.pk %}">
+                                            Ver solicitud #{{ solicitud.pk }}
+                                        </a>
+                                    </td>
+                                    <td>{{ solicitud.employee }}</td>
+                                    <td>
+                                        {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="vacio">No hay solicitudes por preparar.</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2>Pendientes de confirmar recibido</h2>
+
+            {% if por_confirmar %}
+                <div class="tablas">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Solicitud</th>
+                                <th>Trabajador</th>
+                                <th>Fecha de preparación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for solicitud in por_confirmar %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'detalle_solicitud_almacen' solicitud.pk %}">
+                                            Ver solicitud #{{ solicitud.pk }}
+                                        </a>
+                                    </td>
+                                    <td>{{ solicitud.employee }}</td>
+                                    <td>
+                                        {{ solicitud.prepared_at|date:"d/m/Y H:i" }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="vacio">
+                    No hay solicitudes pendientes de confirmación.
+                </p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

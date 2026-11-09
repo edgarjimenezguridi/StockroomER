@@ -69,3 +69,20 @@ class EmployeePinForm(forms.Form):
             "placeholder": "Escribe tu NIP de 6 dígitos",
         }),
     )
+
+class ComandaScanForm(forms.Form):
+    code = forms.RegexField(
+        label="Código de la comanda",
+        regex=r"\ASOL-[0-9]{1,18}\Z",
+        max_length=22,
+        error_messages={
+            "required": "Escanea una comanda.",
+            "invalid": "Usa un código como SOL-000001.",
+        },
+        widget=forms.TextInput(attrs={
+            "autofocus": True,
+            "autocomplete": "off",
+            "spellcheck": "false",
+            "placeholder": "SOL-000001",
+        }),
+    )

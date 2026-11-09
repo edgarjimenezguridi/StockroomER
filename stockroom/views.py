@@ -12,6 +12,16 @@ from .models import MaterialRequestLine
 from .models import MaterialRequest
 from django.shortcuts import get_object_or_404
 from .fulfillment import confirm_request_receipt
+from django.db.models import F
+from .models import QuantityIssue
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import PermissionDenied
+from .forms import ComandaScanForm
+
+import base64
+
+from barcode import Code128
+from barcode.writer import SVGWriter
 
 from .credentials import (
     activate_pin,
@@ -235,6 +245,19 @@ def panel_empleado(request):
         .order_by("-created_at", "-pk")[:10]
     )
 
+    pending_issues = (
+        QuantityIssue.objects.filter(
+            employee_id=credential.employee_id,
+            requires_return=True,
+            returned_quantity__lt=F("quantity"),
+        )
+        .select_related("stock__article", "tool__article")
+        .annotate(
+            pending_quantity=F("quantity") - F("returned_quantity"),
+        )
+        .order_by("issued_at", "pk")
+    )
+
     return render(
         request,
         "stockroom/panel_empleado.html",
@@ -244,6 +267,7 @@ def panel_empleado(request):
             "search": search,
             "cart_lines": cart_lines,
             "my_requests": my_requests,
+            "pending_issues": pending_issues,
         },
     )
 
@@ -451,4 +475,96 @@ def confirmar_recibido(request, request_id):
         request,
         "stockroom/confirmar_recibido.html",
         {"solicitud": solicitud, "form": form},
+    )
+
+@never_cache
+@require_http_methods(["GET"])
+def comanda_empleado(request, request_id):
+    employee_id = request.session.get("worker_employee_id")
+    credential_id = request.session.get("worker_credential_id")
+
+    if not employee_id or not credential_id:
+        return redirect("acceso_empleado")
+
+    credential = EmployeeCredential.objects.filter(
+        pk=credential_id,
+        employee_id=employee_id,
+        is_active=True,
+        employee__is_active=True,
+    ).exclude(pin_hash="").first()
+
+    if credential is None:
+        request.session.flush()
+        return redirect("acceso_empleado")
+
+    solicitud = get_object_or_404(
+        MaterialRequest.objects.select_related(
+            "employee"
+        ).prefetch_related(
+            "lines__article"
+        ).exclude(
+            status=MaterialRequest.Status.DRAFT,
+        ),
+        pk=request_id,
+        employee_id=credential.employee_id,
+    )
+
+    barcode_value = f"SOL-{solicitud.pk:06d}"
+
+    barcode_svg = Code128(
+        barcode_value,
+        writer=SVGWriter(),
+    ).render()
+
+    barcode_image = (
+        "data:image/svg+xml;base64,"
+        + base64.b64encode(barcode_svg).decode("ascii")
+    )
+
+    return render(
+        request,
+        "stockroom/comanda_empleado.html",
+        {
+            "solicitud": solicitud,
+            "barcode_value": barcode_value,
+            "barcode_image": barcode_image,
+        },
+    )
+
+@never_cache
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def escanear_comanda(request):
+    if not request.user.has_perm("stockroom.view_materialrequest"):
+        raise PermissionDenied(
+            "No tienes permiso para consultar solicitudes."
+        )
+
+    form = ComandaScanForm(
+        request.POST if request.method == "POST" else None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        code = form.cleaned_data["code"]
+        request_id = int(code.split("-", 1)[1])
+
+        solicitud = MaterialRequest.objects.exclude(
+            status=MaterialRequest.Status.DRAFT,
+        ).filter(pk=request_id).first()
+
+        if solicitud is None:
+            form.add_error(
+                "code",
+                "No encontramos una solicitud enviada con ese folio.",
+            )
+        else:
+            return redirect(
+                "admin:stockroom_materialrequest_change",
+                solicitud.pk,
+            )
+
+    return render(
+        request,
+        "stockroom/escanear_comanda.html",
+        {"form": form},
     )
