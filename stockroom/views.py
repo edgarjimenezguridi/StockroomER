@@ -17,6 +17,8 @@ from .models import QuantityIssue
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import PermissionDenied
 from .forms import ComandaScanForm
+from django.contrib.auth.decorators import login_required
+
 
 import base64
 
@@ -532,12 +534,16 @@ def comanda_empleado(request, request_id):
     )
 
 @never_cache
-@staff_member_required
+@login_required(login_url="acceso_almacen")
 @require_http_methods(["GET", "POST"])
 def escanear_comanda(request):
-    if not request.user.has_perm("stockroom.view_materialrequest"):
+    if not (
+        request.user.is_active
+        and request.user.is_staff
+        and request.user.has_perm("stockroom.view_materialrequest")
+    ):
         raise PermissionDenied(
-            "No tienes permiso para consultar solicitudes."
+            "No tienes permiso para consultar solicitudes del almacén."
         )
 
     form = ComandaScanForm(
@@ -559,8 +565,8 @@ def escanear_comanda(request):
             )
         else:
             return redirect(
-                "admin:stockroom_materialrequest_change",
-                solicitud.pk,
+                "detalle_solicitud_almacen",
+                request_id=solicitud.pk,
             )
 
     return render(

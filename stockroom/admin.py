@@ -257,6 +257,7 @@ class ArticleAdmin(admin.ModelAdmin):
         "scrapped",
         "return_mode",
         "is_active",
+        "minimum_stock",
     )
     search_fields = (
         "article_code",

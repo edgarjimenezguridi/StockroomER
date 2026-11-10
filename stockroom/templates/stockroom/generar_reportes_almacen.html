@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Generar reporte | StockroomER</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f0f5fa;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+
+        main {
+            max-width: 760px;
+            margin: auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        label {
+            display: block;
+            margin: 16px 0 6px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 24px;
+            padding: 15px 24px;
+            border: 0;
+            border-radius: 9px;
+            background: #195578;
+            color: white;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        a { color: #195578; }
+
+        .fechas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .fechas { grid-template-columns: 1fr; }
+        }
+        .fechas[hidden] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <a href="{% url 'panel_almacen' %}">
+        ← Volver al panel
+    </a>
+
+    <h1>Generar reporte</h1>
+    <p>
+        Selecciona el reporte que necesitas.
+        StockroomER generará un archivo PDF.
+    </p>
+
+    <form method="get"
+          action="{% url 'descargar_reporte_almacen' %}">
+
+        <label for="tipo">Tipo de reporte</label>
+        <select name="tipo" id="tipo" required>
+            {% for opcion in opciones %}
+                <option value="{{ opcion.valor }}">
+                    {{ opcion.titulo }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <div id="campo-empleado" hidden>
+            <label for="employee_id">
+                Número de empleado (opcional)
+            </label>
+            <input
+                type="text"
+                name="employee_id"
+                id="employee_id"
+                placeholder="Ej. 0001"
+            >
+        </div>
+
+        <div class="fechas" id="fechas-reporte">
+            <div>
+                <label for="desde">Fecha inicial</label>
+                <input type="date" name="desde" id="desde">
+            </div>
+
+            <div>
+                <label for="hasta">Fecha final</label>
+                <input type="date" name="hasta" id="hasta">
+            </div>
+        </div>
+
+        <p>
+            Si dejas las fechas vacías, el reporte incluirá
+            todos los registros correspondientes.
+        </p>
+
+        <button type="submit">
+            Generar PDF
+        </button>
+    </form>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tipo = document.getElementById("tipo");
+    const campo = document.getElementById("campo-empleado");
+    const empleado = document.getElementById("employee_id");
+
+    function actualizar() {
+        const mostrar = ["personal", "danos_personal"].includes(tipo.value);
+        campo.hidden = !mostrar;
+        empleado.disabled = !mostrar;
+
+        const esInventario = ["inventario", "reabastecimiento"].includes(tipo.value);
+
+        const fechas = document.getElementById(
+            "fechas-reporte"
+        );
+
+        fechas.hidden = esInventario;
+
+        fechas.querySelectorAll("input").forEach(function(input) {
+            input.disabled = esInventario;
+        });
+
+    }
+
+    tipo.addEventListener("change", actualizar);
+    actualizar();
+});
+</script>
+</body>
+</html>

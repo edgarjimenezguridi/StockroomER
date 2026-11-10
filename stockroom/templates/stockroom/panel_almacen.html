@@ -47,6 +47,172 @@
                 Consulta las solicitudes pendientes y las preparaciones
                 que esperan confirmación de recibido.
             </p>
+            <section style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 16px;
+                margin: 24px 0;
+            ">
+
+                {% if puede_ver_adeudos %}
+                <a href="{% url 'adeudos_almacen' %}" style="
+                    display: block;
+                    padding: 22px;
+                    border-radius: 14px;
+                    background: #e8f2ff;
+                    color: #17446c;
+                    text-decoration: none;
+                ">
+                    <div style="font-size: 15px;">
+                        Piezas pendientes de devolución
+                    </div>
+
+                    <strong style="font-size: 36px;">
+                        {{ piezas_pendientes }}
+                    </strong>
+
+                    <div>Consultar adeudos</div>
+                </a>
+                {% endif %}
+
+                {% if puede_ver_danos %}
+                <a href="{% url 'resolver_dano_almacen' %}" style="
+                    display: block;
+                    padding: 22px;
+                    border-radius: 14px;
+                    background: #fff0eb;
+                    color: #92452f;
+                    text-decoration: none;
+                    cursor: pointer;
+                ">
+                    <div style="font-size: 15px;">
+                        Piezas dañadas sin resolver
+                    </div>
+
+                    <strong style="font-size: 36px;">
+                        {{ piezas_danadas }}
+                    </strong>
+
+                    <div>Ver daños pendientes</div>
+                </a>
+                {% endif %}
+
+
+            </section>
+            <p style="margin: 24px 0;">
+                <a href="{% url 'historial_almacen' %}"
+                style="
+                    display: inline-block;
+                    padding: 14px 22px;
+                    background: #195578;
+                    color: white;
+                    border-radius: 10px;
+                    text-decoration: none;
+                    font-weight: bold;
+                ">
+                    Ver historial de movimientos
+                </a>
+                <a href="{% url 'consultar_existencias_almacen' %}"
+                style="
+                    display: inline-block;
+                    padding: 15px 24px;
+                    margin: 12px 0;
+                    border-radius: 10px;
+                    background: #195578;
+                    color: white;
+                    text-decoration: none;
+                    font-weight: bold;
+                ">
+                    Consultar existencias
+                </a>
+                
+                {% if puede_ver_alertas %}
+                    <a href="{% url 'consultar_existencias_almacen' %}?alertas=1"
+                    style="
+                        display: inline-block;
+                        padding: 16px 24px;
+                        margin: 12px 0;
+                        border-radius: 10px;
+                        background: {% if articulos_bajos %}#b45309{% else %}#217346{% endif %};
+                        color: white;
+                        text-decoration: none;
+                        font-weight: bold;
+                    ">
+
+                        {% if articulos_bajos %}
+                            ⚠ {{ articulos_bajos }}
+                            artículo{{ articulos_bajos|pluralize }}
+                            bajo mínimo
+                        {% else %}
+                            ✓ Inventario sin alertas
+                        {% endif %}
+
+                    </a>
+                {% endif %}
+
+
+                <a href="{% url 'generar_reportes_almacen' %}"
+                style="
+                    display: inline-block;
+                    padding: 15px 24px;
+                    margin: 12px 0;
+                    border-radius: 10px;
+                    background: #195578;
+                    color: white;
+                    text-decoration: none;
+                    font-weight: bold;
+                ">
+                    Generar reporte PDF
+                </a>
+
+                {% if puede_ver_alertas %}
+                    <a href="{% url 'reabastecimiento_almacen' %}"
+                    style="
+                        display: inline-block;
+                        padding: 15px 24px;
+                        margin: 12px 0;
+                        border-radius: 10px;
+                        background: #195578;
+                        color: white;
+                        text-decoration: none;
+                        font-weight: bold;
+                    ">
+                        Plan de reabastecimiento
+                    </a>
+                {% endif %}
+                
+            </p>
+            
+
+            <p>
+                <a href="{% url 'escanear_comanda' %}">
+                    Escanear o escribir folio de comanda
+                </a>
+            </p>
+            <p>
+                <a href="{% url 'registrar_entrada_almacen' %}">
+                    Registrar entrada de material
+                </a>
+            </p>
+            <p>
+                <a href="{% url 'corregir_existencia_almacen' %}">
+                    Corregir existencias
+                </a>
+            </p>
+            <p>
+                <a href="{% url 'resolver_dano_almacen' %}">
+                    Resolver piezas dañadas
+                </a>
+            </p>
+            <p>
+                <a href="{% url 'adeudos_almacen' %}">
+                    Consultar adeudos y devoluciones
+                </a>
+            </p>
+            <form method="post" action="{% url 'salir_almacen' %}">
+                {% csrf_token %}
+                <button type="submit">Cerrar sesión</button>
+            </form>
         </header>
 
         <section>
@@ -120,6 +286,35 @@
                 </p>
             {% endif %}
         </section>
+        <section>
+            <h2>Existencias disponibles</h2>
+
+            {% if inventario %}
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Artículo</th>
+                                <th>Disponibles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for articulo in inventario %}
+                                <tr>
+                                    <td>{{ articulo.article_code }}</td>
+                                    <td>{{ articulo.name }}</td>
+                                    <td>{{ articulo.available_quantity }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>No hay artículos activos en el catálogo.</p>
+            {% endif %}
+        </section>
+
     </main>
 </body>
 </html>

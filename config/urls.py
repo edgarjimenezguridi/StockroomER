@@ -23,6 +23,16 @@ from stockroom.warehouse_views import (
     preparar_articulo_almacen,
     terminar_preparacion_almacen,
     confirmar_entrega_almacen,
+    adeudos_almacen,
+    registrar_devolucion_almacen,
+    salir_almacen,
+    registrar_entrada_almacen,
+    resolver_dano_almacen,
+    corregir_existencia_almacen,
+    historial_almacen,
+    consultar_existencias_almacen,
+    reabastecimiento_almacen,
+
 )
 
 from stockroom.views import (
@@ -37,6 +47,11 @@ from stockroom.views import (
     comanda_empleado,
     escanear_comanda,
 
+)
+
+from stockroom.warehouse_reports import (
+    generar_reportes_almacen,
+    descargar_reporte_almacen,
 )
 
 urlpatterns = [
@@ -109,5 +124,60 @@ urlpatterns = [
         confirmar_entrega_almacen,
         name="confirmar_entrega_almacen",
     ),
-
+    path(
+    "almacen/adeudos/",
+    adeudos_almacen,
+    name="adeudos_almacen",
+    ),
+    path(
+        "almacen/entregas/<int:issue_id>/devolver/",
+        registrar_devolucion_almacen,
+        name="registrar_devolucion_almacen",
+    ),
+    path(
+        "almacen/salir/",
+        salir_almacen,
+        name="salir_almacen",
+    ),
+    path(
+        "almacen/entradas/nueva/",
+        registrar_entrada_almacen,
+        name="registrar_entrada_almacen",
+    ),
+    path(
+        "almacen/danos/resolver/",
+        resolver_dano_almacen,
+        name="resolver_dano_almacen",
+    ),
+    path(
+    "almacen/existencias/corregir/",
+    corregir_existencia_almacen,
+    name="corregir_existencia_almacen",
+    ),
+    path(
+        "almacen/historial/",
+        historial_almacen,
+        name="historial_almacen",
+    ),
+    path(
+    "almacen/reportes/",
+    generar_reportes_almacen,
+    name="generar_reportes_almacen",
+    ),
+    path(
+        "almacen/reportes/pdf/",
+        descargar_reporte_almacen,
+        name="descargar_reporte_almacen",
+    ),
+    path(
+    "almacen/existencias/",
+    consultar_existencias_almacen,
+    name="consultar_existencias_almacen",
+    ),
+    path(
+    "almacen/reabastecimiento/",
+    reabastecimiento_almacen,
+    name="reabastecimiento_almacen",
+    ),
+    
 ]

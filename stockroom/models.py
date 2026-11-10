@@ -200,6 +200,14 @@ class Article(models.Model):
         choices=ReturnMode.choices,
         default=ReturnMode.RETURNABLE,
     )
+    minimum_stock = models.PositiveIntegerField(
+        "Existencia mínima",
+        default=0,
+        help_text=(
+            "Cantidad mínima deseada. "
+            "Si es 0, no se generarán alertas."
+        ),
+    )
     is_active = models.BooleanField(
         "Activo",
         default=True,
