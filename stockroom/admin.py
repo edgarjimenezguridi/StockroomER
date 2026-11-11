@@ -258,6 +258,9 @@ class ArticleAdmin(admin.ModelAdmin):
         "return_mode",
         "is_active",
         "minimum_stock",
+        "article_code",
+        "location",
+        
     )
     search_fields = (
         "article_code",
@@ -265,6 +268,7 @@ class ArticleAdmin(admin.ModelAdmin):
         "brand",
         "specification__name",
         "specification__tool_type__name",
+        "location",
     )
     list_filter = (
         "tracking_mode",

@@ -110,6 +110,24 @@
 
     <h1>Consulta de adeudos</h1>
 
+        {% for message in messages %}
+            <div
+                class="mensaje-operacion {{ message.tags }}"
+                role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+            >
+                {% if 'success' in message.tags %}
+                    ✅
+                {% elif 'error' in message.tags %}
+                    ❌
+                {% else %}
+                    ℹ️
+                {% endif %}
+
+                {{ message }}
+            </div>
+        {% endfor %}
+
+
     <p>
         Herramientas y materiales pendientes de devolución.
     </p>

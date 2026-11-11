@@ -1,0 +1,136 @@
+
+/* ==========================================
+   ENGRANES Y RECTIFICADO
+   Identidad visual corporativa
+   ========================================== */
+
+:root {
+    --empresa-verde: #169c21;
+    --empresa-verde-oscuro: #0f7a18;
+    --empresa-rojo: #e53935;
+
+    --empresa-texto: #172335;
+    --empresa-texto-secundario: #526174;
+
+    --empresa-fondo: #eef3f7;
+    --empresa-blanco: #ffffff;
+    --empresa-borde: #dbe3ec;
+
+    --empresa-radio: 12px;
+}
+
+/* Elementos compartidos */
+.logo-empresa {
+    display: block;
+    width: 300px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.encabezado-empresa {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.encabezado-empresa h1 {
+    margin: 0;
+    color: var(--empresa-texto);
+}
+
+.boton-empresa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 20px;
+    border: 1px solid transparent;
+    border-radius: var(--empresa-radio);
+    background: var(--empresa-verde);
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.boton-empresa:hover {
+    background: var(--empresa-verde-oscuro);
+    color: white;
+}
+
+.boton-empresa-secundario {
+    background: #e8f5ea;
+    color: var(--empresa-verde-oscuro);
+    border-color: #cfe6d2;
+}
+
+.boton-empresa-secundario:hover {
+    background: #d8eddd;
+    color: var(--empresa-verde-oscuro);
+}
+
+.campo-empresa {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--empresa-borde);
+    border-radius: 10px;
+    background: white;
+    color: var(--empresa-texto);
+    font: inherit;
+}
+
+.campo-empresa:focus {
+    outline: 2px solid var(--empresa-verde);
+    outline-offset: 1px;
+}
+
+.tarjeta-empresa {
+    background: var(--empresa-blanco);
+    border: 1px solid var(--empresa-borde);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.tabla-empresa {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-empresa th,
+.tabla-empresa td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--empresa-borde);
+    text-align: left;
+}
+
+.tabla-empresa th {
+    background: #e8f5ea;
+    color: var(--empresa-texto);
+}
+
+@media (max-width: 600px) {
+    .logo-empresa {
+        width: 230px;
+    }
+
+    .encabezado-empresa {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+/* Logo en las pantallas operativas */
+.encabezado-empresa .logo-empresa {
+    width: 360px;
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 600px) {
+    .encabezado-empresa .logo-empresa {
+        width: 260px;
+    }
+}

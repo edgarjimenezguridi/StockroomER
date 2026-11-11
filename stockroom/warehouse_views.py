@@ -113,6 +113,15 @@ def panel_almacen(request):
         ],
     ).order_by("submitted_at", "pk")
 
+    # Indicadores de solicitudes del almacén
+    solicitudes_por_preparar = solicitudes.filter(
+        status=MaterialRequest.Status.SUBMITTED,
+    ).count()
+
+    solicitudes_por_confirmar = solicitudes.filter(
+        status=MaterialRequest.Status.PREPARED,
+    ).count()
+
     puede_ver_adeudos = request.user.has_perms([
         "stockroom.view_employee",
         "stockroom.view_quantityissue",
@@ -204,7 +213,33 @@ def panel_almacen(request):
             bajos_cantidad + bajos_individuales
         )
 
+        # Preparar existencias para la tabla del panel
+    inventario = catalogo_articulos()
 
+    # Ubicaciones registradas en herramientas individuales
+    ubicaciones_por_articulo = {}
+
+    herramientas = (
+        Tool.objects.filter(
+            is_active=True,
+        )
+        .exclude(location__isnull=True)
+        .exclude(location="")
+        .values_list("article_id", "location")
+        .distinct()
+    )
+
+    for articulo_id, ubicacion in herramientas:
+        if articulo_id is not None:
+            ubicaciones_por_articulo.setdefault(
+                articulo_id, set()
+            ).add(ubicacion)
+
+    ubicaciones_por_articulo = {
+        articulo_id: ", ".join(sorted(ubicaciones))
+        for articulo_id, ubicaciones
+        in ubicaciones_por_articulo.items()
+    }
 
     return render(
         request,
@@ -216,14 +251,16 @@ def panel_almacen(request):
             "por_confirmar": solicitudes.filter(
                 status=MaterialRequest.Status.PREPARED,
             ),
-            "inventario": catalogo_articulos(),
+            "inventario": inventario,
+            "ubicaciones_por_articulo": ubicaciones_por_articulo,
             "piezas_pendientes": piezas_pendientes,
             "piezas_danadas": piezas_danadas,
             "puede_ver_adeudos": puede_ver_adeudos,
             "puede_ver_danos": puede_ver_danos,
             "articulos_bajos": articulos_bajos,
             "puede_ver_alertas": puede_ver_alertas,
-
+            "solicitudes_por_preparar": solicitudes_por_preparar,
+            "solicitudes_por_confirmar": solicitudes_por_confirmar,
         },
     )
 

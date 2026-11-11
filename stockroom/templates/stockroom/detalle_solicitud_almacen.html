@@ -39,6 +39,42 @@
             background: #e8f2f8;
             border-radius: 8px;
         }
+        /* Mensajes de operaciones */
+        .mensaje-operacion {
+            padding: 18px 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 1px solid;
+            font-size: 16px;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+
+        .mensaje-operacion.success {
+            background: #ecfdf5;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .mensaje-operacion.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .mensaje-operacion.warning {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fcd34d;
+        }
+
+
+
+
+
+
+
+
     </style>
 </head>
 <body>
@@ -46,9 +82,23 @@
         <a href="{% url 'panel_almacen' %}">← Volver al panel</a>
 
         <h1>Solicitud #{{ solicitud.pk }}</h1>
-        {% for message in messages %}
-            <p role="status">{{ message }}</p>
-        {% endfor %}
+            {% for message in messages %}
+                <div
+                    class="mensaje-operacion {{ message.tags }}"
+                    role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+                >
+                    {% if 'success' in message.tags %}
+                        ✅
+                    {% elif 'error' in message.tags %}
+                        ❌
+                    {% else %}
+                        ℹ️
+                    {% endif %}
+
+                    {{ message }}
+                </div>
+            {% endfor %}
+
 
         <p><strong>Trabajador:</strong> {{ solicitud.employee }}</p>
         <p><strong>Estado:</strong> {{ solicitud.get_status_display }}</p>

@@ -188,6 +188,16 @@ class Article(models.Model):
         max_length=100,
         blank=True,
     )
+    location = models.CharField(
+        "Ubicación principal en almacén",
+        max_length=150,
+        blank=True,
+        default="",
+        help_text=(
+            "Ejemplo: Estante A, nivel 2, "
+            "cajón 4. Si no tiene ubicación, dejar vacío."
+        ),
+    )
     tracking_mode = models.CharField(
         "Forma de control",
         max_length=20,

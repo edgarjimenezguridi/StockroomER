@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,17 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel del almacén | StockroomER</title>
     <style>
+        :root {
+        --brand-green: #169c21;
+        --brand-green-dark: #0f7a18;
+        --brand-red: #e53935;
+        --brand-red-dark: #c62828;
+        --brand-dark: #172335;
+        --brand-muted: #526174;
+        --brand-bg: #eef3f7;
+        --brand-card: #ffffff;
+        --brand-soft: #f7fafc;
+        --brand-border: #dbe3ec;
+        --brand-info: #e8f5ea;
+        --brand-info-text: #0f7a18;
+        --brand-warning: #fff4e8;
+        --brand-warning-text: #b45309;
+        }
+
         * { box-sizing: border-box; }
         body {
             margin: 0;
             padding: 24px 16px;
-            background: #f0f5fa;
-            color: #172335;
+            background: var(--brand-bg);
+            color: var(--brand-dark);
             font-family: Arial, sans-serif;
         }
         main {
-            max-width: 1100px;
+            max-width: 1280px;
             margin: auto;
+            padding: 28px;
+            background: var(--brand-card);
+            border-radius: 18px;
+            box-shadow: 0 10px 25px #00000010;
         }
         header, section {
             background: white;
@@ -36,188 +58,487 @@
         }
         th { background: #e8f2f8; }
         .vacio { color: #526174; }
+
+        /* Botones de operaciones del almacén */
+        .acciones-almacen {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin: 24px 0;
+        }
+
+        .accion-almacen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 64px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: var(--brand-green);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 15px;
+            text-align: center;
+            transition: background 0.2s, transform 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .accion-almacen:hover {
+            background: var(--brand-green-dark);
+            transform: translateY(-2px);
+        }
+
+        .accion-almacen:focus-visible {
+            outline: 3px solid #f59e0b;
+            outline-offset: 3px;
+        }
+
+        .accion-almacen--alerta {
+            background: #b45309;
+        }
+
+        .accion-almacen--alerta:hover {
+            background: #92400e;
+        }
+
+        .accion-almacen--correcto {
+            background: #217346;
+        }
+
+        .accion-almacen--correcto:hover {
+            background: #185936;
+        }
+
+        .boton-salir {
+            padding: 12px 20px;
+            background: #f2f5f8;
+            color: var(--brand-dark);
+            border: 1px solid var(--brand-border);
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+.boton-salir:hover {
+    background: #e5ebf1;
+    transform: translateY(-1px);
+}
+
+        .boton-salir:hover {
+            background: #d6dee8;
+        }
+        /* Resumen de indicadores */
+        /* Resumen de indicadores */
+        .resumen-almacen {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit, minmax(180px, 1fr)
+            );
+            gap: 12px;
+            margin: 22px 0;
+        }
+
+        .tarjeta-indicador {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 150px;
+            padding: 16px 16px 14px;
+            border: 1px solid #dbe3ec;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #172335;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        a.tarjeta-indicador:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px #00000012;
+        }
+
+        .tarjeta-indicador strong {
+            font-size: 28px;
+            line-height: 1;
+            margin: 6px 0;
+        }
+
+        .tarjeta-indicador span {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .tarjeta-indicador small {
+            font-size: 12px;
+            line-height: 1.3;
+            color: #334155;
+        }
+
+        .indicador-azul {
+            border-left: 5px solid #195578;
+        }
+
+        .indicador-naranja {
+            border-left: 5px solid #d97706;
+        }
+
+        .indicador-rojo {
+            border-left: 5px solid #dc2626;
+        }
+
+        .indicador-verde {
+            border-left: 5px solid #16a34a;
+        }
+        /* Acceso principal al escáner */
+        .accion-almacen--principal {
+            background: var(--brand-dark);
+            border: 2px solid var(--brand-green);
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .accion-almacen--principal:hover {
+            background: #0f1b2a;
+        }
+
+        .atajo-escaneo {
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+
+        /* Organización de operaciones */
+        .grupos-operaciones {
+            display: grid;
+            gap: 18px;
+            margin: 24px 0;
+        }
+
+        .grupo-operaciones {
+            margin: 0;
+            padding: 22px;
+            background: #f8fafc;
+            border: 1px solid #dbe3ec;
+            border-radius: 14px;
+        }
+
+        .grupo-operaciones h2 {
+            margin: 0 0 8px;
+            font-size: 19px;
+            color: #172335;
+        }
+
+        .descripcion-grupo {
+            margin: 0 0 16px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .grupo-operaciones .acciones-almacen {
+            margin: 0;
+        }
+
+        /* Botones más discretos para consultas */
+        .acciones-consulta .accion-almacen {
+            background: #f2f8f3;
+            color: var(--brand-green-dark);
+            border: 1px solid #cfe6d2;
+        }
+
+        .acciones-consulta .accion-almacen:hover {
+            background: #e3f3e6;
+        }
+
+        /* Conservar colores de alertas */
+        .acciones-consulta .accion-almacen--alerta {
+            background: var(--brand-red);
+            color: white;
+            border-color: var(--brand-red);
+        }
+
+        .acciones-consulta .accion-almacen--correcto {
+            background: var(--brand-green);
+            color: white;
+            border-color: var(--brand-green);
+        }
+
+        @media (max-width: 600px) {
+            .grupo-operaciones {
+                padding: 14px;
+            }
+        }
+        .encabezado-panel {
+            margin-bottom: 28px;
+        }
+
+        .marca-panel {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .logo-panel {
+            width: 420px;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .encabezado-panel h1 {
+            margin: 0 0 10px;
+            font-size: 42px;
+            color: var(--brand-dark);
+        }
+
+        .bienvenida-panel {
+            margin: 0 0 8px;
+            font-size: 18px;
+            color: var(--brand-dark);
+        }
+
+        .descripcion-panel {
+            margin: 0;
+            color: var(--brand-muted);
+            font-size: 16px;
+            line-height: 1.45;
+        }
+        /* Buscador y filtros de existencias */
+        .filtros-existencias {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 18px 0 16px;
+        }
+
+        .filtros-existencias input,
+        .filtros-existencias select {
+            padding: 12px 14px;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #ffffff;
+            color: #172335;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .filtros-existencias input {
+            flex: 2;
+            min-width: 240px;
+        }
+
+        .filtros-existencias select {
+            flex: 1;
+            min-width: 190px;
+        }
+
+        .filtros-existencias input:focus,
+        .filtros-existencias select:focus {
+            border-color: #169c21;
+            box-shadow: 0 0 0 3px rgba(22, 156, 33, 0.15);
+        }
+        .estado-vacio {
+            margin: 8px 0 0;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: var(--brand-info);
+            color: var(--brand-info-text);
+            font-weight: 600;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
     <main>
         <header>
-            <h1>Panel del almacén</h1>
-            <p>Bienvenido, {{ request.user.get_username }}.</p>
-            <p>
-                Consulta las solicitudes pendientes y las preparaciones
-                que esperan confirmación de recibido.
-            </p>
-            <section style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                gap: 16px;
-                margin: 24px 0;
-            ">
+            <header class="encabezado-panel">
+                <div class="marca-panel">
+                    <img
+                    
+                        src="{% static 'img/logo_empresa.png' %}"
+                        alt="Engranes y Rectificado"
+                        class="logo-panel"
+                    >
 
-                {% if puede_ver_adeudos %}
-                <a href="{% url 'adeudos_almacen' %}" style="
-                    display: block;
-                    padding: 22px;
-                    border-radius: 14px;
-                    background: #e8f2ff;
-                    color: #17446c;
-                    text-decoration: none;
-                ">
-                    <div style="font-size: 15px;">
-                        Piezas pendientes de devolución
+                    <div>
+                        <h1>Panel del almacén</h1>
+                        <p class="bienvenida-panel">
+                            Bienvenido, {{ request.user.first_name|default:request.user.username }}.
+                        </p>
+                        <p class="descripcion-panel">
+                            Consulta las solicitudes pendientes y las preparaciones
+                            que esperan confirmación de recibido.
+                        </p>
+                    </div>
+                </div>
+            </header>
+            <section>
+                <h2>Resumen del almacén</h2>
+
+                <div class="resumen-almacen">
+
+                    <div class="tarjeta-indicador indicador-azul">
+                        <span>📋 Solicitudes por preparar</span>
+                        <strong id="contador-por-preparar">{{ solicitudes_por_preparar }}</strong>
+                        <small>Solicitudes nuevas pendientes</small>
                     </div>
 
-                    <strong style="font-size: 36px;">
-                        {{ piezas_pendientes }}
-                    </strong>
-
-                    <div>Consultar adeudos</div>
-                </a>
-                {% endif %}
-
-                {% if puede_ver_danos %}
-                <a href="{% url 'resolver_dano_almacen' %}" style="
-                    display: block;
-                    padding: 22px;
-                    border-radius: 14px;
-                    background: #fff0eb;
-                    color: #92452f;
-                    text-decoration: none;
-                    cursor: pointer;
-                ">
-                    <div style="font-size: 15px;">
-                        Piezas dañadas sin resolver
+                    <div class="tarjeta-indicador indicador-naranja">
+                        <span>📦 Esperando confirmación</span>
+                        <strong id="contador-por-confirmar">{{ solicitudes_por_confirmar }}</strong>
+                        <small>Preparadas, pendientes de recibido</small>
                     </div>
 
-                    <strong style="font-size: 36px;">
-                        {{ piezas_danadas }}
-                    </strong>
+                    {% if puede_ver_adeudos %}
+                    <a href="{% url 'adeudos_almacen' %}"
+                    class="tarjeta-indicador indicador-azul">
+                        <span>🔄 Piezas pendientes de devolución</span>
+                        <strong>{{ piezas_pendientes }}</strong>
+                        <small>Consultar adeudos</small>
+                    </a>
+                    {% endif %}
 
-                    <div>Ver daños pendientes</div>
-                </a>
-                {% endif %}
+                    {% if puede_ver_danos %}
+                    <a href="{% url 'resolver_dano_almacen' %}"
+                    class="tarjeta-indicador indicador-rojo">
+                        <span>🔧 Piezas dañadas sin resolver</span>
+                        <strong>{{ piezas_danadas }}</strong>
+                        <small>Ver daños pendientes</small>
+                    </a>
+                    {% endif %}
 
-
-            </section>
-            <p style="margin: 24px 0;">
-                <a href="{% url 'historial_almacen' %}"
-                style="
-                    display: inline-block;
-                    padding: 14px 22px;
-                    background: #195578;
-                    color: white;
-                    border-radius: 10px;
-                    text-decoration: none;
-                    font-weight: bold;
-                ">
-                    Ver historial de movimientos
-                </a>
-                <a href="{% url 'consultar_existencias_almacen' %}"
-                style="
-                    display: inline-block;
-                    padding: 15px 24px;
-                    margin: 12px 0;
-                    border-radius: 10px;
-                    background: #195578;
-                    color: white;
-                    text-decoration: none;
-                    font-weight: bold;
-                ">
-                    Consultar existencias
-                </a>
-                
-                {% if puede_ver_alertas %}
+                    {% if puede_ver_alertas %}
                     <a href="{% url 'consultar_existencias_almacen' %}?alertas=1"
-                    style="
-                        display: inline-block;
-                        padding: 16px 24px;
-                        margin: 12px 0;
-                        border-radius: 10px;
-                        background: {% if articulos_bajos %}#b45309{% else %}#217346{% endif %};
-                        color: white;
-                        text-decoration: none;
-                        font-weight: bold;
-                    ">
-
-                        {% if articulos_bajos %}
-                            ⚠ {{ articulos_bajos }}
-                            artículo{{ articulos_bajos|pluralize }}
-                            bajo mínimo
-                        {% else %}
-                            ✓ Inventario sin alertas
-                        {% endif %}
-
+                    class="tarjeta-indicador {% if articulos_bajos %}indicador-naranja{% else %}indicador-verde{% endif %}">
+                        <span>⚠️ Artículos bajo mínimo</span>
+                        <strong>{{ articulos_bajos }}</strong>
+                        <small>
+                            {% if articulos_bajos %}
+                                Revisar existencias
+                            {% else %}
+                                Sin alertas de inventario
+                            {% endif %}
+                        </small>
                     </a>
-                {% endif %}
+                    {% endif %}
 
-
-                <a href="{% url 'generar_reportes_almacen' %}"
-                style="
-                    display: inline-block;
-                    padding: 15px 24px;
-                    margin: 12px 0;
-                    border-radius: 10px;
-                    background: #195578;
-                    color: white;
-                    text-decoration: none;
-                    font-weight: bold;
-                ">
-                    Generar reporte PDF
-                </a>
-
-                {% if puede_ver_alertas %}
-                    <a href="{% url 'reabastecimiento_almacen' %}"
-                    style="
-                        display: inline-block;
-                        padding: 15px 24px;
-                        margin: 12px 0;
-                        border-radius: 10px;
-                        background: #195578;
-                        color: white;
-                        text-decoration: none;
-                        font-weight: bold;
-                    ">
-                        Plan de reabastecimiento
-                    </a>
-                {% endif %}
-                
-            </p>
+                </div>
+            </section>
             
+                <h2>Operaciones del almacén</h2>
+                
+                <div class="grupos-operaciones">
 
-            <p>
-                <a href="{% url 'escanear_comanda' %}">
-                    Escanear o escribir folio de comanda
-                </a>
-            </p>
-            <p>
-                <a href="{% url 'registrar_entrada_almacen' %}">
-                    Registrar entrada de material
-                </a>
-            </p>
-            <p>
-                <a href="{% url 'corregir_existencia_almacen' %}">
-                    Corregir existencias
-                </a>
-            </p>
-            <p>
-                <a href="{% url 'resolver_dano_almacen' %}">
-                    Resolver piezas dañadas
-                </a>
-            </p>
-            <p>
-                <a href="{% url 'adeudos_almacen' %}">
-                    Consultar adeudos y devoluciones
-                </a>
-            </p>
-            <form method="post" action="{% url 'salir_almacen' %}">
-                {% csrf_token %}
-                <button type="submit">Cerrar sesión</button>
-            </form>
+                    <!-- OPERACIONES DIARIAS -->
+                    <section class="grupo-operaciones">
+                        <h2>⚡ Operaciones diarias</h2>
+                        <p class="descripcion-grupo">
+                            Acciones frecuentes para atender a los trabajadores.
+                        </p>
+
+                        <nav class="acciones-almacen" aria-label="Operaciones diarias">
+
+                            <a class="accion-almacen accion-almacen--principal"
+                            href="{% url 'escanear_comanda' %}"
+                            accesskey="e"
+                            title="Abrir escáner de comandas">
+                                📷 Escanear comanda
+                                <span class="atajo-escaneo">Alt + Shift + E</span>
+                            </a>
+
+                            <a class="accion-almacen"
+                            href="{% url 'registrar_entrada_almacen' %}">
+                                📦 Registrar entrada de material
+                            </a>
+
+                            <a class="accion-almacen"
+                            href="{% url 'corregir_existencia_almacen' %}">
+                                ✏️ Corregir existencias
+                            </a>
+
+                            {% if puede_ver_danos %}
+                            <a class="accion-almacen"
+                            href="{% url 'resolver_dano_almacen' %}">
+                                🔧 Resolver piezas dañadas
+                            </a>
+                            {% endif %}
+
+                        </nav>
+                    </section>
+
+                    <!-- CONSULTAS Y ADMINISTRACIÓN -->
+                    <section class="grupo-operaciones">
+                        <h2>📊 Consultas y administración</h2>
+                        <p class="descripcion-grupo">
+                            Información, seguimiento y reportes del almacén.
+                        </p>
+
+                        <nav class="acciones-almacen acciones-consulta"
+                            aria-label="Consultas y administración">
+
+                            {% if puede_ver_adeudos %}
+                            <a class="accion-almacen"
+                            href="{% url 'adeudos_almacen' %}">
+                                📋 Adeudos y devoluciones
+                            </a>
+                            {% endif %}
+
+                            <a class="accion-almacen"
+                            href="{% url 'consultar_existencias_almacen' %}">
+                                🔎 Consultar existencias
+                            </a>
+
+                            <a class="accion-almacen"
+                            href="{% url 'historial_almacen' %}">
+                                🕒 Historial de movimientos
+                            </a>
+
+                            <a class="accion-almacen"
+                            href="{% url 'generar_reportes_almacen' %}">
+                                📄 Generar reportes PDF
+                            </a>
+
+                            {% if puede_ver_alertas %}
+                            <a class="accion-almacen"
+                            href="{% url 'reabastecimiento_almacen' %}">
+                                🛒 Plan de reabastecimiento
+                            </a>
+
+                            <a class="accion-almacen {% if articulos_bajos %}accion-almacen--alerta{% else %}accion-almacen--correcto{% endif %}"
+                            href="{% url 'consultar_existencias_almacen' %}?alertas=1">
+                                {% if articulos_bajos %}
+                                    ⚠️ {{ articulos_bajos }}
+                                    artículo{{ articulos_bajos|pluralize }}
+                                    bajo mínimo
+                                {% else %}
+                                    ✅ Inventario sin alertas
+                                {% endif %}
+                            </a>
+                            {% endif %}
+
+                        </nav>
+                    </section>
+
+                </div>
+
+
+                <form method="post" action="{% url 'salir_almacen' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="boton-salir">
+                        Cerrar sesión
+                    </button>
+                </form>
+
         </header>
 
-        <section>
+        <section  id="solicitudes-por-preparar">
             <h2>Por preparar</h2>
-
+           
             {% if por_preparar %}
                 <div class="tablas">
                     <table>
@@ -246,11 +567,13 @@
                     </table>
                 </div>
             {% else %}
-                <p class="vacio">No hay solicitudes por preparar.</p>
+                <p class="estado-vacio">
+                    ✅ No hay solicitudes por preparar.
+                </p>
             {% endif %}
         </section>
 
-        <section>
+        <section id="solicitudes-por-confirmar">
             <h2>Pendientes de confirmar recibido</h2>
 
             {% if por_confirmar %}
@@ -281,40 +604,232 @@
                     </table>
                 </div>
             {% else %}
-                <p class="vacio">
-                    No hay solicitudes pendientes de confirmación.
+                <p class="estado-vacio">
+                    ✅ No hay solicitudes pendientes de confirmación.
                 </p>
             {% endif %}
         </section>
+
+        
         <section>
             <h2>Existencias disponibles</h2>
 
-            {% if inventario %}
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Artículo</th>
-                                <th>Disponibles</th>
+            <div class="filtros-existencias">
+                <input
+                    type="search"
+                    id="buscar-existencias"
+                    placeholder="Buscar código, artículo o ubicación..."
+                    aria-label="Buscar existencias"
+                >
+
+                <select id="filtro-categoria" aria-label="Filtrar por categoría">
+                    <option value="">Todas las categorías</option>
+                </select>
+
+                <select id="filtro-control" aria-label="Filtrar por control">
+                    <option value="">Todos los controles</option>
+                    <option value="quantity">Por cantidad</option>
+                    <option value="individual">Por pieza individual</option>
+                </select>
+            </div>
+
+            <div class="tablas">
+                <table id="tabla-existencias">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Artículo</th>
+                            <th>Categoría</th>
+                            <th>Ubicación</th>
+                            <th>Disponibles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for articulo in inventario %}
+                            <tr
+                                data-categoria="{{ articulo.specification.tool_type.category.name|default:'' }}"
+                                data-control="{{ articulo.tracking_mode }}"
+                            >
+                                <td>{{ articulo.article_code }}</td>
+                                <td>{{ articulo.name }}</td>
+                                <td>
+                                    {{ articulo.specification.tool_type.category.name|default:"Sin categoría" }}
+                                </td>
+                                <td>
+                                    {{ articulo.location|default:"Sin ubicación asignada" }}
+                                </td>
+                                <td>{{ articulo.available_quantity }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% for articulo in inventario %}
-                                <tr>
-                                    <td>{{ articulo.article_code }}</td>
-                                    <td>{{ articulo.name }}</td>
-                                    <td>{{ articulo.available_quantity }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p>No hay artículos activos en el catálogo.</p>
-            {% endif %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="5">
+                                    No hay artículos activos en el catálogo.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p id="sin-resultados" class="vacio" hidden>
+                No se encontraron artículos con esos filtros.
+            </p>
         </section>
 
+
     </main>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const buscar = document.getElementById("buscar-existencias");
+        const filtroCategoria = document.getElementById("filtro-categoria");
+        const filtroControl = document.getElementById("filtro-control");
+        const sinResultados = document.getElementById("sin-resultados");
+
+        const filas = Array.from(
+            document.querySelectorAll("#tabla-existencias tbody tr[data-control]")
+        );
+
+        const categorias = [
+            ...new Set(
+                filas.map(fila => fila.dataset.categoria).filter(Boolean)
+            )
+        ].sort((a, b) => a.localeCompare(b, "es"));
+
+        categorias.forEach(function (categoria) {
+            const opcion = document.createElement("option");
+            opcion.value = categoria;
+            opcion.textContent = categoria;
+            filtroCategoria.appendChild(opcion);
+        });
+
+        function filtrar() {
+            const texto = buscar.value.trim().toLocaleLowerCase("es");
+            const categoria = filtroCategoria.value;
+            const control = filtroControl.value;
+            let visibles = 0;
+
+            filas.forEach(function (fila) {
+                const coincideTexto =
+                    fila.textContent.toLocaleLowerCase("es").includes(texto);
+
+                const coincideCategoria =
+                    !categoria || fila.dataset.categoria === categoria;
+
+                const coincideControl =
+                    !control || fila.dataset.control === control;
+
+                const mostrar =
+                    coincideTexto && coincideCategoria && coincideControl;
+
+                fila.hidden = !mostrar;
+                fila.style.display = mostrar ? "" : "none";
+
+                if (mostrar) visibles++;
+            });
+
+            sinResultados.hidden = visibles !== 0 || filas.length === 0;
+        }
+
+        buscar.addEventListener("input", filtrar);
+        filtroCategoria.addEventListener("change", filtrar);
+        filtroControl.addEventListener("change", filtrar);
+    });
+    </script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const INTERVALO = 10000; // 10 segundos
+
+        let actualizando = false;
+
+        async function actualizarSolicitudes() {
+            // No consultar si la pestaña está oculta.
+            if (document.hidden || actualizando) {
+                return;
+            }
+
+            actualizando = true;
+
+            try {
+                const respuesta = await fetch(window.location.pathname, {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    redirect: "manual"
+                });
+
+                // Si la sesión terminó o el servidor falla,
+                // conservamos la información visible.
+                if (!respuesta.ok || respuesta.type === "opaqueredirect") {
+                    return;
+                }
+
+                const html = await respuesta.text();
+
+                const documentoNuevo = new DOMParser().parseFromString(
+                    html,
+                    "text/html"
+                );
+
+                const secciones = [
+                    "solicitudes-por-preparar",
+                    "solicitudes-por-confirmar"
+                ];
+
+                secciones.forEach(function (id) {
+                    const actual = document.getElementById(id);
+                    const nueva = documentoNuevo.getElementById(id);
+
+                    if (!actual || !nueva) return;
+
+                    // No interrumpir a alguien que esté
+                    // interactuando dentro de la sección.
+                    if (actual.contains(document.activeElement)) {
+                        return;
+                    }
+
+                    if (actual.innerHTML !== nueva.innerHTML) {
+                        actual.innerHTML = nueva.innerHTML;
+                    }
+                });
+
+                const contadores = [
+                    "contador-por-preparar",
+                    "contador-por-confirmar"
+                ];
+
+                contadores.forEach(function (id) {
+                    const actual = document.getElementById(id);
+                    const nuevo = documentoNuevo.getElementById(id);
+
+                    if (actual && nuevo) {
+                        actual.textContent = nuevo.textContent;
+                    }
+                });
+
+            } catch (error) {
+                console.warn(
+                    "No se pudo actualizar el panel automáticamente.",
+                    error
+                );
+            } finally {
+                actualizando = false;
+            }
+        }
+
+        setInterval(actualizarSolicitudes, INTERVALO);
+
+        // Actualizar también al regresar a la pestaña.
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) {
+                actualizarSolicitudes();
+            }
+        });
+    });
+    </script>
+
+
+
 </body>
 </html>
