@@ -1,0 +1,118 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Acceso al almacén{% endblock %}
+
+{% block body_class %}pagina-acceso-almacen{% endblock %}
+
+{% block titulo_pagina %}
+Acceso al almacén
+{% endblock %}
+
+{% block descripcion %}
+Ingresa con tu usuario y contraseña de almacenista.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-acceso-almacen .contenedor-empresa {
+        max-width: 650px;
+    }
+
+    .pagina-acceso-almacen .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-acceso-almacen .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    .formulario-acceso {
+        max-width: 100%;
+    }
+
+    .formulario-acceso .campo-formulario {
+        margin-bottom: 20px;
+    }
+
+    .formulario-acceso label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .formulario-acceso input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 17px;
+        background: #ffffff;
+        color: #172335;
+    }
+
+    .formulario-acceso input:focus {
+        outline: 2px solid #169c21;
+        outline-offset: 1px;
+    }
+
+    .formulario-acceso .boton-empresa {
+        width: 100%;
+        min-height: 52px;
+        margin-top: 10px;
+        font-size: 17px;
+    }
+
+    .errorlist {
+        margin: 8px 0;
+        padding-left: 20px;
+        color: #b91c1c;
+        font-size: 14px;
+    }
+
+    .errores-acceso {
+        margin-bottom: 18px;
+        color: #b91c1c;
+    }
+
+    @media (max-width: 600px) {
+        .pagina-acceso-almacen .logo-empresa {
+            width: 300px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<form method="post" class="formulario-acceso">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="errores-acceso" role="alert">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <div class="campo-formulario">
+        {{ form.username.label_tag }}
+        {{ form.username }}
+        {{ form.username.errors }}
+    </div>
+
+    <div class="campo-formulario">
+        {{ form.password.label_tag }}
+        {{ form.password }}
+        {{ form.password.errors }}
+    </div>
+
+    <button type="submit" class="boton-empresa">
+        Iniciar sesión
+    </button>
+</form>
+
+{% endblock %}

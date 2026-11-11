@@ -1,0 +1,326 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Generar reportes{% endblock %}
+
+{% block body_class %}pagina-generar-reportes{% endblock %}
+
+{% block titulo_pagina %}
+Generar reportes
+{% endblock %}
+
+{% block descripcion %}
+Genera y descarga reportes del almacén en formato PDF.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Contenedor principal */
+    .pagina-generar-reportes .contenedor-empresa {
+        max-width: 800px;
+    }
+
+    .pagina-generar-reportes .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-generar-reportes .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    /* Información inicial */
+    .informacion-reportes {
+        padding: 18px 20px;
+        margin-bottom: 26px;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.6;
+    }
+
+    .informacion-reportes p {
+        margin: 0;
+    }
+
+    /* Secciones del formulario */
+    .seccion-reporte {
+        margin-bottom: 26px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .seccion-reporte h2 {
+        margin: 0 0 16px;
+        color: #0f7a18;
+        font-size: 19px;
+    }
+
+    .formulario-reportes label {
+        display: block;
+        margin: 16px 0 8px;
+        color: #172335;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .formulario-reportes input,
+    .formulario-reportes select {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        min-height: 49px;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: white;
+        color: #172335;
+        font: inherit;
+        font-size: 15px;
+    }
+
+    .formulario-reportes input:focus,
+    .formulario-reportes select:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    /* Fechas */
+    .fechas {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .fechas[hidden],
+    #campo-empleado[hidden] {
+        display: none !important;
+    }
+
+    .nota-fechas {
+        margin: 16px 0 0;
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #526174;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* Botones */
+    .acciones-reportes {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .acciones-reportes .boton-empresa {
+        min-height: 52px;
+    }
+
+    /* Diseño móvil */
+    @media (max-width: 600px) {
+        .pagina-generar-reportes .logo-empresa {
+            width: 300px;
+        }
+
+        .fechas {
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-reportes {
+            flex-direction: column;
+        }
+
+        .acciones-reportes .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+    <!-- Información del módulo -->
+    <div class="informacion-reportes">
+        <p>
+            Selecciona el tipo de reporte que necesitas.
+            <strong>StockroomER generará un archivo PDF</strong>
+            con la información correspondiente.
+        </p>
+    </div>
+
+    <!-- Formulario de reportes -->
+    <form
+        method="get"
+        action="{% url 'descargar_reporte_almacen' %}"
+        class="formulario-reportes"
+    >
+
+        <!-- Tipo de reporte -->
+        <section class="seccion-reporte">
+            <h2>1. Seleccionar reporte</h2>
+
+            <label for="tipo">
+                Tipo de reporte
+            </label>
+
+            <select name="tipo" id="tipo" required>
+                {% for opcion in opciones %}
+                    <option value="{{ opcion.valor }}">
+                        {{ opcion.titulo }}
+                    </option>
+                {% endfor %}
+            </select>
+        </section>
+
+        <!-- Filtro de trabajador -->
+        <section
+            class="seccion-reporte"
+            id="campo-empleado"
+            hidden
+        >
+            <h2>2. Filtrar por trabajador</h2>
+
+            <label for="employee_id">
+                Número de empleado (opcional)
+            </label>
+
+            <input
+                type="text"
+                name="employee_id"
+                id="employee_id"
+                placeholder="Ej. 0001"
+                autocomplete="off"
+            >
+
+            <p class="nota-fechas">
+                Deja este campo vacío si deseas incluir
+                a todos los trabajadores.
+            </p>
+        </section>
+
+        <!-- Rango de fechas -->
+        <section
+            class="seccion-reporte"
+            id="seccion-fechas"
+        >
+            <h2>2. Seleccionar periodo</h2>
+
+            <div class="fechas" id="fechas-reporte">
+                <div>
+                    <label for="desde">
+                        Fecha inicial
+                    </label>
+
+                    <input
+                        type="date"
+                        name="desde"
+                        id="desde"
+                    >
+                </div>
+
+                <div>
+                    <label for="hasta">
+                        Fecha final
+                    </label>
+
+                    <input
+                        type="date"
+                        name="hasta"
+                        id="hasta"
+                    >
+                </div>
+            </div>
+
+            <p class="nota-fechas">
+                Si dejas las fechas vacías, el reporte incluirá
+                todos los registros correspondientes.
+            </p>
+        </section>
+
+        <!-- Acciones -->
+        <div class="acciones-reportes">
+            <button
+                type="submit"
+                class="boton-empresa"
+            >
+                Generar PDF
+            </button>
+
+            <a
+                href="{% url 'panel_almacen' %}"
+                class="boton-empresa boton-empresa-secundario"
+            >
+                ← Regresar al inicio
+            </a>
+        </div>
+
+    </form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tipo = document.getElementById("tipo");
+    const campo = document.getElementById("campo-empleado");
+    const empleado = document.getElementById("employee_id");
+
+    const fechas = document.getElementById(
+        "fechas-reporte"
+    );
+
+    const seccionFechas = document.getElementById(
+        "seccion-fechas"
+    );
+
+    function actualizar() {
+        // Mostrar el filtro de empleado solamente
+        // en reportes relacionados con personal.
+        const mostrarEmpleado = [
+            "personal",
+            "danos_personal"
+        ].includes(tipo.value);
+
+        campo.hidden = !mostrarEmpleado;
+        empleado.disabled = !mostrarEmpleado;
+
+        // Los reportes de inventario y reabastecimiento
+        // no necesitan un rango de fechas.
+        const esInventario = [
+            "inventario",
+            "reabastecimiento"
+        ].includes(tipo.value);
+
+        seccionFechas.hidden = esInventario;
+        fechas.hidden = esInventario;
+
+        fechas.querySelectorAll("input").forEach(
+            function (input) {
+                input.disabled = esInventario;
+            }
+        );
+
+        // Ajustar la numeración visual de las secciones.
+        const tituloFechas = seccionFechas.querySelector("h2");
+
+        tituloFechas.textContent = mostrarEmpleado
+            ? "3. Seleccionar periodo"
+            : "2. Seleccionar periodo";
+    }
+
+    tipo.addEventListener("change", actualizar);
+
+    // Aplicar las condiciones al abrir la pantalla.
+    actualizar();
+});
+</script>
+{% endblock %}

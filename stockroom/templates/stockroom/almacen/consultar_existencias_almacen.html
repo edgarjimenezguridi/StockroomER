@@ -1,0 +1,1105 @@
+{% extends "stockroom/base.html" %}
+
+{% block title %}Consultar existencias{% endblock %}
+
+{% block body_class %}pagina-consultar-existencias{% endblock %}
+
+{% block titulo_pagina %}
+
+Consultar existencias
+
+{% endblock %}
+
+{% block descripcion %}
+
+Consulta la disponibilidad actual de herramientas y materiales del almacén.
+
+{% endblock %}
+
+{% block extra_css %}
+
+<style>
+
+    .pagina-consultar-existencias .contenedor-empresa {
+
+        max-width: 1350px;
+
+    }
+
+    .pagina-consultar-existencias .cabecera-empresa {
+
+        align-items: center;
+
+    }
+
+    .pagina-consultar-existencias .logo-empresa {
+
+        width: 360px;
+
+        max-width: 100%;
+
+    }
+
+    /* Filtros */
+
+    .filtros {
+
+        display: grid;
+
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+
+        gap: 12px;
+
+        margin: 24px 0;
+
+    }
+
+    .filtros input,
+
+    .filtros select {
+
+        box-sizing: border-box;
+
+        width: 100%;
+
+        min-width: 0;
+
+        padding: 13px 14px;
+
+        border: 1px solid #cbd5e1;
+
+        border-radius: 10px;
+
+        background: white;
+
+        color: #172335;
+
+        font: inherit;
+
+        font-size: 15px;
+
+    }
+
+    .filtros input:focus,
+
+    .filtros select:focus {
+
+        outline: none;
+
+        border-color: #169c21;
+
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, 0.15);
+
+    }
+
+    /* Resumen de resultados */
+
+    .resumen {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin: 20px 0;
+
+        padding: 18px 22px;
+
+        border: 1px solid #cfe6d2;
+
+        border-left: 5px solid #169c21;
+
+        border-radius: 12px;
+
+        background: #f2f8f3;
+
+        color: #285b32;
+
+    }
+
+    .resumen strong {
+
+        font-size: 26px;
+
+        color: #0f7a18;
+
+    }
+
+    /* Tabla de existencias */
+
+    .tabla {
+
+        overflow-x: auto;
+
+        border: 1px solid #dbe3ec;
+
+        border-radius: 12px;
+
+    }
+
+    .tabla table {
+
+        width: 100%;
+
+        min-width: 1050px;
+
+        border-collapse: collapse;
+
+    }
+
+    .tabla th,
+
+    .tabla td {
+
+        padding: 13px 12px;
+
+        text-align: left;
+
+        vertical-align: middle;
+
+        border-bottom: 1px solid #e2e8f0;
+
+        font-size: 14px;
+
+    }
+
+    .tabla th {
+
+        background: #e8f5ea;
+
+        color: #0f7a18;
+
+        font-weight: 700;
+
+        white-space: nowrap;
+
+    }
+
+    .tabla tbody tr:hover {
+
+        background: #f8fcf9;
+
+    }
+
+    .tabla tbody tr:last-child td {
+
+        border-bottom: none;
+
+    }
+
+    .codigo-articulo {
+
+        font-weight: 700;
+
+        color: #172335;
+
+    }
+
+    .numero {
+
+        text-align: center !important;
+
+        font-weight: 700;
+
+        font-variant-numeric: tabular-nums;
+
+    }
+
+    /* Estados y alertas */
+
+    .estado {
+
+        display: inline-block;
+
+        padding: 6px 10px;
+
+        border-radius: 8px;
+
+        background: #e8f5ea;
+
+        color: #166534;
+
+        font-size: 12px;
+
+        font-weight: 700;
+
+        white-space: nowrap;
+
+    }
+
+    .estado.inactivo {
+
+        background: #fee2e2;
+
+        color: #991b1b;
+
+    }
+
+    .estado.alerta {
+
+        background: #fef2f2;
+
+        color: #b91c1c;
+
+    }
+
+    .estado.sin-minimo {
+
+        background: #f1f5f9;
+
+        color: #475569;
+
+    }
+
+    .estado.normal {
+
+        background: #dcfce7;
+
+        color: #166534;
+
+    }
+
+    .fila-bajo-minimo {
+
+        background: #fffafa;
+
+    }
+
+    /* Paginación */
+
+    .paginacion {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        justify-content: center;
+
+        align-items: center;
+
+        gap: 16px;
+
+        margin-top: 26px;
+
+    }
+
+    .paginacion a {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 10px 16px;
+
+        border: 1px solid #cfe6d2;
+
+        border-radius: 9px;
+
+        background: #e8f5ea;
+
+        color: #0f7a18;
+
+        font-weight: 700;
+
+        text-decoration: none;
+
+    }
+
+    .paginacion a:hover {
+
+        background: #d8eddd;
+
+    }
+
+    .paginacion strong {
+
+        color: #526174;
+
+        font-size: 14px;
+
+    }
+
+    /* Información adicional */
+
+    .nota-inventario {
+
+        margin: 24px 0;
+
+        padding: 16px 20px;
+
+        border: 1px solid #dbe3ec;
+
+        border-radius: 10px;
+
+        background: #f8fafc;
+
+        color: #526174;
+
+        font-size: 14px;
+
+        line-height: 1.6;
+
+    }
+
+    #error-consulta {
+
+        margin-top: 14px;
+
+        color: #991b1b;
+
+        font-weight: 600;
+
+    }
+
+    #error-consulta:empty {
+
+        display: none;
+
+    }
+
+    /* Regresar al panel */
+
+    .acciones-pagina {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 12px;
+
+        margin-top: 24px;
+
+    }
+
+    @media (max-width: 1000px) {
+
+        .filtros {
+
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        }
+
+    }
+
+    @media (max-width: 700px) {
+
+        .pagina-consultar-existencias .cabecera-empresa {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+        }
+
+        .pagina-consultar-existencias .logo-empresa {
+
+            width: 300px;
+
+        }
+
+        .filtros {
+
+            grid-template-columns: 1fr;
+
+        }
+
+        .acciones-pagina .boton-empresa {
+
+            width: 100%;
+
+        }
+
+    }
+
+    /* Ubicación física del artículo */
+
+        .ubicacion-articulo {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+            padding: 6px 10px;
+
+            border-radius: 8px;
+
+            background: #e8f5ea;
+
+            color: #0f7a18;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            white-space: nowrap;
+
+        }
+
+        .ubicacion-sin-asignar {
+
+            display: inline-block;
+
+            padding: 6px 10px;
+
+            border-radius: 8px;
+
+            background: #f1f5f9;
+
+            color: #64748b;
+
+            font-size: 13px;
+
+        }
+
+        .tabla table {
+
+            min-width: 1150px;
+
+        }
+
+    .boton-editar-articulo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 8px 13px;
+        border: 1px solid #169c21;
+        border-radius: 9px;
+        background: #f2f8f3;
+        color: #0f7a18;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .boton-editar-articulo:hover { background: #e3f3e6; }
+    .boton-editar-articulo:focus-visible {
+        outline: 3px solid #f59e0b;
+        outline-offset: 2px;
+    }
+
+</style>
+
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Buscador y filtros -->
+
+<form method="get" id="form-existencias" class="filtros">
+
+    <input
+
+        type="search"
+
+        name="q"
+
+        value="{{ busqueda }}"
+
+        placeholder="Buscar código, artículo o pieza..."
+
+        aria-label="Buscar artículo"
+
+        autocomplete="off"
+
+    >
+
+    <select name="categoria" aria-label="Categoría">
+
+        <option value="">Todas las categorías</option>
+
+        {% for item in categorias %}
+
+            <option
+
+                value="{{ item.pk }}"
+
+                {% if categoria == item.pk|stringformat:"s" %}
+
+                    selected
+
+                {% endif %}
+
+            >
+
+                {{ item.name }}
+
+            </option>
+
+        {% endfor %}
+
+    </select>
+
+    <select name="control" aria-label="Tipo de control">
+
+        <option value="">Todos los artículos</option>
+
+        <option
+
+            value="quantity"
+
+            {% if control == "quantity" %}selected{% endif %}
+
+        >
+
+            Por cantidad
+
+        </option>
+
+        <option
+
+            value="individual"
+
+            {% if control == "individual" %}selected{% endif %}
+
+        >
+
+            Individuales
+
+        </option>
+
+    </select>
+
+    <select name="alertas" aria-label="Alertas de inventario">
+
+        <option value="">Todos los estados</option>
+
+        <option
+
+            value="1"
+
+            {% if solo_bajos %}selected{% endif %}
+
+        >
+
+            Solo inventario bajo
+
+        </option>
+
+    </select>
+
+</form>
+
+<!-- Resumen -->
+
+<div id="resumen-existencias" class="resumen">
+
+    <strong>{{ total_articulos }}</strong>
+
+    <span>artículos encontrados</span>
+
+</div>
+
+<!-- Tabla -->
+
+<div class="tabla" id="tabla-existencias">
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Código</th>
+
+                <th>Artículo</th>
+
+                <th>Ubicación</th>
+
+                <th>Control</th>
+
+                <th>Estado</th>
+
+                <th class="numero">Disponibles</th>
+
+                <th class="numero">Mínimo</th>
+
+                <th>Alerta</th>
+
+                <th class="numero">Prestadas</th>
+
+                <th class="numero">En revisión</th>
+
+                <th class="numero">Bajas</th>
+                {% if perms.stockroom.change_article %}
+                    <th>Acciones</th>
+                {% endif %}
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for registro in registros %}
+
+                <tr class="{% if registro.bajo_minimo %}fila-bajo-minimo{% endif %}">
+
+                    <td>
+
+                        <span class="codigo-articulo">
+
+                            {{ registro.articulo.article_code }}
+
+                        </span>
+
+                    </td>
+
+                    <td>{{ registro.articulo.name }}</td>
+
+                    <td>
+
+                        {% if registro.articulo.location %}
+
+                            <span class="ubicacion-articulo">
+
+                                <span aria-hidden="true">📍</span>
+
+                                {{ registro.articulo.location }}
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="ubicacion-sin-asignar">
+
+                                Sin asignar
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {{ registro.articulo.get_tracking_mode_display }}
+
+                    </td>
+
+                    <td>
+
+                        {% if registro.articulo.is_active %}
+
+                            <span class="estado">Activo</span>
+
+                        {% else %}
+
+                            <span class="estado inactivo">
+
+                                Inactivo
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td class="numero">
+
+                        {{ registro.disponibles }}
+
+                    </td>
+
+                    <td class="numero">
+
+                        {{ registro.minimo }}
+
+                    </td>
+
+                    <td>
+
+                        {% if registro.bajo_minimo %}
+
+                            <span class="estado alerta">
+
+                                ⚠️ Reabastecer
+
+                            </span>
+
+                        {% elif not registro.articulo.is_active %}
+
+                            <span class="estado inactivo">
+
+                                Inactivo
+
+                            </span>
+
+                        {% elif registro.minimo == 0 %}
+
+                            <span class="estado sin-minimo">
+
+                                Sin mínimo
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="estado normal">
+
+                                Normal
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td class="numero">
+
+                        {{ registro.prestadas }}
+
+                    </td>
+
+                    <td class="numero">
+
+                        {{ registro.revision }}
+
+                    </td>
+
+                    <td class="numero">
+
+                        {{ registro.bajas }}
+
+                    </td>
+
+                    {% if perms.stockroom.change_article %}
+
+                        <td>
+
+                            <a class="boton-editar-articulo"
+
+                               href="{% url 'editar_articulo_almacen' registro.articulo.pk %}"
+
+                               aria-label="Editar {{ registro.articulo.article_code }}">
+
+                                ✏️ Editar
+
+                            </a>
+
+                        </td>
+
+                    {% endif %}
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+
+                    <td colspan="{% if perms.stockroom.change_article %}12{% else %}11{% endif %}">
+
+                        No se encontraron artículos.
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- Paginación -->
+
+<nav
+
+    id="paginacion-existencias"
+
+    class="paginacion"
+
+    aria-label="Páginas de inventario"
+
+\>
+
+    {% if pagina.has_previous %}
+
+        <a href="?q={{ busqueda|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;control={{ control|urlencode }}&amp;alertas={% if solo_bajos %}1{% endif %}&amp;page={{ pagina.previous_page_number }}">
+
+            ← Anterior
+
+        </a>
+
+    {% endif %}
+
+    <strong>
+
+        Página {{ pagina.number }}
+
+        de {{ pagina.paginator.num_pages }}
+
+    </strong>
+
+    {% if pagina.has_next %}
+
+        <a href="?q={{ busqueda|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;control={{ control|urlencode }}&amp;alertas={% if solo_bajos %}1{% endif %}&amp;page={{ pagina.next_page_number }}">
+
+            Siguiente →
+
+        </a>
+
+    {% endif %}
+
+</nav>
+
+<!-- Avisos de error -->
+
+<p id="error-consulta" role="status"></p>
+
+<!-- Nota informativa -->
+
+<div class="nota-inventario">
+
+    <strong>Nota:</strong>
+
+    Los artículos inactivos no se pueden entregar.
+
+    Un guion indica que falta el registro de existencias
+
+    para un artículo controlado por cantidad.
+
+</div>
+
+<!-- Botón de regreso -->
+
+<div class="acciones-pagina">
+
+    <a
+
+        href="{% url 'panel_almacen' %}"
+
+        class="boton-empresa boton-empresa-secundario"
+
+    >
+
+        ← Regresar al inicio
+
+    </a>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("form-existencias");
+
+    const buscador = form.querySelector('[name="q"]');
+
+    const tabla = document.getElementById("tabla-existencias");
+
+    const resumen = document.getElementById("resumen-existencias");
+
+    const paginacion = document.getElementById("paginacion-existencias");
+
+    const error = document.getElementById("error-consulta");
+
+    let temporizador = null;
+
+    let controlador = null;
+
+    async function cargar(url) {
+
+        if (controlador) {
+
+            controlador.abort();
+
+        }
+
+        controlador = new AbortController();
+
+        const solicitudActual = controlador;
+
+        error.textContent = "";
+
+        try {
+
+            const respuesta = await fetch(url, {
+
+                method: "GET",
+
+                credentials: "same-origin",
+
+                cache: "no-store",
+
+                signal: solicitudActual.signal
+
+            });
+
+            if (!respuesta.ok || respuesta.redirected) {
+
+                throw new Error("Error al consultar existencias.");
+
+            }
+
+            const html = await respuesta.text();
+
+            const documento = new DOMParser().parseFromString(
+
+                html,
+
+                "text/html"
+
+            );
+
+            const nuevaTabla = documento.getElementById(
+
+                "tabla-existencias"
+
+            );
+
+            const nuevoResumen = documento.getElementById(
+
+                "resumen-existencias"
+
+            );
+
+            const nuevaPaginacion = documento.getElementById(
+
+                "paginacion-existencias"
+
+            );
+
+            if (!nuevaTabla || !nuevoResumen || !nuevaPaginacion) {
+
+                throw new Error("Respuesta incompleta.");
+
+            }
+
+            // Evitar que una consulta antigua reemplace
+
+            // los resultados de una búsqueda más reciente.
+
+            if (controlador !== solicitudActual) {
+
+                return;
+
+            }
+
+            tabla.innerHTML = nuevaTabla.innerHTML;
+
+            resumen.innerHTML = nuevoResumen.innerHTML;
+
+            paginacion.innerHTML = nuevaPaginacion.innerHTML;
+
+            window.history.replaceState(null, "", url);
+
+        } catch (e) {
+
+            if (e.name !== "AbortError" &&
+
+                controlador === solicitudActual) {
+
+                error.textContent =
+
+                    "No se pudieron actualizar las existencias.";
+
+                console.error(e);
+
+            }
+
+        } finally {
+
+            if (controlador === solicitudActual) {
+
+                controlador = null;
+
+            }
+
+        }
+
+    }
+
+    function actualizar() {
+
+        const parametros = new URLSearchParams(
+
+            new FormData(form)
+
+        );
+
+        // Una búsqueda nueva comienza desde página 1.
+
+        parametros.delete("page");
+
+        const url = window.location.pathname +
+
+            "?" + parametros.toString();
+
+        cargar(url);
+
+    }
+
+    // Búsqueda mientras escribes.
+
+    buscador.addEventListener("input", function () {
+
+        clearTimeout(temporizador);
+
+        temporizador = setTimeout(actualizar, 300);
+
+    });
+
+    // Filtros automáticos.
+
+    form.querySelectorAll("select").forEach(function (select) {
+
+        select.addEventListener("change", function () {
+
+            clearTimeout(temporizador);
+
+            actualizar();
+
+        });
+
+    });
+
+    // También permite buscar con Enter.
+
+    form.addEventListener("submit", function (event) {
+
+        event.preventDefault();
+
+        clearTimeout(temporizador);
+
+        actualizar();
+
+    });
+
+    // Paginación sin recarga completa.
+
+    paginacion.addEventListener("click", function (event) {
+
+        const enlace = event.target.closest("a");
+
+        if (!enlace) {
+
+            return;
+
+        }
+
+        event.preventDefault();
+
+        clearTimeout(temporizador);
+
+        cargar(enlace.href);
+
+    });
+
+});
+
+</script>
+
+{% endblock %}

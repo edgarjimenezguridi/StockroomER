@@ -1,0 +1,671 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Historial de movimientos{% endblock %}
+
+{% block body_class %}pagina-historial{% endblock %}
+
+{% block titulo_pagina %}
+Historial de movimientos
+{% endblock %}
+
+{% block descripcion %}
+Consulta los movimientos registrados en el almacén.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-historial .contenedor-empresa {
+        max-width: 1300px;
+    }
+
+    .pagina-historial .cabecera-empresa {
+        align-items: center;
+    }
+
+    .pagina-historial .logo-empresa {
+        width: 360px;
+        max-width: 100%;
+    }
+
+    /* Panel de filtros */
+    .panel-filtros {
+        margin: 24px 0;
+        padding: 22px;
+        border: 1px solid #dbe3ec;
+        border-radius: 14px;
+        background: #f8fafc;
+    }
+
+    .panel-filtros h2 {
+        margin: 0 0 18px;
+        color: #0f7a18;
+        font-size: 18px;
+    }
+
+    .filtros-historial {
+        display: grid;
+        grid-template-columns: 1.2fr 1.8fr 1fr 1fr;
+        gap: 16px;
+        align-items: end;
+    }
+
+    .grupo-filtro label {
+        display: block;
+        margin-bottom: 8px;
+        color: #172335;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .grupo-filtro input,
+    .grupo-filtro select {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        min-height: 48px;
+        padding: 12px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #172335;
+        font: inherit;
+        font-size: 15px;
+    }
+
+    .grupo-filtro input:focus,
+    .grupo-filtro select:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .acciones-filtros {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    /* Resumen */
+    .resumen-historial {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 24px 0;
+        padding: 18px 22px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+    }
+
+    .resumen-historial strong {
+        color: #0f7a18;
+        font-size: 28px;
+    }
+
+    /* Tabla */
+    .tabla-historial {
+        overflow-x: auto;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+    }
+
+    .tabla-historial table {
+        width: 100%;
+        min-width: 850px;
+        border-collapse: collapse;
+    }
+
+    .tabla-historial th,
+    .tabla-historial td {
+        padding: 15px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: left;
+        vertical-align: middle;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+
+    .tabla-historial th {
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .tabla-historial tbody tr:hover {
+        background: #f8fcf9;
+    }
+
+    .tabla-historial tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .fecha-movimiento {
+        color: #526174;
+        white-space: nowrap;
+    }
+
+    .tipo-movimiento {
+        display: inline-block;
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #e8f5ea;
+        color: #166534;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .cantidad-movimiento {
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        text-align: center !important;
+    }
+
+    .detalle-movimiento {
+        overflow-wrap: anywhere;
+        color: #526174;
+    }
+
+    /* Paginación */
+    .paginacion-historial {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin: 28px 0;
+    }
+
+    .paginacion-historial a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border: 1px solid #cfe6d2;
+        border-radius: 9px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .paginacion-historial a:hover {
+        background: #d8eddd;
+    }
+
+    .paginacion-historial strong {
+        color: #526174;
+        font-size: 14px;
+    }
+
+    /* Navegación */
+    .acciones-pagina {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .error-historial {
+        margin: 16px 0;
+        color: #b91c1c;
+        font-weight: 700;
+    }
+
+    .error-historial:empty {
+        display: none;
+    }
+
+    @media (max-width: 1050px) {
+        .filtros-historial {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
+        .pagina-historial .cabecera-empresa {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pagina-historial .logo-empresa {
+            width: 300px;
+        }
+
+        .panel-filtros {
+            padding: 16px;
+        }
+
+        .filtros-historial {
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-filtros,
+        .acciones-pagina {
+            flex-direction: column;
+        }
+
+        .acciones-filtros .boton-empresa,
+        .acciones-pagina .boton-empresa {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Panel de filtros -->
+<section class="panel-filtros">
+
+    <h2>Filtrar movimientos</h2>
+
+    <form
+        method="get"
+        id="filtros-historial"
+        class="filtros-historial"
+    >
+        <div class="grupo-filtro">
+            <label for="tipo">
+                Tipo de movimiento
+            </label>
+
+            <select name="tipo" id="tipo">
+                <option value="todos"
+                    {% if filtro == "todos" %}selected{% endif %}>
+                    Todos
+                </option>
+
+                <option value="entrada"
+                    {% if filtro == "entrada" %}selected{% endif %}>
+                    Entradas
+                </option>
+
+                <option value="entrega"
+                    {% if filtro == "entrega" %}selected{% endif %}>
+                    Entregas
+                </option>
+
+                <option value="cambio"
+                    {% if filtro == "cambio" %}selected{% endif %}>
+                    Cambios
+                </option>
+
+                <option value="devolucion"
+                    {% if filtro == "devolucion" %}selected{% endif %}>
+                    Devoluciones
+                </option>
+
+                <option value="resolucion"
+                    {% if filtro == "resolucion" %}selected{% endif %}>
+                    Resoluciones
+                </option>
+
+                <option value="correccion"
+                    {% if filtro == "correccion" %}selected{% endif %}>
+                    Correcciones
+                </option>
+            </select>
+        </div>
+
+        <div class="grupo-filtro">
+            <label for="busqueda-historial">
+                Buscar movimiento
+            </label>
+
+            <input
+                type="search"
+                name="q"
+                id="busqueda-historial"
+                value="{{ busqueda }}"
+                placeholder="Trabajador, número o artículo..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="grupo-filtro">
+            <label for="desde">
+                Desde
+            </label>
+
+            <input
+                type="date"
+                name="desde"
+                id="desde"
+                value="{{ desde }}"
+            >
+        </div>
+
+        <div class="grupo-filtro">
+            <label for="hasta">
+                Hasta
+            </label>
+
+            <input
+                type="date"
+                name="hasta"
+                id="hasta"
+                value="{{ hasta }}"
+            >
+        </div>
+    </form>
+
+    <div class="acciones-filtros">
+
+        <a
+            href="{% url 'historial_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            Limpiar filtros
+        </a>
+
+        <a
+            href="?tipo={{ filtro|urlencode }}&amp;q={{ busqueda|urlencode }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;exportar=csv"
+            id="descargar-csv"
+            class="boton-empresa"
+        >
+            Descargar CSV
+        </a>
+
+    </div>
+</section>
+
+<!-- Conteo de movimientos -->
+<div id="conteo-historial" class="resumen-historial">
+    <strong>{{ total_movimientos }}</strong>
+    <span>
+        movimientos encontrados en los registros recientes.
+    </span>
+</div>
+
+<!-- Tabla de movimientos -->
+<div id="resultados-historial" class="tabla-historial">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Movimiento</th>
+                <th>Artículo / Pieza</th>
+                <th>Cantidad</th>
+                <th>Detalles</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for movimiento in movimientos %}
+
+                <tr>
+                    <td class="fecha-movimiento">
+                        {{ movimiento.fecha|date:"d/m/Y H:i" }}
+                    </td>
+
+                    <td>
+                        <span class="tipo-movimiento">
+                            {{ movimiento.tipo }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <strong>
+                            {{ movimiento.articulo }}
+                        </strong>
+                    </td>
+
+                    <td class="cantidad-movimiento">
+                        {{ movimiento.cantidad }}
+                    </td>
+
+                    <td class="detalle-movimiento">
+                        {{ movimiento.detalle }}
+                    </td>
+                </tr>
+
+            {% empty %}
+
+                <tr>
+                    <td colspan="5">
+                        No hay movimientos para mostrar.
+                    </td>
+                </tr>
+
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación -->
+<nav
+    id="paginacion-historial"
+    class="paginacion-historial"
+    aria-label="Páginas del historial"
+>
+    {% if pagina.has_previous %}
+        <a href="?tipo={{ filtro|urlencode }}&amp;q={{ busqueda|urlencode }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;page={{ pagina.previous_page_number }}">
+            ← Anterior
+        </a>
+    {% endif %}
+
+    <strong>
+        Página {{ pagina.number }}
+        de {{ pagina.paginator.num_pages }}
+    </strong>
+
+    {% if pagina.has_next %}
+        <a href="?tipo={{ filtro|urlencode }}&amp;q={{ busqueda|urlencode }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;page={{ pagina.next_page_number }}">
+            Siguiente →
+        </a>
+    {% endif %}
+</nav>
+
+<!-- Mensaje de error -->
+<p
+    id="error-historial"
+    class="error-historial"
+    role="status"
+></p>
+
+<!-- Regresar al panel -->
+<div class="acciones-pagina">
+    <a
+        href="{% url 'panel_almacen' %}"
+        class="boton-empresa boton-empresa-secundario"
+    >
+        ← Regresar al inicio
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("filtros-historial");
+
+    const tabla = document.getElementById("resultados-historial");
+    const conteo = document.getElementById("conteo-historial");
+    const paginacion = document.getElementById("paginacion-historial");
+
+    const tipo = form.querySelector('[name="tipo"]');
+    const busqueda = form.querySelector('[name="q"]');
+    const desde = form.querySelector('[name="desde"]');
+    const hasta = form.querySelector('[name="hasta"]');
+
+    const descargarCSV = document.getElementById("descargar-csv");
+    const errorHistorial = document.getElementById("error-historial");
+
+    let temporizador = null;
+    let controlador = null;
+
+    function construirURL(numeroPagina = null) {
+        const parametros = new URLSearchParams(
+            new FormData(form)
+        );
+
+        if (numeroPagina !== null) {
+            parametros.set("page", numeroPagina);
+        } else {
+            parametros.delete("page");
+        }
+
+        return window.location.pathname + "?" +
+            parametros.toString();
+    }
+
+    // Exportar según los filtros seleccionados.
+    descargarCSV.addEventListener("click", function () {
+        const parametros = new URLSearchParams(
+            new FormData(form)
+        );
+
+        parametros.set("exportar", "csv");
+        parametros.delete("page");
+
+        descargarCSV.href = window.location.pathname +
+            "?" + parametros.toString();
+    });
+
+    async function actualizarHistorial(numeroPagina = null) {
+        if (controlador) {
+            controlador.abort();
+        }
+
+        controlador = new AbortController();
+        const solicitudActual = controlador;
+
+        const url = construirURL(numeroPagina);
+
+        errorHistorial.textContent = "";
+
+        try {
+            const respuesta = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                signal: solicitudActual.signal,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            if (!respuesta.ok || respuesta.redirected) {
+                throw new Error(
+                    "No se pudo actualizar el historial."
+                );
+            }
+
+            const html = await respuesta.text();
+
+            const documento = new DOMParser().parseFromString(
+                html,
+                "text/html"
+            );
+
+            const nuevaTabla = documento.getElementById(
+                "resultados-historial"
+            );
+
+            const nuevoConteo = documento.getElementById(
+                "conteo-historial"
+            );
+
+            const nuevaPaginacion = documento.getElementById(
+                "paginacion-historial"
+            );
+
+            if (
+                !nuevaTabla ||
+                !nuevoConteo ||
+                !nuevaPaginacion
+            ) {
+                throw new Error(
+                    "Respuesta incompleta del servidor."
+                );
+            }
+
+            if (controlador !== solicitudActual) {
+                return;
+            }
+
+            tabla.innerHTML = nuevaTabla.innerHTML;
+            conteo.innerHTML = nuevoConteo.innerHTML;
+            paginacion.innerHTML = nuevaPaginacion.innerHTML;
+
+            window.history.replaceState(null, "", url);
+
+        } catch (e) {
+            if (
+                e.name !== "AbortError" &&
+                controlador === solicitudActual
+            ) {
+                console.error(e);
+
+                errorHistorial.textContent =
+                    "No se pudo actualizar el historial. " +
+                    "Intenta nuevamente.";
+            }
+        } finally {
+            if (controlador === solicitudActual) {
+                controlador = null;
+            }
+        }
+    }
+
+    function actualizarConRetraso() {
+        clearTimeout(temporizador);
+
+        temporizador = setTimeout(function () {
+            actualizarHistorial();
+        }, 300);
+    }
+
+    // Actualizar al cambiar los filtros.
+    tipo.addEventListener("change", function () {
+        clearTimeout(temporizador);
+        actualizarHistorial();
+    });
+
+    desde.addEventListener("change", function () {
+        clearTimeout(temporizador);
+        actualizarHistorial();
+    });
+
+    hasta.addEventListener("change", function () {
+        clearTimeout(temporizador);
+        actualizarHistorial();
+    });
+
+    // Búsqueda instantánea.
+    busqueda.addEventListener("input", actualizarConRetraso);
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        clearTimeout(temporizador);
+        actualizarHistorial();
+    });
+
+    // Paginación sin recargar toda la pantalla.
+    paginacion.addEventListener("click", function (event) {
+        const enlace = event.target.closest("a");
+
+        if (!enlace) {
+            return;
+        }
+
+        event.preventDefault();
+        clearTimeout(temporizador);
+
+        const url = new URL(enlace.href);
+        const numeroPagina = url.searchParams.get("page");
+
+        actualizarHistorial(numeroPagina);
+    });
+});
+</script>
+{% endblock %}

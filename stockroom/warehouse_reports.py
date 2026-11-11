@@ -638,7 +638,7 @@ def generar_reportes_almacen(request):
 
     return render(
         request,
-        "stockroom/generar_reportes_almacen.html",
+        "stockroom/almacen/generar_reportes_almacen.html",
         {"opciones": opciones},
     )
 

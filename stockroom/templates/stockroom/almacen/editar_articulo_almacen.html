@@ -1,0 +1,348 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Editar artículo{% endblock %}
+
+{% block body_class %}pagina-editar-articulo{% endblock %}
+
+{% block titulo_pagina %}
+Editar artículo
+{% endblock %}
+
+{% block descripcion %}
+Actualiza la información del catálogo sin modificar existencias ni movimientos.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-editar-articulo .contenedor-empresa {
+        max-width: 900px;
+    }
+
+    .pagina-editar-articulo .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-editar-articulo .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    .ficha-articulo {
+        margin-bottom: 25px;
+        padding: 20px 22px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+    }
+
+    .ficha-articulo h2 {
+        margin: 0 0 14px;
+        color: #0f7a18;
+        font-size: 20px;
+    }
+
+    .datos-fijos {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .dato-fijo {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .dato-fijo span {
+        color: #526174;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .dato-fijo strong {
+        color: #172335;
+        font-size: 15px;
+        overflow-wrap: anywhere;
+    }
+
+    .seccion-edicion {
+        margin: 26px 0;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .seccion-edicion h2 {
+        margin: 0 0 20px;
+        color: #0f7a18;
+        font-size: 21px;
+    }
+
+    .grupo-campos-edicion {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .campo-edicion {
+        min-width: 0;
+    }
+
+    .campo-completo {
+        grid-column: 1 / -1;
+    }
+
+    .campo-edicion label {
+        display: block;
+        margin-bottom: 8px;
+        color: #172335;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .campo-edicion input,
+    .campo-edicion select {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-height: 50px;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #172335;
+        font: inherit;
+        font-size: 15px;
+    }
+
+    .campo-edicion input:focus,
+    .campo-edicion select:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .campo-edicion small {
+        display: block;
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .errorlist {
+        margin: 8px 0;
+        padding-left: 20px;
+        color: #b91c1c;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .aviso-proteccion {
+        margin: 24px 0;
+        padding: 18px 20px;
+        border: 1px solid #fde68a;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: #92400e;
+        line-height: 1.7;
+    }
+
+    .aviso-proteccion h2 {
+        margin: 0 0 9px;
+        color: #92400e;
+        font-size: 17px;
+    }
+
+    .aviso-proteccion p {
+        margin: 0;
+    }
+
+    .acciones-edicion {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .acciones-edicion .boton-empresa {
+        min-height: 52px;
+    }
+
+    @media (max-width: 650px) {
+        .pagina-editar-articulo .logo-empresa {
+            width: 300px;
+        }
+
+        .datos-fijos,
+        .grupo-campos-edicion {
+            grid-template-columns: 1fr;
+        }
+
+        .campo-completo {
+            grid-column: auto;
+        }
+
+        .acciones-edicion {
+            flex-direction: column;
+        }
+
+        .acciones-edicion .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Información que no se puede cambiar -->
+<section class="ficha-articulo">
+    <h2>Información del artículo</h2>
+
+    <div class="datos-fijos">
+        <div class="dato-fijo">
+            <span>Código del artículo</span>
+            <strong>{{ articulo.article_code }}</strong>
+        </div>
+
+        <div class="dato-fijo">
+            <span>Tipo de control</span>
+            <strong>{{ articulo.get_tracking_mode_display }}</strong>
+        </div>
+
+        <div class="dato-fijo">
+            <span>Modalidad de devolución</span>
+            <strong>{{ articulo.get_return_mode_display }}</strong>
+        </div>
+
+        <div class="dato-fijo">
+            <span>Estado actual</span>
+            <strong>
+                {% if articulo.is_active %}
+                    Activo
+                {% else %}
+                    Inactivo
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+</section>
+
+<!-- Formulario -->
+<form method="post">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    <section class="seccion-edicion">
+        <h2>1. Datos generales</h2>
+
+        <div class="grupo-campos-edicion">
+
+            <div class="campo-edicion campo-completo">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+
+            <div class="campo-edicion">
+                {{ form.brand.label_tag }}
+                {{ form.brand }}
+                {{ form.brand.errors }}
+            </div>
+
+            <div class="campo-edicion">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+                {{ form.location.errors }}
+
+                <small>
+                    Ubicación principal de este artículo
+                    dentro del almacén.
+                </small>
+            </div>
+
+            <div class="campo-edicion campo-completo">
+                {{ form.specification.label_tag }}
+                {{ form.specification }}
+                {{ form.specification.errors }}
+
+                <small>
+                    Puedes cambiar la especificación sin
+                    alterar el código del artículo.
+                </small>
+
+                {% if perms.stockroom.add_toolcategory or perms.stockroom.add_tooltype or perms.stockroom.add_toolspecification %}
+                    <small>
+                        <a
+                            href="{% url 'administrar_clasificaciones_almacen' %}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style="color: #0f7a18; font-weight: bold;"
+                        >
+                            + Administrar clasificaciones
+                        </a>
+                    </small>
+                {% endif %}
+            </div>
+
+        </div>
+    </section>
+
+    <section class="seccion-edicion">
+        <h2>2. Control de inventario</h2>
+
+        <div class="grupo-campos-edicion">
+            <div class="campo-edicion">
+                {{ form.minimum_stock.label_tag }}
+                {{ form.minimum_stock }}
+                {{ form.minimum_stock.errors }}
+
+                <small>
+                    Establece el mínimo de unidades disponibles
+                    antes de generar una alerta.
+                    Si utilizas 0, no habrá alerta por mínimo.
+                </small>
+            </div>
+        </div>
+    </section>
+
+    <!-- Protección de movimientos -->
+    <section class="aviso-proteccion">
+        <h2>Información protegida</h2>
+
+        <p>
+            Esta pantalla únicamente modifica los datos
+            generales del artículo.
+
+            No cambia existencias, préstamos,
+            devoluciones, piezas dañadas ni registros
+            históricos.
+
+            Las piezas individuales ya registradas
+            conservarán sus propios datos.
+        </p>
+    </section>
+
+    <div class="acciones-edicion">
+        <button type="submit" class="boton-empresa">
+            Guardar cambios
+        </button>
+
+        <a
+            href="{% url 'consultar_existencias_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            ← Cancelar y regresar
+        </a>
+    </div>
+
+</form>
+
+{% endblock %}

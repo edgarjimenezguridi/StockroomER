@@ -1,0 +1,487 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Administrar clasificaciones{% endblock %}
+
+{% block body_class %}pagina-clasificaciones{% endblock %}
+
+{% block titulo_pagina %}
+Administrar clasificaciones
+{% endblock %}
+
+{% block descripcion %}
+Organiza las categorías, tipos y especificaciones técnicas del catálogo.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-clasificaciones .contenedor-empresa {
+        max-width: 1100px;
+    }
+
+    .introduccion {
+        padding: 18px 20px;
+        margin-bottom: 26px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        line-height: 1.6;
+    }
+
+    .introduccion p {
+        margin: 0;
+        color: #285b32;
+    }
+
+    .mensaje {
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        border-radius: 10px;
+        background: #ecfdf5;
+        border: 1px solid #86efac;
+        color: #166534;
+    }
+
+    .mensaje.error {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
+    .mensaje.warning {
+        background: #fffbeb;
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    .formularios-clasificacion {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(min(100%, 290px), 1fr)
+        );
+        gap: 18px;
+        align-items: stretch;
+        margin-bottom: 34px;
+    }
+
+    .tarjeta-formulario {
+        display: flex;
+        flex-direction: column;
+        padding: 22px;
+        border: 1px solid #dbe3ec;
+        border-radius: 14px;
+        background: #f8fafc;
+    }
+
+    .tarjeta-formulario h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        color: #0f7a18;
+    }
+
+    .descripcion-formulario {
+        margin: 0 0 20px;
+        color: #526174;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .tarjeta-formulario form {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .campo {
+        margin-bottom: 17px;
+    }
+
+    .campo label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #172335;
+    }
+
+    .campo input,
+    .campo select,
+    .campo textarea {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-height: 46px;
+        padding: 11px 13px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        background: white;
+        color: #172335;
+        font: inherit;
+        font-size: 14px;
+    }
+
+    .campo textarea {
+        min-height: 90px;
+        resize: vertical;
+    }
+
+    .campo input:focus,
+    .campo select:focus,
+    .campo textarea:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .errorlist {
+        padding-left: 18px;
+        color: #b91c1c;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .boton-guardar {
+        width: 100%;
+        min-height: 48px;
+        margin-top: auto;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 10px;
+        background: #169c21;
+        color: white;
+        font: inherit;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .boton-guardar:hover {
+        background: #0f7a18;
+    }
+
+    .boton-guardar:focus-visible,
+    .enlaces-navegacion a:focus-visible {
+        outline: 3px solid #f59e0b;
+        outline-offset: 3px;
+    }
+
+    .seccion-registros {
+        margin: 30px 0;
+    }
+
+    .seccion-registros h2 {
+        margin: 0 0 8px;
+        color: #172335;
+        font-size: 23px;
+    }
+
+    .descripcion-registros {
+        margin: 0 0 18px;
+        color: #526174;
+        line-height: 1.5;
+    }
+
+    .lista-registros {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit, minmax(min(100%, 290px), 1fr)
+        );
+        gap: 16px;
+    }
+
+    .tarjeta-registros {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .tarjeta-registros h3 {
+        margin: 0 0 14px;
+        color: #0f7a18;
+        font-size: 17px;
+    }
+
+    .registros-scroll {
+        max-height: 350px;
+        overflow: auto;
+    }
+
+    .registro {
+        padding: 11px 0;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-wrap: anywhere;
+        line-height: 1.5;
+    }
+
+    .registro:last-child {
+        border-bottom: 0;
+    }
+
+    .registro strong {
+        color: #172335;
+    }
+
+    .registro small {
+        display: block;
+        margin-top: 4px;
+        color: #64748b;
+    }
+
+    .sin-registros {
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .enlaces-navegacion {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 22px;
+        border-top: 1px solid #dbe3ec;
+    }
+
+    .enlaces-navegacion a {
+        box-sizing: border-box;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 48px;
+        padding: 12px 18px;
+        border: 1px solid #cfe6d2;
+        border-radius: 10px;
+        background: #f2f8f3;
+        color: #0f7a18;
+        font-weight: bold;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .enlaces-navegacion a:hover {
+        background: #e3f3e6;
+    }
+
+    @media (max-width: 600px) {
+        .tarjeta-formulario {
+            padding: 18px;
+        }
+
+        .enlaces-navegacion {
+            flex-direction: column;
+        }
+
+        .enlaces-navegacion a {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+{% for message in messages %}
+    <div class="mensaje {{ message.tags }}"
+         role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">
+        {{ message }}
+    </div>
+{% endfor %}
+
+<section class="introduccion">
+    <p>
+        Crea las clasificaciones necesarias para organizar
+        los artículos del almacén. Primero registra una
+        <strong>categoría</strong>, después un
+        <strong>tipo</strong> y finalmente una
+        <strong>especificación técnica</strong>.
+    </p>
+</section>
+
+<div class="formularios-clasificacion">
+
+    {% if puede_agregar_categoria %}
+    <section class="tarjeta-formulario" id="nueva-categoria">
+        <h2>1. Nueva categoría</h2>
+        <p class="descripcion-formulario">
+            Agrupa herramientas y materiales según su función.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="categoria">
+
+            {{ formulario_categoria.non_field_errors }}
+
+            {% for campo in formulario_categoria %}
+                <div class="campo">
+                    {{ campo.label_tag }}
+                    {{ campo }}
+                    {{ campo.errors }}
+                    {% if campo.help_text %}
+                        <small>{{ campo.help_text }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button class="boton-guardar" type="submit">
+                Guardar categoría
+            </button>
+        </form>
+    </section>
+    {% endif %}
+
+    {% if puede_agregar_tipo %}
+    <section class="tarjeta-formulario" id="nuevo-tipo">
+        <h2>2. Nuevo tipo</h2>
+        <p class="descripcion-formulario">
+            Registra un tipo dentro de una categoría existente.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="tipo">
+
+            {{ formulario_tipo.non_field_errors }}
+
+            {% for campo in formulario_tipo %}
+                <div class="campo">
+                    {{ campo.label_tag }}
+                    {{ campo }}
+                    {{ campo.errors }}
+                    {% if campo.help_text %}
+                        <small>{{ campo.help_text }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button class="boton-guardar" type="submit">
+                Guardar tipo
+            </button>
+        </form>
+    </section>
+    {% endif %}
+
+    {% if puede_agregar_especificacion %}
+    <section class="tarjeta-formulario" id="nueva-especificacion">
+        <h2>3. Nueva especificación</h2>
+        <p class="descripcion-formulario">
+            Define medidas, capacidades o características técnicas.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden"
+                   name="accion"
+                   value="especificacion">
+
+            {{ formulario_especificacion.non_field_errors }}
+
+            {% for campo in formulario_especificacion %}
+                <div class="campo">
+                    {{ campo.label_tag }}
+                    {{ campo }}
+                    {{ campo.errors }}
+                    {% if campo.help_text %}
+                        <small>{{ campo.help_text }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button class="boton-guardar" type="submit">
+                Guardar especificación
+            </button>
+        </form>
+    </section>
+    {% endif %}
+
+</div>
+
+<section class="seccion-registros">
+    <h2>Clasificaciones registradas</h2>
+    <p class="descripcion-registros">
+        Consulta los registros existentes antes de agregar uno nuevo.
+    </p>
+
+    <div class="lista-registros">
+
+        <div class="tarjeta-registros">
+            <h3>Categorías</h3>
+            <div class="registros-scroll">
+                {% for categoria in categorias %}
+                    <div class="registro">
+                        <strong>{{ categoria.name }}</strong>
+                        {% if categoria.description %}
+                            <small>{{ categoria.description }}</small>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <p class="sin-registros">
+                        No hay categorías registradas.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tarjeta-registros">
+            <h3>Tipos</h3>
+            <div class="registros-scroll">
+                {% for tipo in tipos %}
+                    <div class="registro">
+                        <strong>{{ tipo.name }}</strong>
+                        <small>
+                            Categoría: {{ tipo.category.name }}
+                        </small>
+                    </div>
+                {% empty %}
+                    <p class="sin-registros">
+                        No hay tipos registrados.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tarjeta-registros">
+            <h3>Especificaciones</h3>
+            <div class="registros-scroll">
+                {% for especificacion in especificaciones %}
+                    <div class="registro">
+                        <strong>{{ especificacion.name }}</strong>
+                        <small>
+                            {{ especificacion.tool_type.category.name }}
+                            → {{ especificacion.tool_type.name }}
+                        </small>
+                        {% if especificacion.description %}
+                            <small>
+                                {{ especificacion.description }}
+                            </small>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <p class="sin-registros">
+                        No hay especificaciones registradas.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<nav class="enlaces-navegacion"
+     aria-label="Navegación del almacén">
+
+    {% if perms.stockroom.add_article %}
+        <a href="{% url 'agregar_articulo_almacen' %}">
+            + Agregar nuevo artículo
+        </a>
+    {% endif %}
+
+    <a href="{% url 'panel_almacen' %}">
+        ← Regresar al panel
+    </a>
+
+</nav>
+
+{% endblock %}

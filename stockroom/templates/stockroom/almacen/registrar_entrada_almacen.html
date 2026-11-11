@@ -1,0 +1,182 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrar entrada | StockroomER</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f0f5fa;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+        main {
+            max-width: 720px;
+            margin: auto;
+            padding: 28px;
+            background: white;
+            border-radius: 16px;
+        }
+        a { color: #195578; }
+        select, input, textarea {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            margin-top: 6px;
+            padding: 12px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            padding: 14px 22px;
+            border: 0;
+            border-radius: 8px;
+            background: #195578;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .errorlist { color: #a31919; }
+        .mensaje { padding: 12px; background: #e7f5e9; }
+
+        /* Identidad corporativa de entradas */
+        .encabezado-entrada {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .encabezado-entrada .logo-empresa {
+            width: 420px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .encabezado-entrada h1 {
+            margin: 0 0 10px;
+            color: #172335;
+            font-size: 32px;
+        }
+
+        .encabezado-entrada .nombre-empresa {
+            margin: 0 0 8px;
+            color: #0f7a18;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .encabezado-entrada .descripcion-pagina {
+            margin: 0;
+            color: #526174;
+            line-height: 1.5;
+        }
+        /* Botones corporativos */
+        .acciones-entrada {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .acciones-entrada button[type="submit"],
+        .acciones-entrada .boton-empresa {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+            padding: 13px 22px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: #169c21;
+            color: white;
+            font: inherit;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .acciones-entrada button[type="submit"]:hover {
+            background: #0f7a18;
+        }
+
+        .acciones-entrada .boton-empresa-secundario {
+            background: #e8f5ea;
+            color: #0f7a18;
+            border-color: #cfe6d2;
+        }
+
+        .acciones-entrada .boton-empresa-secundario:hover {
+            background: #d8eddd;
+        }
+
+
+    </style>
+    <link rel="stylesheet" href="{% static 'stockroom/css/empresa.css' %}">
+</head>
+<body>
+    <main>
+
+
+        
+<div class="encabezado-empresa encabezado-entrada">
+
+    <img
+        src="{% static 'img/logo_empresa.png' %}"
+        alt="Engranes y Rectificado"
+        class="logo-empresa"
+    >
+
+    <div>
+        <p class="nombre-empresa">
+            ENGRANES Y RECTIFICADO
+        </p>
+
+        <h1>Registrar entrada de material</h1>
+
+        <p class="descripcion-pagina">
+            Registra los materiales recibidos y actualiza
+            las existencias del almacén.
+        </p>
+    </div>
+
+</div>
+
+
+        {% for message in messages %}
+            <p class="mensaje" role="status">{{ message }}</p>
+        {% endfor %}
+
+        <p>
+            Registra las piezas recibidas para aumentar las existencias
+            del artículo seleccionado.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="acciones-entrada">
+                <button type="submit" class="boton-empresa">
+                    Registrar entrada
+                </button>
+
+                <a
+                    href="{% url 'panel_almacen' %}"
+                    class="boton-empresa boton-empresa-secundario"
+                >
+                    ← Regresar al inicio
+                </a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

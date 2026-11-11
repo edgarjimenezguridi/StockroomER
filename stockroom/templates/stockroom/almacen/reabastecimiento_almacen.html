@@ -1,0 +1,698 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Plan de reabastecimiento{% endblock %}
+
+{% block body_class %}pagina-reabastecimiento{% endblock %}
+
+{% block titulo_pagina %}
+Plan de reabastecimiento
+{% endblock %}
+
+{% block descripcion %}
+Identifica los artículos que necesitan reabastecerse.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-reabastecimiento .contenedor-empresa {
+        max-width: 1350px;
+    }
+
+    .pagina-reabastecimiento .cabecera-empresa {
+        align-items: center;
+    }
+
+    .pagina-reabastecimiento .logo-empresa {
+        width: 360px;
+        max-width: 100%;
+    }
+
+    /* Introducción */
+    .introduccion-reabastecimiento {
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.6;
+    }
+
+    .introduccion-reabastecimiento p {
+        margin: 0;
+    }
+
+    /* Buscador */
+    .buscador-reabastecimiento {
+        margin: 24px 0;
+    }
+
+    .buscador-reabastecimiento label {
+        display: block;
+        margin-bottom: 9px;
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .buscador-reabastecimiento input {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-height: 50px;
+        padding: 14px 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #172335;
+        font: inherit;
+        font-size: 16px;
+    }
+
+    .buscador-reabastecimiento input:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .ayuda-buscador {
+        margin: 8px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    /* Resumen */
+    .resumen-reabastecimiento {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin: 24px 0;
+    }
+
+    .indicador-reabastecimiento {
+        padding: 22px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .indicador-reabastecimiento strong {
+        display: block;
+        margin-top: 10px;
+        color: #0f7a18;
+        font-size: 34px;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .indicador-faltante {
+        border-color: #fde68a;
+        border-left-color: #d97706;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .indicador-faltante strong {
+        color: #b45309;
+    }
+
+    .indicador-compra {
+        border-color: #fecaca;
+        border-left-color: #e53935;
+        background: #fff5f5;
+        color: #991b1b;
+    }
+
+    .indicador-compra strong {
+        color: #b91c1c;
+    }
+
+    /* Encabezado de tabla */
+    .encabezado-tabla {
+        margin: 30px 0 14px;
+    }
+
+    .encabezado-tabla h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #0f7a18;
+    }
+
+    /* Tabla */
+    .tabla-reabastecimiento {
+        overflow-x: auto;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+    }
+
+    .tabla-reabastecimiento table {
+        width: 100%;
+        min-width: 1050px;
+        border-collapse: collapse;
+    }
+
+    .tabla-reabastecimiento th,
+    .tabla-reabastecimiento td {
+        padding: 15px 13px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: left;
+        vertical-align: middle;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+
+    .tabla-reabastecimiento th {
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .tabla-reabastecimiento tbody tr:hover {
+        background: #f8fcf9;
+    }
+
+    .tabla-reabastecimiento tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .codigo-articulo {
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .numero {
+        text-align: center !important;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .faltante {
+        color: #b45309;
+        font-weight: 800;
+    }
+
+    .compra-estimada {
+        display: inline-block;
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #b91c1c;
+        font-weight: 800;
+    }
+
+    /* Ubicación física */
+    .ubicacion-articulo {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-size: 13px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .ubicacion-sin-asignar {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    /* Paginación */
+    .paginacion-reabastecimiento {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        margin: 28px 0;
+    }
+
+    .paginacion-reabastecimiento a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border: 1px solid #cfe6d2;
+        border-radius: 9px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .paginacion-reabastecimiento a:hover {
+        background: #d8eddd;
+    }
+
+    .paginacion-reabastecimiento strong {
+        color: #526174;
+        font-size: 14px;
+    }
+
+    /* Aviso importante */
+    .aviso-reabastecimiento {
+        margin: 26px 0;
+        padding: 20px;
+        border: 1px solid #fde68a;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: #92400e;
+        line-height: 1.7;
+    }
+
+    .aviso-reabastecimiento h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+    }
+
+    .aviso-reabastecimiento p {
+        margin: 0;
+    }
+
+    /* Navegación */
+    .acciones-pagina {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .error-reabastecimiento {
+        margin: 16px 0;
+        color: #b91c1c;
+        font-weight: 700;
+    }
+
+    .error-reabastecimiento:empty {
+        display: none;
+    }
+
+    @media (max-width: 900px) {
+        .resumen-reabastecimiento {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
+        .pagina-reabastecimiento .cabecera-empresa {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pagina-reabastecimiento .logo-empresa {
+            width: 300px;
+        }
+
+        .resumen-reabastecimiento {
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-pagina {
+            flex-direction: column;
+        }
+
+        .acciones-pagina .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Información inicial -->
+<section class="introduccion-reabastecimiento">
+    <p>
+        Consulta los artículos por debajo de su
+        <strong>disponibilidad mínima</strong>.
+        Las cantidades de compra mostradas son estimaciones.
+    </p>
+</section>
+
+<!-- Buscador -->
+<div class="buscador-reabastecimiento">
+    <form method="get" id="form-reabastecimiento">
+
+        <label for="buscar-reabastecimiento">
+            Buscar artículo
+        </label>
+
+        <input
+            type="search"
+            id="buscar-reabastecimiento"
+            name="q"
+            value="{{ busqueda }}"
+            placeholder="Buscar código o nombre del artículo..."
+            autocomplete="off"
+        >
+
+        <p class="ayuda-buscador">
+            Los resultados se actualizan automáticamente
+            mientras escribes.
+        </p>
+
+    </form>
+</div>
+
+<!-- Indicadores -->
+<div
+    class="resumen-reabastecimiento"
+    id="resumen-reabastecimiento"
+>
+    <div class="indicador-reabastecimiento">
+        Artículos bajo mínimo
+        <strong>{{ total_articulos }}</strong>
+    </div>
+
+    <div class="indicador-reabastecimiento indicador-faltante">
+        Piezas faltantes disponibles
+        <strong>{{ total_faltante }}</strong>
+    </div>
+
+    <div class="indicador-reabastecimiento indicador-compra">
+        Compra estimada
+        <strong>{{ total_compra }}</strong>
+    </div>
+</div>
+
+<!-- Encabezado -->
+<div class="encabezado-tabla">
+    <h2>Artículos que requieren atención</h2>
+</div>
+
+<!-- Tabla -->
+<div
+    class="tabla-reabastecimiento"
+    id="tabla-reabastecimiento"
+>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Artículo</th>
+                <th>Ubicación</th>
+                <th class="numero">Disponibles</th>
+                <th class="numero">Prestadas</th>
+                <th class="numero">Mínimo</th>
+                <th class="numero">Faltante</th>
+                <th class="numero">Compra estimada</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for articulo in articulos %}
+                <tr>
+                    <td>
+                        <span class="codigo-articulo">
+                            {{ articulo.article_code }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ articulo.name }}
+                    </td>
+
+                    <td>
+                        {% if articulo.location %}
+                            <span class="ubicacion-articulo">
+                                <span aria-hidden="true">📍</span>
+                                {{ articulo.location }}
+                            </span>
+                        {% else %}
+                            <span class="ubicacion-sin-asignar">
+                                Sin asignar
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="numero">
+                        {{ articulo.disponibles_actuales }}
+                    </td>
+
+                    <td class="numero">
+                        {{ articulo.prestadas_actuales }}
+                    </td>
+
+                    <td class="numero">
+                        {{ articulo.minimum_stock }}
+                    </td>
+
+                    <td class="numero faltante">
+                        {{ articulo.faltante }}
+                    </td>
+
+                    <td class="numero">
+                        <span class="compra-estimada">
+                            {{ articulo.compra_estimada }}
+                        </span>
+                    </td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="8">
+                        No hay artículos bajo mínimo
+                        que coincidan con la búsqueda.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación -->
+<nav
+    class="paginacion-reabastecimiento"
+    id="paginacion-reabastecimiento"
+    aria-label="Páginas de reabastecimiento"
+>
+    {% if pagina.has_previous %}
+        <a href="?q={{ busqueda|urlencode }}&amp;page={{ pagina.previous_page_number }}">
+            ← Anterior
+        </a>
+    {% endif %}
+
+    <strong>
+        Página {{ pagina.number }}
+        de {{ pagina.paginator.num_pages }}
+    </strong>
+
+    {% if pagina.has_next %}
+        <a href="?q={{ busqueda|urlencode }}&amp;page={{ pagina.next_page_number }}">
+            Siguiente →
+        </a>
+    {% endif %}
+</nav>
+
+<!-- Errores de consulta -->
+<p
+    id="error-reabastecimiento"
+    class="error-reabastecimiento"
+    role="status"
+></p>
+
+<!-- Advertencia -->
+<section class="aviso-reabastecimiento">
+    <h2>Importante antes de realizar una compra</h2>
+
+    <p>
+        La <strong>compra estimada</strong> considera que
+        las herramientas prestadas con devolución podrían
+        regresar.
+
+        No incluye las piezas dañadas en revisión.
+
+        Revisa los adeudos y daños antes de autorizar
+        una compra.
+    </p>
+</section>
+
+<!-- Regreso al panel -->
+<div class="acciones-pagina">
+    <a
+        href="{% url 'panel_almacen' %}"
+        class="boton-empresa boton-empresa-secundario"
+    >
+        ← Regresar al inicio
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById(
+        "form-reabastecimiento"
+    );
+
+    const buscador = form.querySelector('[name="q"]');
+
+    const resumen = document.getElementById(
+        "resumen-reabastecimiento"
+    );
+
+    const tabla = document.getElementById(
+        "tabla-reabastecimiento"
+    );
+
+    const paginacion = document.getElementById(
+        "paginacion-reabastecimiento"
+    );
+
+    const error = document.getElementById(
+        "error-reabastecimiento"
+    );
+
+    let temporizador = null;
+    let controlador = null;
+
+    async function actualizar(url) {
+        // Cancelar una consulta anterior.
+        if (controlador) {
+            controlador.abort();
+        }
+
+        controlador = new AbortController();
+        const solicitudActual = controlador;
+
+        error.textContent = "";
+
+        try {
+            const respuesta = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                signal: solicitudActual.signal
+            });
+
+            if (!respuesta.ok || respuesta.redirected) {
+                throw new Error(
+                    "No se pudo consultar el reabastecimiento."
+                );
+            }
+
+            const html = await respuesta.text();
+
+            const documento = new DOMParser().parseFromString(
+                html,
+                "text/html"
+            );
+
+            const nuevoResumen = documento.getElementById(
+                "resumen-reabastecimiento"
+            );
+
+            const nuevaTabla = documento.getElementById(
+                "tabla-reabastecimiento"
+            );
+
+            const nuevaPaginacion = documento.getElementById(
+                "paginacion-reabastecimiento"
+            );
+
+            if (
+                !nuevoResumen ||
+                !nuevaTabla ||
+                !nuevaPaginacion
+            ) {
+                throw new Error(
+                    "La respuesta del servidor está incompleta."
+                );
+            }
+
+            // Ignorar respuestas de búsquedas anteriores.
+            if (controlador !== solicitudActual) {
+                return;
+            }
+
+            resumen.innerHTML = nuevoResumen.innerHTML;
+            tabla.innerHTML = nuevaTabla.innerHTML;
+            paginacion.innerHTML = nuevaPaginacion.innerHTML;
+
+            window.history.replaceState(
+                null,
+                "",
+                url
+            );
+
+        } catch (e) {
+            if (
+                e.name !== "AbortError" &&
+                controlador === solicitudActual
+            ) {
+                error.textContent =
+                    "No se pudo actualizar el reabastecimiento.";
+
+                console.error(e);
+            }
+        } finally {
+            if (controlador === solicitudActual) {
+                controlador = null;
+            }
+        }
+    }
+
+    function construirURLBusqueda() {
+        const parametros = new URLSearchParams(
+            new FormData(form)
+        );
+
+        // Toda búsqueda nueva comienza en página 1.
+        parametros.delete("page");
+
+        return window.location.pathname +
+            "?" + parametros.toString();
+    }
+
+    function buscarConRetraso() {
+        clearTimeout(temporizador);
+
+        temporizador = setTimeout(function () {
+            actualizar(construirURLBusqueda());
+        }, 300);
+    }
+
+    // Buscar automáticamente mientras se escribe.
+    buscador.addEventListener("input", buscarConRetraso);
+
+    // Permitir búsqueda inmediata con Enter.
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        clearTimeout(temporizador);
+
+        actualizar(construirURLBusqueda());
+    });
+
+    // Paginación sin recargar toda la pantalla.
+    paginacion.addEventListener("click", function (event) {
+        const enlace = event.target.closest("a");
+
+        if (!enlace) {
+            return;
+        }
+
+        event.preventDefault();
+
+        clearTimeout(temporizador);
+
+        actualizar(enlace.href);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,267 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Registrar devolución{% endblock %}
+
+{% block body_class %}pagina-registrar-devolucion{% endblock %}
+
+{% block titulo_pagina %}
+Registrar devolución
+{% endblock %}
+
+{% block descripcion %}
+Registra la devolución de herramientas y materiales del almacén.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-registrar-devolucion .contenedor-empresa {
+        max-width: 760px;
+    }
+
+    .pagina-registrar-devolucion .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-registrar-devolucion .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    /* Información de la entrega */
+    .detalle-entrega {
+        padding: 20px;
+        margin-bottom: 26px;
+        background: #f2f8f3;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+    }
+
+    .detalle-entrega h2 {
+        margin: 0 0 16px;
+        font-size: 19px;
+        color: #0f7a18;
+    }
+
+    .detalle-entrega dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: minmax(140px, 180px) 1fr;
+        gap: 12px 18px;
+    }
+
+    .detalle-entrega dt {
+        font-weight: 700;
+        color: #526174;
+    }
+
+    .detalle-entrega dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .cantidad-pendiente {
+        font-weight: 800;
+        color: #b45309;
+    }
+
+    /* Formulario */
+    .formulario-devolucion p {
+        margin: 0 0 20px;
+    }
+
+    .formulario-devolucion label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .formulario-devolucion input,
+    .formulario-devolucion select,
+    .formulario-devolucion textarea {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: white;
+        color: #172335;
+        font: inherit;
+    }
+
+    .formulario-devolucion input:focus,
+    .formulario-devolucion select:focus,
+    .formulario-devolucion textarea:focus {
+        outline: 2px solid #169c21;
+        outline-offset: 1px;
+    }
+
+    .formulario-devolucion .helptext {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .formulario-devolucion .errorlist {
+        color: #b91c1c;
+        font-size: 14px;
+    }
+
+    .formulario-devolucion [hidden] {
+        display: none !important;
+    }
+
+    /* Botones */
+    .acciones-devolucion {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .acciones-devolucion .boton-empresa {
+        min-height: 52px;
+    }
+
+    /* Diseño adaptable */
+    @media (max-width: 600px) {
+        .pagina-registrar-devolucion .logo-empresa {
+            width: 300px;
+        }
+
+        .detalle-entrega dl {
+            grid-template-columns: 1fr;
+            gap: 4px;
+        }
+
+        .detalle-entrega dd {
+            margin-bottom: 12px;
+        }
+
+        .acciones-devolucion {
+            flex-direction: column;
+        }
+
+        .acciones-devolucion .boton-empresa {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+    <section class="detalle-entrega">
+        <h2>Información de la entrega</h2>
+
+        <dl>
+            <dt>Trabajador</dt>
+            <dd>{{ entrega.employee }}</dd>
+
+            <dt>Número de entrega</dt>
+            <dd>#{{ entrega.pk }}</dd>
+
+            <dt>Artículo o pieza</dt>
+            <dd>
+                {% if entrega.tool_id %}
+                    {{ entrega.tool.tool_code }} —
+                    {{ entrega.tool.name }}
+                {% else %}
+                    {{ entrega.stock.article.article_code }} —
+                    {{ entrega.stock.article.name }}
+                {% endif %}
+            </dd>
+
+            <dt>Pendiente de devolución</dt>
+            <dd class="cantidad-pendiente">
+                {{ entrega.pending_quantity }}
+            </dd>
+        </dl>
+    </section>
+
+    <form method="post" class="formulario-devolucion">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <div class="acciones-devolucion">
+            <button
+                type="submit"
+                id="submit-return"
+                class="boton-empresa"
+            >
+                Guardar devolución
+            </button>
+
+            <a
+                href="{% url 'adeudos_almacen' %}?employee_id={{ entrega.employee.employee_id }}"
+                class="boton-empresa boton-empresa-secundario"
+            >
+                ← Regresar a los adeudos
+            </a>
+        </div>
+    </form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const operation = document.getElementById("id_operation");
+    const condition = document.getElementById("id_condition");
+    const replacement = document.getElementById("id_replacement_tool");
+    const reason = document.getElementById("id_reason");
+    const submitButton = document.getElementById("submit-return");
+
+    const individualTool = {% if entrega.tool_id %}true{% else %}false{% endif %};
+
+    // Mantener compatibilidad con los campos del formulario.
+    if (!operation || !condition || !submitButton) {
+        return;
+    }
+
+    const replacementRow = replacement
+        ? replacement.closest("p")
+        : null;
+
+    const reasonRow = reason
+        ? reason.closest("p")
+        : null;
+
+    function updateForm() {
+        const isExchange = operation.value === "exchange";
+        const isDamaged = condition.value === "damaged";
+
+        if (replacementRow) {
+            replacementRow.hidden = !(isExchange && individualTool);
+        }
+
+        if (reasonRow) {
+            reasonRow.hidden = !isDamaged;
+        }
+
+        if (replacement && !isExchange) {
+            replacement.value = "";
+        }
+
+        if (reason && !isDamaged) {
+            reason.value = "";
+        }
+
+        submitButton.textContent = isExchange
+            ? "Registrar devolución y cambio"
+            : "Guardar devolución";
+    }
+
+    operation.addEventListener("change", updateForm);
+    condition.addEventListener("change", updateForm);
+
+    updateForm();
+});
+</script>
+{% endblock %}

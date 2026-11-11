@@ -80,7 +80,7 @@ def activar_nip(request, barcode):
 
     return render(
         request,
-        "stockroom/activar_nip.html",
+        "stockroom/credenciales/activar_nip.html",
         {"credential": credential, "form": form},
     )
 
@@ -200,7 +200,7 @@ def acceso_empleado(request):
 
     return render(
         request,
-        "stockroom/acceso_empleado.html",
+        "stockroom/empleados/acceso_empleado.html",
         {
             "scan_form": scan_form,
             "number_form": number_form,
@@ -262,7 +262,7 @@ def panel_empleado(request):
 
     return render(
         request,
-        "stockroom/panel_empleado.html",
+        "stockroom/empleados/panel_empleado.html",
         {
             "employee": credential.employee,
             "articles": catalogo_articulos(search),
@@ -475,7 +475,7 @@ def confirmar_recibido(request, request_id):
 
     return render(
         request,
-        "stockroom/confirmar_recibido.html",
+        "stockroom/empleados/confirmar_recibido.html",
         {"solicitud": solicitud, "form": form},
     )
 
@@ -525,7 +525,7 @@ def comanda_empleado(request, request_id):
 
     return render(
         request,
-        "stockroom/comanda_empleado.html",
+        "stockroom/empleados/comanda_empleado.html",
         {
             "solicitud": solicitud,
             "barcode_value": barcode_value,
@@ -571,6 +571,6 @@ def escanear_comanda(request):
 
     return render(
         request,
-        "stockroom/escanear_comanda.html",
+        "stockroom/almacen/escanear_comanda.html",
         {"form": form},
     )

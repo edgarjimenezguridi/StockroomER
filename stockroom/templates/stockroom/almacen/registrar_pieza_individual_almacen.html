@@ -1,0 +1,318 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Registrar pieza individual{% endblock %}
+
+{% block body_class %}pagina-registrar-pieza{% endblock %}
+
+{% block titulo_pagina %}
+Registrar pieza individual
+{% endblock %}
+
+{% block descripcion %}
+Da de alta herramientas físicas con códigos únicos para su seguimiento.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-registrar-pieza .contenedor-empresa {
+        max-width: 850px;
+    }
+
+    .introduccion-pieza {
+        margin-bottom: 26px;
+        padding: 18px 20px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.7;
+    }
+
+    .introduccion-pieza p {
+        margin: 0;
+    }
+
+    .mensaje-pieza {
+        margin-bottom: 20px;
+        padding: 15px 18px;
+        border: 1px solid #86efac;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #166534;
+        line-height: 1.6;
+    }
+
+    .mensaje-pieza.error {
+        border-color: #fca5a5;
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .mensaje-pieza.warning {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .seccion-pieza {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .seccion-pieza h2 {
+        margin: 0 0 18px;
+        color: #0f7a18;
+        font-size: 21px;
+    }
+
+    .grupo-campos-pieza {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .campo-pieza {
+        min-width: 0;
+    }
+
+    .campo-completo {
+        grid-column: 1 / -1;
+    }
+
+    .campo-pieza label {
+        display: block;
+        margin-bottom: 8px;
+        color: #172335;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .campo-pieza input,
+    .campo-pieza select {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        min-height: 50px;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: white;
+        color: #172335;
+        font: inherit;
+        font-size: 15px;
+    }
+
+    .campo-pieza input:focus,
+    .campo-pieza select:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .campo-pieza small {
+        display: block;
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .errorlist {
+        margin: 8px 0;
+        padding-left: 20px;
+        color: #b91c1c;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .ayuda-registro {
+        margin: 22px 0;
+        padding: 18px 20px;
+        border: 1px solid #fde68a;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: #92400e;
+        line-height: 1.7;
+    }
+
+    .ayuda-registro h2 {
+        margin: 0 0 9px;
+        color: #92400e;
+        font-size: 17px;
+    }
+
+    .ayuda-registro p {
+        margin: 0;
+    }
+
+    .acciones-pieza {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .acciones-pieza .boton-empresa {
+        min-height: 52px;
+    }
+
+    .enlace-articulo {
+        display: inline-block;
+        margin-top: 12px;
+        color: #0f7a18;
+        font-size: 14px;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .enlace-articulo:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 650px) {
+        .grupo-campos-pieza {
+            grid-template-columns: 1fr;
+        }
+
+        .campo-completo {
+            grid-column: auto;
+        }
+
+        .acciones-pieza {
+            flex-direction: column;
+        }
+
+        .acciones-pieza .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+{% for message in messages %}
+    <div
+        class="mensaje-pieza {{ message.tags }}"
+        role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+    >
+        {{ message }}
+    </div>
+{% endfor %}
+
+<section class="introduccion-pieza">
+    <p>
+        Registra una herramienta física perteneciente a un
+        artículo del catálogo. Cada pieza debe tener un
+        <strong>código único</strong> para identificarla
+        durante préstamos, devoluciones y revisiones.
+    </p>
+</section>
+
+<form method="post">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    <section class="seccion-pieza">
+        <h2>1. Artículo del catálogo</h2>
+
+        <div class="grupo-campos-pieza">
+            <div class="campo-pieza campo-completo">
+                {{ form.article.label_tag }}
+                {{ form.article }}
+                {{ form.article.errors }}
+
+                <small>
+                    Se muestran únicamente artículos activos
+                    controlados por pieza individual.
+                </small>
+
+                {% if perms.stockroom.add_article %}
+                    <a
+                        href="{% url 'agregar_articulo_almacen' %}"
+                        class="enlace-articulo"
+                    >
+                        + Crear nuevo artículo en el catálogo
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="seccion-pieza">
+        <h2>2. Identificación de la pieza</h2>
+
+        <div class="grupo-campos-pieza">
+
+            <div class="campo-pieza">
+                {{ form.tool_code.label_tag }}
+                {{ form.tool_code }}
+                {{ form.tool_code.errors }}
+
+                <small>
+                    Código interno único que utilizarás
+                    para identificar o escanear la herramienta.
+                </small>
+            </div>
+
+            <div class="campo-pieza">
+                {{ form.serial_number.label_tag }}
+                {{ form.serial_number }}
+                {{ form.serial_number.errors }}
+
+                <small>
+                    Número de serie del fabricante, si existe.
+                </small>
+            </div>
+
+            <div class="campo-pieza campo-completo">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+                {{ form.location.errors }}
+
+                <small>
+                    Si dejas este campo vacío, se utilizará
+                    la ubicación general del artículo,
+                    cuando sea compatible.
+                </small>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="ayuda-registro">
+        <h2>¿Qué sucede al registrar la pieza?</h2>
+        <p>
+            La herramienta quedará activa y disponible
+            en el inventario individual.
+
+            Su nombre, marca y especificación se tomarán
+            del artículo seleccionado.
+
+            No se registrará una entrada de mercancía
+            ni se modificarán existencias controladas por cantidad.
+        </p>
+    </section>
+
+    <div class="acciones-pieza">
+        <button type="submit" class="boton-empresa">
+            Guardar pieza individual
+        </button>
+
+        <a
+            href="{% url 'panel_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            ← Regresar al panel
+        </a>
+    </div>
+</form>
+
+{% endblock %}

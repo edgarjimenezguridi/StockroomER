@@ -7,6 +7,7 @@ from django.core.exceptions import (
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
+from django.db import transaction, IntegrityError
 from django.db.models import ( 
     F, 
     Sum, 
@@ -42,6 +43,7 @@ from .services import (
     register_stock_entry_correction,
     register_return_and_exchange,
 )
+from .article_forms import NewArticleForm
 from .forms import EmployeePinForm 
 from .warehouse_forms import (
     WarehouseLoginForm, 
@@ -64,13 +66,14 @@ StockEntryCorrection,
 Article,
 Tool,
 ToolCategory,
+QuantityStock,
 )
 import csv
 from django.http import HttpResponse, request
 
 
 class WarehouseLoginView(LoginView):
-    template_name = "stockroom/acceso_almacen.html"
+    template_name = "stockroom/almacen/acceso_almacen.html"
     authentication_form = WarehouseLoginForm
 
     def form_valid(self, form):
@@ -243,7 +246,7 @@ def panel_almacen(request):
 
     return render(
         request,
-        "stockroom/panel_almacen.html",
+        "stockroom/almacen/panel_almacen.html",
         {
             "por_preparar": solicitudes.filter(
                 status=MaterialRequest.Status.SUBMITTED,
@@ -291,7 +294,7 @@ def detalle_solicitud_almacen(request, request_id):
 
     return render(
         request,
-        "stockroom/detalle_solicitud_almacen.html",
+        "stockroom/almacen/detalle_solicitud_almacen.html",
         {"solicitud": solicitud},
     )
 
@@ -359,7 +362,7 @@ def preparar_articulo_almacen(request, request_id, line_id):
 
     return render(
         request,
-        "stockroom/preparar_articulo_almacen.html",
+        "stockroom/almacen/preparar_articulo_almacen.html",
         {
             "linea": linea,
             "form": form,
@@ -571,7 +574,7 @@ def adeudos_almacen(request):
 
     return render(
         request,
-        "stockroom/adeudos_almacen.html",
+        "stockroom/almacen/adeudos_almacen.html",
         {
             "employee_number": employee_number,
             "trabajador": trabajador,
@@ -684,7 +687,7 @@ def registrar_devolucion_almacen(request, issue_id):
 
     return render(
         request,
-        "stockroom/registrar_devolucion_almacen.html",
+        "stockroom/almacen/registrar_devolucion_almacen.html",
         {
             "entrega": entrega,
             "form": form,
@@ -736,7 +739,7 @@ def registrar_entrada_almacen(request):
 
     return render(
         request,
-        "stockroom/registrar_entrada_almacen.html",
+        "stockroom/almacen/registrar_entrada_almacen.html",
         {"form": form},
     )
 
@@ -779,7 +782,7 @@ def resolver_dano_almacen(request):
 
     return render(
         request,
-        "stockroom/resolver_dano_almacen.html",
+        "stockroom/almacen/resolver_dano_almacen.html",
         {"form": form},
     )
 
@@ -823,7 +826,7 @@ def corregir_existencia_almacen(request):
 
     return render(
         request,
-        "stockroom/corregir_existencia_almacen.html",
+        "stockroom/almacen/corregir_existencia_almacen.html",
         {"form": form},
     )
 
@@ -1114,7 +1117,7 @@ def historial_almacen(request):
 
     return render(
         request,
-        "stockroom/historial_almacen.html",
+        "stockroom/almacen/historial_almacen.html",
         {
             "movimientos": pagina.object_list,
             "pagina": pagina,
@@ -1282,7 +1285,7 @@ def consultar_existencias_almacen(request):
 
     return render(
         request,
-        "stockroom/consultar_existencias_almacen.html",
+        "stockroom/almacen/consultar_existencias_almacen.html",
         {
             "registros": registros,
             "pagina": pagina,
@@ -1421,7 +1424,7 @@ def reabastecimiento_almacen(request):
 
     return render(
         request,
-        "stockroom/reabastecimiento_almacen.html",
+        "stockroom/almacen/reabastecimiento_almacen.html",
         {
             "articulos": pagina.object_list,
             "pagina": pagina,
@@ -1430,4 +1433,54 @@ def reabastecimiento_almacen(request):
             "total_faltante": resumen["total_faltante"],
             "total_compra": resumen["total_compra"],
         },
+    )
+
+
+@never_cache
+@login_required(login_url="acceso_almacen")
+@require_http_methods(["GET", "POST"])
+def agregar_articulo_almacen(request):
+    if not (
+        request.user.is_active
+        and request.user.is_staff
+        and request.user.has_perm("stockroom.add_article")
+    ):
+        raise PermissionDenied(
+            "No tienes permiso para agregar artículos al catálogo."
+        )
+
+    form = NewArticleForm(
+        request.POST if request.method == "POST" else None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                articulo = form.save()
+
+                if articulo.tracking_mode == Article.TrackingMode.QUANTITY:
+                    QuantityStock.objects.create(
+                        article=articulo,
+                        available_quantity=0,
+                        loaned_quantity=0,
+                        quarantine_quantity=0,
+                    )
+        except IntegrityError:
+            form.add_error(
+                None,
+                "No fue posible registrar el artículo. "
+                "Comprueba que su código no exista e intenta nuevamente.",
+            )
+        else:
+            messages.success(
+                request,
+                f"Artículo {articulo.article_code} registrado correctamente. "
+                "Todavía no se han registrado entradas de mercancía.",
+            )
+            return redirect("agregar_articulo_almacen")
+
+    return render(
+        request,
+        "stockroom/almacen/agregar_articulo_almacen.html",
+        {"form": form},
     )

@@ -1,0 +1,643 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Consulta de adeudos{% endblock %}
+
+{% block body_class %}pagina-adeudos{% endblock %}
+
+{% block titulo_pagina %}
+Consulta de adeudos
+{% endblock %}
+
+{% block descripcion %}
+Consulta las herramientas y materiales pendientes de devolución.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-adeudos .contenedor-empresa {
+        max-width: 1250px;
+    }
+
+    .pagina-adeudos .cabecera-empresa {
+        align-items: center;
+    }
+
+    .pagina-adeudos .logo-empresa {
+        width: 360px;
+        max-width: 100%;
+    }
+
+    /* Mensajes de confirmación */
+    .mensaje-operacion {
+        margin: 0 0 20px;
+        padding: 16px 18px;
+        border: 1px solid #86efac;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #166534;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .mensaje-operacion.error {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
+    .mensaje-operacion.warning {
+        background: #fffbeb;
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    /* Filtro por trabajador */
+    .filtro-trabajador {
+        margin-bottom: 22px;
+        padding: 16px 20px;
+        background: #f2f8f3;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        line-height: 1.6;
+    }
+
+    .filtro-trabajador p {
+        margin: 0 0 12px;
+    }
+
+    .filtro-trabajador p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Buscador */
+    .buscador-contenedor {
+        margin: 20px 0 24px;
+    }
+
+    .buscador-contenedor label {
+        display: block;
+        margin-bottom: 9px;
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .buscador {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        padding: 15px 17px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #172335;
+        font-size: 16px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .buscador:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .ayuda-buscador {
+        margin: 9px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    /* Indicadores */
+    .resumen {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin: 24px 0;
+    }
+
+    .indicador {
+        min-width: 0;
+        padding: 22px;
+        background: #f2f8f3;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        color: #172335;
+        font-weight: 600;
+    }
+
+    .indicador strong {
+        display: block;
+        margin-top: 10px;
+        font-size: 34px;
+        line-height: 1.1;
+        color: #0f7a18;
+    }
+
+    .indicador-pendientes {
+        border-left-color: #d97706;
+        background: #fffbeb;
+        border-color: #fde68a;
+        border-left-width: 5px;
+    }
+
+    .indicador-pendientes strong {
+        color: #92400e;
+    }
+
+    /* Tabla */
+    .tabla {
+        overflow-x: auto;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+    }
+
+    .tabla table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 780px;
+    }
+
+    .tabla th,
+    .tabla td {
+        padding: 15px 14px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+        line-height: 1.5;
+    }
+
+    .tabla th {
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .tabla tbody tr:hover {
+        background: #f8fcf9;
+    }
+
+    .tabla tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .nombre-trabajador {
+        color: #526174;
+        margin-top: 4px;
+    }
+
+    .cantidad-pendiente {
+        display: inline-block;
+        min-width: 34px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: #fff4e8;
+        color: #92400e;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    /* Botón de devolución */
+    .accion-devolucion {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 15px;
+        border-radius: 9px;
+        background: #169c21;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .accion-devolucion:hover {
+        background: #0f7a18;
+        color: #ffffff;
+    }
+
+    /* Paginación */
+    .paginacion {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin: 26px 0 20px;
+    }
+
+    .paginacion a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border: 1px solid #cfe6d2;
+        border-radius: 9px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .paginacion a:hover {
+        background: #d8eddd;
+    }
+
+    .paginacion strong {
+        color: #526174;
+        font-size: 14px;
+    }
+
+    /* Navegación */
+    .acciones-pagina {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .error-consulta {
+        margin-top: 14px;
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
+    .error-consulta:empty {
+        display: none;
+    }
+
+    @media (max-width: 700px) {
+        .pagina-adeudos .cabecera-empresa {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pagina-adeudos .logo-empresa {
+            width: 300px;
+        }
+
+        .resumen {
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-pagina .boton-empresa {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+    <!-- Mensajes de confirmación de operaciones -->
+    {% for message in messages %}
+        <div
+            class="mensaje-operacion {{ message.tags }}"
+            role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+        >
+            {% if 'success' in message.tags %}
+                ✅
+            {% elif 'error' in message.tags %}
+                ❌
+            {% else %}
+                ℹ️
+            {% endif %}
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    <!-- Filtro por trabajador -->
+    {% if employee_number %}
+        <div class="filtro-trabajador">
+            <p>
+                {% if trabajador %}
+                    Mostrando adeudos de:
+                    <strong>{{ trabajador }}</strong>
+                {% else %}
+                    No se encontró el trabajador
+                    <strong>{{ employee_number }}</strong>.
+                {% endif %}
+            </p>
+
+            <a
+                href="{% url 'adeudos_almacen' %}"
+                class="boton-empresa boton-empresa-secundario"
+            >
+                Ver todos los trabajadores
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Buscador -->
+    <div class="buscador-contenedor">
+        <form method="get" id="form-adeudos">
+
+            {% if employee_number %}
+                <input
+                    type="hidden"
+                    name="employee_id"
+                    value="{{ employee_number }}"
+                >
+            {% endif %}
+
+            <label for="buscar-adeudos">
+                Buscar adeudos
+            </label>
+
+            <input
+                type="search"
+                id="buscar-adeudos"
+                name="q"
+                class="buscador"
+                value="{{ busqueda }}"
+                placeholder="Buscar trabajador, número, artículo o herramienta..."
+                aria-label="Buscar adeudos"
+                autocomplete="off"
+            >
+
+            <p class="ayuda-buscador">
+                La búsqueda se actualiza automáticamente mientras escribes.
+            </p>
+        </form>
+    </div>
+
+    <!-- Resumen de adeudos -->
+    <div id="resumen-adeudos" class="resumen">
+
+        <div class="indicador">
+            Entregas con adeudo
+            <strong>{{ total_entregas }}</strong>
+        </div>
+
+        <div class="indicador indicador-pendientes">
+            Piezas pendientes
+            <strong>{{ total_piezas }}</strong>
+        </div>
+
+    </div>
+
+    <!-- Tabla -->
+    <div id="tabla-adeudos" class="tabla">
+        <table>
+            <thead>
+                <tr>
+                    <th>Trabajador</th>
+                    <th>Artículo / Pieza</th>
+                    <th>Fecha de entrega</th>
+                    <th>Pendientes</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for entrega in entregas %}
+                    <tr>
+                        <td>
+                            <strong>
+                                {{ entrega.employee.employee_id }}
+                            </strong>
+                            <div class="nombre-trabajador">
+                                {{ entrega.employee.first_name }}
+                                {{ entrega.employee.last_name }}
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if entrega.tool_id %}
+                                {{ entrega.tool.tool_code }}
+                                — {{ entrega.tool.name }}
+                            {% else %}
+                                {{ entrega.stock.article.article_code }}
+                                — {{ entrega.stock.article.name }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ entrega.issued_at|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td>
+                            <span class="cantidad-pendiente">
+                                {{ entrega.pending_quantity }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if puede_devolver %}
+                                <a
+                                    class="accion-devolucion"
+                                    href="{% url 'registrar_devolucion_almacen' entrega.pk %}"
+                                >
+                                    Registrar devolución
+                                </a>
+                            {% else %}
+                                <span>
+                                    Sin permiso de devolución
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            No hay adeudos que coincidan con la búsqueda.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    <nav
+        id="paginacion-adeudos"
+        class="paginacion"
+        aria-label="Páginas de adeudos"
+    >
+        {% if pagina.has_previous %}
+            <a href="?employee_id={{ employee_number|urlencode }}&q={{ busqueda|urlencode }}&page={{ pagina.previous_page_number }}">
+                ← Anterior
+            </a>
+        {% endif %}
+
+        <strong>
+            Página {{ pagina.number }}
+            de {{ pagina.paginator.num_pages }}
+        </strong>
+
+        {% if pagina.has_next %}
+            <a href="?employee_id={{ employee_number|urlencode }}&q={{ busqueda|urlencode }}&page={{ pagina.next_page_number }}">
+                Siguiente →
+            </a>
+        {% endif %}
+    </nav>
+
+    <!-- Avisos de búsqueda -->
+    <p id="error-adeudos" class="error-consulta" role="status"></p>
+
+    <!-- Regreso al panel -->
+    <div class="acciones-pagina">
+        <a
+            href="{% url 'panel_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            ← Regresar al inicio
+        </a>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const formulario = document.getElementById("form-adeudos");
+    const buscador = document.getElementById("buscar-adeudos");
+    const error = document.getElementById("error-adeudos");
+
+    let temporizador = null;
+    let controlador = null;
+
+    async function actualizarAdeudos(url) {
+        if (controlador) {
+            controlador.abort();
+        }
+
+        controlador = new AbortController();
+        const controladorActual = controlador;
+
+        error.textContent = "";
+
+        try {
+            const respuesta = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                signal: controladorActual.signal
+            });
+
+            if (!respuesta.ok || respuesta.redirected) {
+                throw new Error("No se pudo obtener la información.");
+            }
+
+            const html = await respuesta.text();
+
+            const documento = new DOMParser().parseFromString(
+                html,
+                "text/html"
+            );
+
+            const ids = [
+                "resumen-adeudos",
+                "tabla-adeudos",
+                "paginacion-adeudos"
+            ];
+
+            // Comprobar que la respuesta contiene
+            // todas las secciones esperadas.
+            for (const id of ids) {
+                if (!documento.getElementById(id)) {
+                    throw new Error(
+                        "La respuesta no contiene los adeudos esperados."
+                    );
+                }
+            }
+
+            for (const id of ids) {
+                const actual = document.getElementById(id);
+                const nuevo = documento.getElementById(id);
+
+                if (actual && nuevo) {
+                    actual.innerHTML = nuevo.innerHTML;
+                }
+            }
+
+            // Mantener la dirección del navegador
+            // sincronizada con la búsqueda.
+            window.history.replaceState(
+                null,
+                "",
+                url.pathname + url.search
+            );
+
+        } catch (e) {
+            if (e.name !== "AbortError") {
+                error.textContent =
+                    "No se pudo actualizar la consulta. " +
+                    "Puedes intentar nuevamente.";
+                console.warn(e);
+            }
+        } finally {
+            if (controlador === controladorActual) {
+                controlador = null;
+            }
+        }
+    }
+
+    // Búsqueda mientras el almacenista escribe.
+    buscador.addEventListener("input", function () {
+        clearTimeout(temporizador);
+
+        temporizador = setTimeout(function () {
+            const url = new URL(
+                formulario.action || window.location.pathname,
+                window.location.origin
+            );
+
+            const datos = new FormData(formulario);
+
+            for (const [clave, valor] of datos.entries()) {
+                if (valor !== "") {
+                    url.searchParams.set(clave, valor);
+                }
+            }
+
+            // Una búsqueda nueva siempre inicia
+            // desde la primera página.
+            url.searchParams.delete("page");
+
+            actualizarAdeudos(url);
+        }, 300);
+    });
+
+    // Permitir también buscar con Enter.
+    formulario.addEventListener("submit", function (evento) {
+        evento.preventDefault();
+        clearTimeout(temporizador);
+
+        const url = new URL(
+            formulario.action || window.location.pathname,
+            window.location.origin
+        );
+
+        const datos = new FormData(formulario);
+
+        for (const [clave, valor] of datos.entries()) {
+            if (valor !== "") {
+                url.searchParams.set(clave, valor);
+            }
+        }
+
+        url.searchParams.delete("page");
+        actualizarAdeudos(url);
+    });
+
+    // Cambiar de página sin recargar toda la pantalla.
+    document.getElementById("paginacion-adeudos")
+        .addEventListener("click", function (evento) {
+            const enlace = evento.target.closest("a");
+
+            if (!enlace) {
+                return;
+            }
+
+            evento.preventDefault();
+            clearTimeout(temporizador);
+
+            const url = new URL(enlace.href);
+            actualizarAdeudos(url);
+        });
+});
+</script>
+{% endblock %}

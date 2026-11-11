@@ -1,0 +1,174 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Resolver piezas dañadas{% endblock %}
+
+{% block body_class %}pagina-resolver-danos{% endblock %}
+
+{% block titulo_pagina %}
+Resolver piezas dañadas
+{% endblock %}
+
+{% block descripcion %}
+Gestiona las piezas dañadas y registra su resolución.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-resolver-danos .contenedor-empresa {
+        max-width: 760px;
+    }
+
+    .pagina-resolver-danos .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-resolver-danos .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    .instrucciones-danos {
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.6;
+    }
+
+    .formulario-danos p {
+        margin: 0 0 20px;
+    }
+
+    .formulario-danos label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: #172335;
+    }
+
+    .formulario-danos select,
+    .formulario-danos input,
+    .formulario-danos textarea {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: white;
+        color: #172335;
+        font: inherit;
+    }
+
+    .formulario-danos select:focus,
+    .formulario-danos input:focus,
+    .formulario-danos textarea:focus {
+        outline: 2px solid #169c21;
+        outline-offset: 1px;
+    }
+
+    .formulario-danos .helptext {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .formulario-danos .errorlist {
+        color: #b91c1c;
+        font-size: 14px;
+    }
+
+    .acciones-danos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .mensaje-danos {
+        margin-bottom: 20px;
+        padding: 14px 18px;
+        border: 1px solid #86efac;
+        border-radius: 10px;
+        background: #ecfdf5;
+        color: #166534;
+        font-weight: 600;
+    }
+
+    .mensaje-danos.error {
+        border-color: #fca5a5;
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .mensaje-danos.warning {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    @media (max-width: 600px) {
+        .pagina-resolver-danos .logo-empresa {
+            width: 300px;
+        }
+
+        .acciones-danos {
+            flex-direction: column;
+        }
+
+        .acciones-danos .boton-empresa {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+    {% for message in messages %}
+        <div
+            class="mensaje-danos {{ message.tags }}"
+            role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+        >
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    <div class="instrucciones-danos">
+        Registra si las piezas dañadas se
+        <strong>recuperaron</strong> o se dieron
+        <strong>de baja</strong>.
+
+        La cantidad registrada no puede superar
+        las piezas pendientes por resolver.
+    </div>
+
+    <form method="post" class="formulario-danos">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <div class="acciones-danos">
+            <button
+                type="submit"
+                class="boton-empresa"
+            >
+                Guardar resolución
+            </button>
+
+            <a
+                href="{% url 'panel_almacen' %}"
+                class="boton-empresa boton-empresa-secundario"
+            >
+                ← Regresar al inicio
+            </a>
+        </div>
+    </form>
+
+{% endblock %}

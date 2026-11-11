@@ -1,0 +1,684 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Agregar nuevo artículo{% endblock %}
+
+{% block body_class %}pagina-agregar-articulo{% endblock %}
+
+{% block titulo_pagina %}
+Agregar nuevo artículo
+{% endblock %}
+
+{% block descripcion %}
+Registra nuevas herramientas y materiales en el catálogo del almacén.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-agregar-articulo .contenedor-empresa {
+        max-width: 850px;
+    }
+
+    .pagina-agregar-articulo .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-agregar-articulo .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    .informacion-alta {
+        margin-bottom: 26px;
+        padding: 18px 20px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.7;
+    }
+
+    .informacion-alta p {
+        margin: 0;
+    }
+
+    .mensaje-articulo {
+        margin-bottom: 22px;
+        padding: 16px 20px;
+        border: 1px solid #86efac;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #166534;
+        font-weight: 600;
+        line-height: 1.6;
+    }
+
+    .mensaje-articulo.error {
+        border-color: #fca5a5;
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .mensaje-articulo.warning {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .formulario-articulo {
+        margin-top: 22px;
+    }
+
+    .formulario-articulo h2 {
+        margin: 0 0 20px;
+        color: #0f7a18;
+        font-size: 21px;
+    }
+
+    .grupo-campos {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .campo-articulo {
+        min-width: 0;
+        margin-bottom: 20px;
+    }
+
+    .campo-completo {
+        grid-column: 1 / -1;
+    }
+
+    .campo-articulo label {
+        display: block;
+        margin-bottom: 8px;
+        color: #172335;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .campo-articulo input,
+    .campo-articulo select,
+    .campo-articulo textarea {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-height: 49px;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #172335;
+        font: inherit;
+        font-size: 15px;
+    }
+
+    .campo-articulo input:focus,
+    .campo-articulo select:focus,
+    .campo-articulo textarea:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .campo-articulo .helptext {
+        display: block;
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .campo-articulo .errorlist,
+    .errores-generales .errorlist {
+        margin: 8px 0;
+        padding-left: 20px;
+        color: #b91c1c;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .campo-articulo input[aria-invalid="true"],
+    .campo-articulo select[aria-invalid="true"] {
+        border-color: #dc2626;
+    }
+
+    .seccion-articulo {
+        padding-bottom: 10px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Nueva sección de clasificaciones */
+
+    .herramientas-clasificacion {
+        margin-top: 14px;
+        padding: 17px 18px;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+    }
+
+    .herramientas-clasificacion h3 {
+        margin: 0 0 7px;
+        color: #0f7a18;
+        font-size: 16px;
+    }
+
+    .herramientas-clasificacion p {
+        margin: 0 0 13px;
+        color: #526174;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .acciones-clasificacion {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .enlace-clasificacion,
+    .boton-actualizar {
+        box-sizing: border-box;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 45px;
+        padding: 11px 15px;
+        border: 1px solid #169c21;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .enlace-clasificacion {
+        background: #169c21;
+        color: #ffffff;
+    }
+
+    .enlace-clasificacion:hover {
+        background: #0f7a18;
+    }
+
+    .boton-actualizar {
+        background: #ffffff;
+        color: #0f7a18;
+    }
+
+    .boton-actualizar:hover {
+        background: #e3f3e6;
+    }
+
+    .boton-actualizar:disabled {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    .enlace-clasificacion:focus-visible,
+    .boton-actualizar:focus-visible {
+        outline: 3px solid #f59e0b;
+        outline-offset: 3px;
+    }
+
+    .estado-especificaciones {
+        margin: 12px 0 0 !important;
+        font-size: 13px !important;
+        color: #526174;
+    }
+
+    .estado-especificaciones.exito {
+        color: #0f7a18;
+        font-weight: bold;
+    }
+
+    .estado-especificaciones.error {
+        color: #b91c1c;
+        font-weight: bold;
+    }
+
+    .aviso-existencias {
+        margin: 24px 0;
+        padding: 18px 20px;
+        border: 1px solid #fde68a;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: #92400e;
+        line-height: 1.7;
+    }
+
+    .aviso-existencias h2 {
+        margin: 0 0 9px;
+        font-size: 17px;
+        color: #92400e;
+    }
+
+    .aviso-existencias p {
+        margin: 0;
+    }
+
+    .acciones-articulo {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .acciones-articulo .boton-empresa {
+        min-height: 52px;
+    }
+
+    @media (max-width: 650px) {
+        .pagina-agregar-articulo .logo-empresa {
+            width: 300px;
+        }
+
+        .grupo-campos {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        .campo-completo {
+            grid-column: auto;
+        }
+
+        .acciones-clasificacion,
+        .acciones-articulo {
+            flex-direction: column;
+        }
+
+        .enlace-clasificacion,
+        .boton-actualizar,
+        .acciones-articulo .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Mensajes de Django -->
+{% for message in messages %}
+    <div
+        class="mensaje-articulo {{ message.tags }}"
+        role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+    >
+        {% if 'success' in message.tags %}
+            ✅
+        {% elif 'error' in message.tags %}
+            ❌
+        {% else %}
+            ℹ️
+        {% endif %}
+
+        {{ message }}
+    </div>
+{% endfor %}
+
+<!-- Introducción -->
+<section class="informacion-alta">
+    <p>
+        Da de alta un artículo nuevo en el catálogo de
+        <strong>Engranes y Rectificado</strong>.
+
+        Registra sus datos generales y selecciona
+        cómo se controlará dentro del almacén.
+    </p>
+</section>
+
+<!-- Formulario -->
+<form method="post" class="formulario-articulo">
+    {% csrf_token %}
+
+    <div class="errores-generales" role="alert">
+        {{ form.non_field_errors }}
+    </div>
+
+    <section class="seccion-articulo">
+        <h2>1. Información del artículo</h2>
+
+        <div class="grupo-campos">
+
+            <div class="campo-articulo">
+                {{ form.article_code.label_tag }}
+                {{ form.article_code }}
+                {{ form.article_code.errors }}
+
+                {% if form.article_code.help_text %}
+                    <span class="helptext">
+                        {{ form.article_code.help_text }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="campo-articulo">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+
+            <div class="campo-articulo campo-completo">
+
+                {{ form.specification.label_tag }}
+                {{ form.specification }}
+                {{ form.specification.errors }}
+
+                <span class="helptext">
+                    Selecciona una especificación existente
+                    o deja el campo sin especificación.
+                </span>
+
+                <!-- Acceso a clasificaciones -->
+                {% if perms.stockroom.add_toolcategory or perms.stockroom.add_tooltype or perms.stockroom.add_toolspecification %}
+                    <div class="herramientas-clasificacion">
+
+                        <h3>¿No encuentras la especificación?</h3>
+
+                        <p>
+                            Puedes crear nuevas categorías,
+                            tipos y especificaciones desde
+                            StockroomER sin perder los datos
+                            que estás capturando.
+                        </p>
+
+                        <div class="acciones-clasificacion">
+
+                            <a
+                                href="{% url 'administrar_clasificaciones_almacen' %}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="enlace-clasificacion"
+                            >
+                                + Crear nueva clasificación
+                            </a>
+
+                            <button
+                                type="button"
+                                class="boton-actualizar"
+                                id="actualizar-especificaciones"
+                            >
+                                ↻ Actualizar especificaciones
+                            </button>
+
+                        </div>
+
+                        <p
+                            id="estado-especificaciones"
+                            class="estado-especificaciones"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            Al regresar de la otra pestaña,
+                            la lista se actualizará automáticamente.
+                        </p>
+
+                    </div>
+                {% endif %}
+
+            </div>
+
+            <div class="campo-articulo">
+                {{ form.brand.label_tag }}
+                {{ form.brand }}
+                {{ form.brand.errors }}
+            </div>
+
+            <div class="campo-articulo">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+                {{ form.location.errors }}
+
+                {% if form.location.help_text %}
+                    <span class="helptext">
+                        {{ form.location.help_text }}
+                    </span>
+                {% endif %}
+            </div>
+
+        </div>
+    </section>
+
+    <section class="seccion-articulo">
+        <h2>2. Control de inventario</h2>
+
+        <div class="grupo-campos">
+
+            <div class="campo-articulo">
+                {{ form.tracking_mode.label_tag }}
+                {{ form.tracking_mode }}
+                {{ form.tracking_mode.errors }}
+
+                <span class="helptext">
+                    Por cantidad: varias unidades de un mismo artículo.
+                    Individual: cada herramienta tiene su propio código.
+                </span>
+            </div>
+
+            <div class="campo-articulo">
+                {{ form.return_mode.label_tag }}
+                {{ form.return_mode }}
+                {{ form.return_mode.errors }}
+
+                <span class="helptext">
+                    Indica si las piezas deben devolverse
+                    o se consumen al entregarlas.
+                </span>
+            </div>
+
+            <div class="campo-articulo">
+                {{ form.minimum_stock.label_tag }}
+                {{ form.minimum_stock }}
+                {{ form.minimum_stock.errors }}
+
+                <span class="helptext">
+                    Si estableces 0, no se generarán
+                    alertas por inventario mínimo.
+                </span>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Aviso importante -->
+    <section class="aviso-existencias">
+        <h2>Importante sobre las existencias</h2>
+
+        <p>
+            Al guardar, se creará únicamente el artículo
+            dentro del catálogo.
+
+            Si es un artículo
+            <strong>por cantidad</strong>, sus existencias
+            comenzarán en cero.
+
+            Si es <strong>individual</strong>, deberás registrar
+            sus piezas y códigos únicos posteriormente.
+
+            <strong>No se registrará una entrada de mercancía.</strong>
+        </p>
+    </section>
+
+    <!-- Botones -->
+    <div class="acciones-articulo">
+
+        <button type="submit" class="boton-empresa">
+            Guardar nuevo artículo
+        </button>
+
+        <a
+            href="{% url 'panel_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            ← Regresar al inicio
+        </a>
+
+    </div>
+
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const selector = document.getElementById("id_specification");
+    const boton = document.getElementById("actualizar-especificaciones");
+    const estado = document.getElementById("estado-especificaciones");
+
+    if (!selector || !boton || !estado) {
+        return;
+    }
+
+    let actualizando = false;
+
+    async function actualizarEspecificaciones() {
+        if (actualizando) {
+            return;
+        }
+
+        actualizando = true;
+        boton.disabled = true;
+        estado.classList.remove("exito", "error");
+        estado.textContent = "Consultando especificaciones...";
+
+        try {
+            // Obtener una versión actualizada del mismo formulario,
+            // sin enviar ni modificar los datos que ya se capturaron.
+            const respuesta = await fetch(
+                "{% url 'agregar_articulo_almacen' %}",
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    redirect: "manual"
+                }
+            );
+
+            if (
+                !respuesta.ok ||
+                respuesta.type === "opaqueredirect"
+            ) {
+                throw new Error(
+                    "No fue posible consultar las especificaciones."
+                );
+            }
+
+            const html = await respuesta.text();
+
+            const documento = new DOMParser().parseFromString(
+                html,
+                "text/html"
+            );
+
+            const selectorNuevo = documento.getElementById(
+                "id_specification"
+            );
+
+            if (!selectorNuevo) {
+                throw new Error(
+                    "No se encontró la lista de especificaciones."
+                );
+            }
+
+            const valorActual = selector.value;
+
+            const opcionesAnteriores = Array.from(
+                selector.options
+            ).map(function (opcion) {
+                return opcion.value;
+            });
+
+            const opcionesNuevas = Array.from(
+                selectorNuevo.options
+            );
+
+            const nuevasEspecificaciones = opcionesNuevas.filter(
+                function (opcion) {
+                    return (
+                        opcion.value &&
+                        !opcionesAnteriores.includes(opcion.value)
+                    );
+                }
+            );
+
+            // Se reemplazan solamente las opciones de este selector.
+            // Todos los demás campos conservan sus valores.
+            selector.replaceChildren(
+                ...opcionesNuevas.map(function (opcion) {
+                    return opcion.cloneNode(true);
+                })
+            );
+
+            // Conservar la especificación seleccionada anteriormente.
+            if (
+                Array.from(selector.options).some(function (opcion) {
+                    return opcion.value === valorActual;
+                })
+            ) {
+                selector.value = valorActual;
+            }
+
+            if (nuevasEspecificaciones.length === 1) {
+                // Seleccionar automáticamente la nueva especificación.
+                selector.value = nuevasEspecificaciones[0].value;
+
+                estado.textContent =
+                    "Nueva especificación encontrada y seleccionada.";
+            } else if (nuevasEspecificaciones.length > 1) {
+                estado.textContent =
+                    "Se encontraron " +
+                    nuevasEspecificaciones.length +
+                    " especificaciones nuevas. Selecciona la que necesites.";
+            } else {
+                estado.textContent =
+                    "Lista actualizada. No hay especificaciones nuevas.";
+            }
+
+            estado.classList.add("exito");
+
+        } catch (error) {
+            estado.textContent =
+                "No se pudo actualizar la lista. " +
+                "Comprueba tu sesión e intenta nuevamente.";
+
+            estado.classList.add("error");
+
+            console.warn(
+                "Error al actualizar especificaciones:",
+                error
+            );
+
+        } finally {
+            actualizando = false;
+            boton.disabled = false;
+        }
+    }
+
+    // Actualización manual.
+    boton.addEventListener(
+        "click",
+        actualizarEspecificaciones
+    );
+
+    // Actualización automática al regresar a esta pestaña.
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+            actualizarEspecificaciones();
+        }
+    });
+});
+</script>
+{% endblock %}

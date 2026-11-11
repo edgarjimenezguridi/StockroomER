@@ -1,0 +1,647 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Solicitud #{{ solicitud.pk }}{% endblock %}
+
+{% block body_class %}pagina-detalle-solicitud{% endblock %}
+
+{% block titulo_pagina %}
+Solicitud #{{ solicitud.pk }}
+{% endblock %}
+
+{% block descripcion %}
+Consulta, prepara y confirma los materiales solicitados.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-detalle-solicitud .contenedor-empresa {
+        max-width: 1200px;
+    }
+
+    .pagina-detalle-solicitud .cabecera-empresa {
+        align-items: center;
+    }
+
+    .pagina-detalle-solicitud .logo-empresa {
+        width: 360px;
+        max-width: 100%;
+    }
+
+    /* Mensajes de operaciones */
+    .mensaje-operacion {
+        padding: 18px 20px;
+        margin: 20px 0;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        font-size: 15px;
+        line-height: 1.6;
+        font-weight: 600;
+    }
+
+    .mensaje-operacion.success {
+        background: #ecfdf5;
+        color: #166534;
+        border-color: #86efac;
+    }
+
+    .mensaje-operacion.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #fca5a5;
+    }
+
+    .mensaje-operacion.warning {
+        background: #fffbeb;
+        color: #92400e;
+        border-color: #fcd34d;
+    }
+
+    /* Datos generales de la solicitud */
+    .informacion-solicitud {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin: 24px 0 30px;
+    }
+
+    .dato-solicitud {
+        min-width: 0;
+        padding: 20px;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .dato-solicitud .etiqueta {
+        display: block;
+        margin-bottom: 10px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .dato-solicitud .valor {
+        display: block;
+        color: #172335;
+        font-size: 17px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .estado-solicitud {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 8px;
+        background: #e8f5ea;
+        color: #166534;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .estado-solicitud.enviada {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .estado-solicitud.preparada {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .estado-solicitud.cerrada {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .estado-solicitud.cancelada {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* Encabezado de artículos */
+    .encabezado-seccion {
+        margin: 30px 0 16px;
+    }
+
+    .encabezado-seccion h2 {
+        margin: 0 0 7px;
+        color: #0f7a18;
+        font-size: 21px;
+    }
+
+    .encabezado-seccion p {
+        margin: 0;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    /* Tabla */
+    .tabla-solicitud {
+        overflow-x: auto;
+        border: 1px solid #dbe3ec;
+        border-radius: 12px;
+    }
+
+    .tabla-solicitud table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+    }
+
+    .tabla-solicitud th,
+    .tabla-solicitud td {
+        padding: 16px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: left;
+        vertical-align: middle;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .tabla-solicitud th {
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 700;
+    }
+
+    .tabla-solicitud tbody tr:hover {
+        background: #f8fcf9;
+    }
+
+    .tabla-solicitud tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .codigo-articulo {
+        display: block;
+        color: #526174;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .nombre-articulo {
+        display: block;
+        margin-top: 3px;
+        color: #172335;
+        font-weight: 700;
+    }
+
+    .cantidad {
+        display: inline-block;
+        min-width: 36px;
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #172335;
+        font-weight: 800;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cantidad-preparada {
+        background: #e8f5ea;
+        color: #166534;
+    }
+
+    .piezas-seleccionadas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .pieza-codigo {
+        display: inline-block;
+        padding: 6px 10px;
+        border: 1px solid #dbe3ec;
+        border-radius: 7px;
+        background: #f8fafc;
+        color: #526174;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    /* Acción de preparar artículo */
+    .accion-preparar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px;
+        padding: 9px 13px;
+        border-radius: 8px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .accion-preparar:hover {
+        background: #d8eddd;
+    }
+
+    /* Aviso de estado */
+    .aviso-solicitud {
+        margin: 24px 0;
+        padding: 18px 20px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+        color: #285b32;
+        line-height: 1.6;
+    }
+
+    .aviso-solicitud.cancelada {
+        border-color: #fecaca;
+        border-left-color: #e53935;
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    /* Preparación y confirmación */
+    .panel-operacion {
+        margin: 28px 0;
+        padding: 24px;
+        border: 1px solid #dbe3ec;
+        border-radius: 14px;
+        background: #f8fafc;
+    }
+
+    .panel-operacion h2 {
+        margin: 0 0 14px;
+        color: #0f7a18;
+        font-size: 21px;
+    }
+
+    .panel-operacion p {
+        line-height: 1.7;
+        color: #526174;
+    }
+
+    .panel-confirmacion {
+        border-color: #cfe6d2;
+        background: #f2f8f3;
+    }
+
+    .grupo-pin {
+        margin: 22px 0;
+    }
+
+    .grupo-pin label {
+        display: block;
+        margin-bottom: 9px;
+        color: #172335;
+        font-weight: 700;
+    }
+
+    .grupo-pin input {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        max-width: 320px;
+        padding: 14px 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #172335;
+        font-size: 20px;
+        letter-spacing: 3px;
+    }
+
+    .grupo-pin input:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+
+    .ayuda-pin {
+        display: block;
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    /* Botones */
+    .acciones-solicitud {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .acciones-solicitud .boton-empresa {
+        min-height: 52px;
+    }
+
+    @media (max-width: 800px) {
+        .informacion-solicitud {
+            grid-template-columns: 1fr;
+        }
+
+        .pagina-detalle-solicitud .cabecera-empresa {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pagina-detalle-solicitud .logo-empresa {
+            width: 300px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .panel-operacion {
+            padding: 18px;
+        }
+
+        .acciones-solicitud {
+            flex-direction: column;
+        }
+
+        .acciones-solicitud .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+
+        .grupo-pin input {
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Mensajes de operaciones -->
+{% for message in messages %}
+    <div
+        class="mensaje-operacion {{ message.tags }}"
+        role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+    >
+        {% if 'success' in message.tags %}
+            ✅
+        {% elif 'error' in message.tags %}
+            ❌
+        {% else %}
+            ℹ️
+        {% endif %}
+
+        {{ message }}
+    </div>
+{% endfor %}
+
+<!-- Información de la solicitud -->
+<section class="informacion-solicitud">
+
+    <div class="dato-solicitud">
+        <span class="etiqueta">Trabajador</span>
+
+        <span class="valor">
+            {{ solicitud.employee }}
+        </span>
+    </div>
+
+    <div class="dato-solicitud">
+        <span class="etiqueta">Estado de la solicitud</span>
+
+        <span class="estado-solicitud
+            {% if solicitud.status == 'submitted' %}enviada
+            {% elif solicitud.status == 'prepared' %}preparada
+            {% elif solicitud.status == 'closed' %}cerrada
+            {% elif solicitud.status == 'cancelled' %}cancelada
+            {% endif %}">
+            {{ solicitud.get_status_display }}
+        </span>
+    </div>
+
+    <div class="dato-solicitud">
+        <span class="etiqueta">Fecha de envío</span>
+
+        <span class="valor">
+            {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
+        </span>
+    </div>
+
+</section>
+
+<!-- Artículos solicitados -->
+<section class="encabezado-seccion">
+    <h2>Artículos de la solicitud</h2>
+
+    <p>
+        Revisa las cantidades solicitadas y preparadas
+        antes de continuar.
+    </p>
+</section>
+
+<div class="tabla-solicitud">
+    <table>
+        <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Solicitado</th>
+                <th>Preparado</th>
+                <th>Piezas individuales seleccionadas</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for linea in solicitud.lines.all %}
+                <tr>
+
+                    <td>
+                        <span class="codigo-articulo">
+                            {{ linea.article.article_code }}
+                        </span>
+
+                        <span class="nombre-articulo">
+                            {{ linea.article.name }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="cantidad">
+                            {{ linea.requested_quantity }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="cantidad cantidad-preparada">
+                            {{ linea.prepared_quantity }}
+                        </span>
+
+                        {% if solicitud.status == "submitted" and perms.stockroom.change_materialrequest %}
+                            <div>
+                                <a
+                                    href="{% url 'preparar_articulo_almacen' solicitud.pk linea.pk %}"
+                                    class="accion-preparar"
+                                >
+                                    Preparar artículo
+                                </a>
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="piezas-seleccionadas">
+                            {% for seleccion in linea.selected_pieces.all %}
+                                <span class="pieza-codigo">
+                                    {{ seleccion.tool.tool_code }}
+                                </span>
+                            {% empty %}
+                                —
+                            {% endfor %}
+                        </div>
+                    </td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="4">
+                        Esta solicitud no tiene artículos.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Aviso según estado -->
+<div class="aviso-solicitud {% if solicitud.status == 'cancelled' %}cancelada{% endif %}">
+
+    {% if solicitud.status == "closed" %}
+
+        <strong>Solicitud completada.</strong>
+        El trabajador confirmó recibido.
+        Las entregas de esta solicitud ya fueron registradas.
+
+    {% elif solicitud.status == "cancelled" %}
+
+        <strong>Solicitud cancelada.</strong>
+        Esta solicitud está cancelada.
+
+    {% else %}
+
+        <strong>Información importante.</strong>
+        La cantidad preparada indica lo que el almacén
+        propone entregar. La entrega se registra cuando
+        el trabajador confirma recibido.
+
+    {% endif %}
+
+</div>
+
+<!-- Terminar preparación -->
+{% if solicitud.status == "submitted" and perms.stockroom.change_materialrequest %}
+
+    <section class="panel-operacion">
+
+        <h2>Terminar preparación</h2>
+
+        <p>
+            Revisa las cantidades preparadas antes de continuar.
+            Los artículos con cantidad 0 no se entregarán.
+        </p>
+
+        <form
+            method="post"
+            action="{% url 'terminar_preparacion_almacen' solicitud.pk %}"
+        >
+            {% csrf_token %}
+
+            <div class="acciones-solicitud">
+                <button
+                    type="submit"
+                    class="boton-empresa"
+                >
+                    Terminar preparación
+                </button>
+            </div>
+        </form>
+
+    </section>
+
+{% endif %}
+
+<!-- Confirmación del trabajador -->
+{% if solicitud.status == "prepared" and perms.stockroom.change_materialrequest and perms.stockroom.add_quantityissue %}
+
+    <section class="panel-operacion panel-confirmacion">
+
+        <h2>Confirmación del trabajador</h2>
+
+        <p>
+            <strong>{{ solicitud.employee }}</strong>,
+            revisa las cantidades preparadas y las piezas
+            seleccionadas en la tabla.
+
+            Introduce tu NIP solamente si coinciden
+            con lo que estás recibiendo.
+        </p>
+
+        <form
+            method="post"
+            action="{% url 'confirmar_entrega_almacen' solicitud.pk %}"
+        >
+            {% csrf_token %}
+
+            <!-- Conservar la versión de preparación -->
+            <input
+                type="hidden"
+                name="preparation_version"
+                value="{{ solicitud.preparation_version }}"
+            >
+
+            <div class="grupo-pin">
+                <label for="receipt-pin">
+                    NIP del trabajador
+                </label>
+
+                <input
+                    id="receipt-pin"
+                    type="password"
+                    name="pin"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    minlength="6"
+                    maxlength="6"
+                    autocomplete="off"
+                    required
+                    aria-describedby="ayuda-pin"
+                >
+
+                <span class="ayuda-pin" id="ayuda-pin">
+                    Introduce tu NIP de 6 dígitos para
+                    confirmar la recepción.
+                </span>
+            </div>
+
+            <div class="acciones-solicitud">
+                <button
+                    type="submit"
+                    class="boton-empresa"
+                >
+                    Confirmar que recibí estas piezas
+                </button>
+            </div>
+        </form>
+
+    </section>
+
+{% endif %}
+
+<!-- Regresar al panel -->
+<div class="acciones-solicitud">
+    <a
+        href="{% url 'panel_almacen' %}"
+        class="boton-empresa boton-empresa-secundario"
+    >
+        ← Regresar al inicio
+    </a>
+</div>
+
+{% endblock %}

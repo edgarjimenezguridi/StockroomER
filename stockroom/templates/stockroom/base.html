@@ -1,0 +1,125 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>
+        {% block title %}StockroomER{% endblock %} | Engranes y Rectificado
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'stockroom/css/empresa.css' %}"
+    >
+
+    <style>
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #eef3f7;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+
+        .contenedor-empresa {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 32px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .cabecera-empresa {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .cabecera-empresa .logo-empresa {
+            width: 300px;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .nombre-empresa {
+            margin: 0 0 8px;
+            color: #0f7a18;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .titulo-pagina {
+            margin: 0 0 10px;
+            font-size: 32px;
+        }
+
+        .descripcion-pagina {
+            margin: 0;
+            color: #526174;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .contenedor-empresa {
+                margin: 12px auto;
+                padding: 20px;
+            }
+
+            .cabecera-empresa {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .titulo-pagina {
+                font-size: 26px;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+    <main class="contenedor-empresa">
+
+        <header class="cabecera-empresa">
+            <img
+                src="{% static 'img/logo_empresa.png' %}"
+                alt="Engranes y Rectificado"
+                class="logo-empresa"
+            >
+
+            <div>
+                <p class="nombre-empresa">
+                    ENGRANES Y RECTIFICADO
+                </p>
+
+                <h1 class="titulo-pagina">
+                    {% block titulo_pagina %}StockroomER{% endblock %}
+                </h1>
+
+                <p class="descripcion-pagina">
+                    {% block descripcion %}
+                    Sistema de gestión de almacén
+                    {% endblock %}
+                </p>
+            </div>
+        </header>
+
+        {% block contenido %}{% endblock %}
+
+    </main>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

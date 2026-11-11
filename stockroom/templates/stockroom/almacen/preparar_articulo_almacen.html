@@ -1,0 +1,295 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Preparar artículo{% endblock %}
+
+{% block body_class %}pagina-preparar-articulo{% endblock %}
+
+{% block titulo_pagina %}
+Preparar artículo
+{% endblock %}
+
+{% block descripcion %}
+Selecciona las cantidades o piezas que se prepararán para el trabajador.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Contenedor */
+    .pagina-preparar-articulo .contenedor-empresa {
+        max-width: 800px;
+    }
+
+    .pagina-preparar-articulo .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-preparar-articulo .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    /* Información de la solicitud */
+    .informacion-preparacion {
+        margin-bottom: 28px;
+        padding: 22px;
+        border: 1px solid #cfe6d2;
+        border-radius: 12px;
+        background: #f2f8f3;
+    }
+
+    .informacion-preparacion h2 {
+        margin: 0 0 18px;
+        color: #0f7a18;
+        font-size: 19px;
+    }
+
+    .informacion-preparacion dl {
+        display: grid;
+        grid-template-columns: 170px minmax(0, 1fr);
+        gap: 14px 18px;
+        margin: 0;
+    }
+
+    .informacion-preparacion dt {
+        color: #526174;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .informacion-preparacion dd {
+        margin: 0;
+        color: #172335;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .cantidad-solicitada {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 8px;
+        background: #e8f5ea;
+        color: #0f7a18;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Formulario */
+    .seccion-formulario {
+        margin-bottom: 26px;
+    }
+
+    .seccion-formulario h2 {
+        margin: 0 0 16px;
+        color: #0f7a18;
+        font-size: 20px;
+    }
+
+    .formulario-preparacion p {
+        margin: 0 0 22px;
+    }
+
+    .formulario-preparacion label {
+        display: block;
+        margin-bottom: 8px;
+        color: #172335;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+
+    .formulario-preparacion input[type="number"],
+    .formulario-preparacion input[type="text"],
+    .formulario-preparacion select,
+    .formulario-preparacion textarea {
+        box-sizing: border-box;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 13px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: white;
+        color: #172335;
+        font: inherit;
+        font-size: 16px;
+    }
+
+    .formulario-preparacion input:focus,
+    .formulario-preparacion select:focus,
+    .formulario-preparacion textarea:focus {
+        outline: 2px solid #169c21;
+        outline-offset: 1px;
+    }
+
+    /* Selección de herramientas individuales */
+    .formulario-preparacion input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0 8px 0 0;
+        accent-color: #169c21;
+        vertical-align: middle;
+    }
+
+    .formulario-preparacion input[type="checkbox"] + label {
+        display: inline;
+    }
+
+    .formulario-preparacion .helptext {
+        display: block;
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .formulario-preparacion .errorlist {
+        padding-left: 20px;
+        color: #b91c1c;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* Botones */
+    .acciones-preparacion {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .acciones-preparacion .boton-empresa {
+        min-height: 52px;
+    }
+
+    /* Aviso importante */
+    .aviso-preparacion {
+        margin-top: 28px;
+        padding: 18px 20px;
+        border: 1px solid #fde68a;
+        border-left: 5px solid #d97706;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: #92400e;
+        line-height: 1.7;
+    }
+
+    .aviso-preparacion h2 {
+        margin: 0 0 10px;
+        font-size: 17px;
+    }
+
+    .aviso-preparacion p {
+        margin: 0;
+    }
+
+    @media (max-width: 600px) {
+        .pagina-preparar-articulo .logo-empresa {
+            width: 300px;
+        }
+
+        .informacion-preparacion {
+            padding: 18px;
+        }
+
+        .informacion-preparacion dl {
+            grid-template-columns: 1fr;
+            gap: 5px;
+        }
+
+        .informacion-preparacion dd {
+            margin-bottom: 12px;
+        }
+
+        .acciones-preparacion {
+            flex-direction: column;
+        }
+
+        .acciones-preparacion .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<!-- Información de la solicitud -->
+<section class="informacion-preparacion">
+
+    <h2>Información de la solicitud</h2>
+
+    <dl>
+        <dt>Número de solicitud</dt>
+        <dd>#{{ linea.request_id }}</dd>
+
+        <dt>Trabajador</dt>
+        <dd>{{ linea.request.employee }}</dd>
+
+        <dt>Artículo</dt>
+        <dd>
+            <strong>{{ linea.article.article_code }}</strong>
+            —
+            {{ linea.article.name }}
+        </dd>
+
+        <dt>Cantidad solicitada</dt>
+        <dd>
+            <span class="cantidad-solicitada">
+                {{ linea.requested_quantity }}
+            </span>
+        </dd>
+    </dl>
+
+</section>
+
+<!-- Formulario de preparación -->
+<section class="seccion-formulario">
+
+    <h2>Preparación del artículo</h2>
+
+    <form method="post" class="formulario-preparacion">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <div class="acciones-preparacion">
+
+            <button
+                type="submit"
+                class="boton-empresa"
+            >
+                Guardar preparación
+            </button>
+
+            <a
+                href="{% url 'detalle_solicitud_almacen' linea.request_id %}"
+                class="boton-empresa boton-empresa-secundario"
+            >
+                ← Regresar a la solicitud
+            </a>
+
+        </div>
+    </form>
+
+</section>
+
+<!-- Aviso -->
+<section class="aviso-preparacion">
+
+    <h2>Importante</h2>
+
+    <p>
+        Guardar la preparación
+        <strong>no reserva ni descuenta existencias</strong>.
+
+        La entrega se registrará únicamente cuando
+        el trabajador confirme que recibió los materiales.
+    </p>
+
+</section>
+
+{% endblock %}

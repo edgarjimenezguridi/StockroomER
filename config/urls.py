@@ -1,21 +1,11 @@
-"""
-URL configuration for config project.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+URL configuration for StockroomER.
+"""
+
 from django.contrib import admin
 from django.urls import path
+
 from stockroom.warehouse_views import (
     WarehouseLoginView,
     panel_almacen,
@@ -32,8 +22,23 @@ from stockroom.warehouse_views import (
     historial_almacen,
     consultar_existencias_almacen,
     reabastecimiento_almacen,
-
+    agregar_articulo_almacen,
 )
+
+from stockroom.classification_views import (
+    administrar_clasificaciones_almacen,
+    
+)
+
+from stockroom.individual_tool_views import (
+    registrar_pieza_individual_almacen,
+)
+
+from stockroom.individual_tool_management_views import (
+    consultar_piezas_individuales_almacen,
+    editar_pieza_individual_almacen,
+)
+
 
 from stockroom.views import (
     activar_nip,
@@ -46,7 +51,6 @@ from stockroom.views import (
     confirmar_recibido,
     comanda_empleado,
     escanear_comanda,
-
 )
 
 from stockroom.warehouse_reports import (
@@ -54,16 +58,40 @@ from stockroom.warehouse_reports import (
     descargar_reporte_almacen,
 )
 
+from stockroom.article_management_views import (
+    editar_articulo_almacen,
+)
+
+
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path("trabajadores/acceso/", acceso_empleado, name="acceso_empleado"),
+    # Administrador técnico
+    path(
+        "admin/",
+        admin.site.urls,
+    ),
+
+    # Trabajadores
+    path(
+        "trabajadores/acceso/",
+        acceso_empleado,
+        name="acceso_empleado",
+    ),
     path(
         "credenciales/<uuid:barcode>/activar/",
         activar_nip,
         name="activar_nip",
     ),
-    path("trabajadores/panel/", panel_empleado, name="panel_empleado"),
-    path("trabajadores/salir/", salir_empleado, name="salir_empleado"),
+    path(
+        "trabajadores/panel/",
+        panel_empleado,
+        name="panel_empleado",
+    ),
+    path(
+        "trabajadores/salir/",
+        salir_empleado,
+        name="salir_empleado",
+    ),
     path(
         "trabajadores/carrito/articulo/<int:article_id>/",
         guardar_articulo_carrito,
@@ -74,7 +102,7 @@ urlpatterns = [
         quitar_articulo_carrito,
         name="quitar_articulo_carrito",
     ),
-        path(
+    path(
         "trabajadores/carrito/<int:cart_id>/enviar/",
         enviar_solicitud,
         name="enviar_solicitud",
@@ -89,11 +117,8 @@ urlpatterns = [
         comanda_empleado,
         name="comanda_empleado",
     ),
-    path(
-        "almacen/escanear/",
-        escanear_comanda,
-        name="escanear_comanda",
-    ),
+
+    # Acceso al almacén
     path(
         "almacen/acceso/",
         WarehouseLoginView.as_view(),
@@ -104,6 +129,18 @@ urlpatterns = [
         panel_almacen,
         name="panel_almacen",
     ),
+    path(
+        "almacen/salir/",
+        salir_almacen,
+        name="salir_almacen",
+    ),
+    path(
+        "almacen/escanear/",
+        escanear_comanda,
+        name="escanear_comanda",
+    ),
+
+    # Solicitudes
     path(
         "almacen/solicitudes/<int:request_id>/",
         detalle_solicitud_almacen,
@@ -124,60 +161,105 @@ urlpatterns = [
         confirmar_entrega_almacen,
         name="confirmar_entrega_almacen",
     ),
+
+    # Adeudos y devoluciones
     path(
-    "almacen/adeudos/",
-    adeudos_almacen,
-    name="adeudos_almacen",
+        "almacen/adeudos/",
+        adeudos_almacen,
+        name="adeudos_almacen",
     ),
     path(
         "almacen/entregas/<int:issue_id>/devolver/",
         registrar_devolucion_almacen,
         name="registrar_devolucion_almacen",
     ),
+
+    # Catálogo de artículos
     path(
-        "almacen/salir/",
-        salir_almacen,
-        name="salir_almacen",
+        "almacen/articulos/nuevo/",
+        agregar_articulo_almacen,
+        name="agregar_articulo_almacen",
     ),
+
+    # Nueva administración de clasificaciones
+    path(
+        "almacen/clasificaciones/",
+        administrar_clasificaciones_almacen,
+        name="administrar_clasificaciones_almacen",
+    ),
+
+    # Entradas y correcciones
     path(
         "almacen/entradas/nueva/",
         registrar_entrada_almacen,
         name="registrar_entrada_almacen",
     ),
     path(
+        "almacen/existencias/corregir/",
+        corregir_existencia_almacen,
+        name="corregir_existencia_almacen",
+    ),
+    path(
         "almacen/danos/resolver/",
         resolver_dano_almacen,
         name="resolver_dano_almacen",
     ),
+
+    # Consultas
     path(
-    "almacen/existencias/corregir/",
-    corregir_existencia_almacen,
-    name="corregir_existencia_almacen",
+        "almacen/existencias/",
+        consultar_existencias_almacen,
+        name="consultar_existencias_almacen",
+    ),
+    path(
+        "almacen/reabastecimiento/",
+        reabastecimiento_almacen,
+        name="reabastecimiento_almacen",
     ),
     path(
         "almacen/historial/",
         historial_almacen,
         name="historial_almacen",
     ),
+
+    # Reportes
     path(
-    "almacen/reportes/",
-    generar_reportes_almacen,
-    name="generar_reportes_almacen",
+        "almacen/reportes/",
+        generar_reportes_almacen,
+        name="generar_reportes_almacen",
     ),
     path(
         "almacen/reportes/pdf/",
         descargar_reporte_almacen,
         name="descargar_reporte_almacen",
     ),
+    # Registro de piezas individuales
     path(
-    "almacen/existencias/",
-    consultar_existencias_almacen,
-    name="consultar_existencias_almacen",
+        "almacen/piezas/nueva/",
+        registrar_pieza_individual_almacen,
+        name="registrar_pieza_individual_almacen",
     ),
+
+    # Consulta de herramientas individuales
     path(
-    "almacen/reabastecimiento/",
-    reabastecimiento_almacen,
-    name="reabastecimiento_almacen",
+        "almacen/piezas/",
+        consultar_piezas_individuales_almacen,
+        name="consultar_piezas_individuales_almacen",
     ),
-    
+
+    # Edición de herramientas individuales
+    path(
+        "almacen/piezas/<int:tool_id>/editar/",
+        editar_pieza_individual_almacen,
+        name="editar_pieza_individual_almacen",
+    ),
+
+
+    path(
+        "almacen/articulos/<int:article_id>/editar/",
+        editar_articulo_almacen,
+        name="editar_articulo_almacen",
+    ),
+
+
 ]

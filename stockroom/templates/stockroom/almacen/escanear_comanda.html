@@ -1,0 +1,86 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Escanear comanda{% endblock %}
+
+{% block body_class %}pagina-escanear{% endblock %}
+
+{% block titulo_pagina %}
+Escanear comanda
+{% endblock %}
+
+{% block descripcion %}
+Escanea el código o escribe el folio impreso.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pagina-escanear .contenedor-empresa {
+        max-width: 650px;
+    }
+
+    .pagina-escanear .cabecera-empresa {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .pagina-escanear .logo-empresa {
+        width: 420px;
+        max-width: 100%;
+    }
+
+    .pagina-escanear form label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .pagina-escanear form input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 14px;
+        font-size: 20px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .pagina-escanear form input:focus {
+        outline: 2px solid #169c21;
+        outline-offset: 1px;
+    }
+
+    .pagina-escanear .errorlist {
+        color: #b91c1c;
+    }
+
+    .pagina-escanear .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+
+<form method="post">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <div class="acciones">
+        <button type="submit" class="boton-empresa">
+            Abrir solicitud
+        </button>
+
+        <a
+            href="{% url 'panel_almacen' %}"
+            class="boton-empresa boton-empresa-secundario"
+        >
+            ← Regresar al inicio
+        </a>
+    </div>
+</form>
+
+{% endblock %}
