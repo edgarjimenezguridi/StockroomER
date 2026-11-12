@@ -146,7 +146,20 @@
         <tbody>
             {% for pieza in piezas %}
             <tr>
-                <td><span class="codigo-pieza">{{ pieza.tool_code }}</span></td>
+                <td><span class="codigo-pieza">{{ pieza.tool_code }}</span>
+
+                    <div style="margin-top: 9px;">
+                        <a
+                            href="{% url 'imprimir_etiqueta_pieza_almacen' pieza.pk %}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="boton-editar-pieza"
+                        >
+                            🖨️ Imprimir etiqueta
+                        </a>
+                    </div>
+
+                </td>
                 <td>
                     {% if pieza.article %}
                         {{ pieza.article.name }}

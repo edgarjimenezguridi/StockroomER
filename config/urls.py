@@ -38,6 +38,9 @@ from stockroom.individual_tool_management_views import (
     consultar_piezas_individuales_almacen,
     editar_pieza_individual_almacen,
 )
+from stockroom.tool_label_views import (
+    imprimir_etiqueta_pieza_almacen,
+)
 
 
 from stockroom.views import (
@@ -260,6 +263,14 @@ urlpatterns = [
         editar_articulo_almacen,
         name="editar_articulo_almacen",
     ),
+
+    # Impresion de etiqueta de herramienta individual
+    path(
+        "almacen/piezas/<int:tool_id>/etiqueta/",
+        imprimir_etiqueta_pieza_almacen,
+        name="imprimir_etiqueta_pieza_almacen",
+    ),
+
 
 
 ]

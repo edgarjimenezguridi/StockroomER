@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Etiqueta {{ pieza.tool_code }}</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            background: #f1f5f9;
+            color: #172335;
+            font-family: Arial, sans-serif;
+        }
+
+        .contenedor {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .encabezado {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .encabezado h1 {
+            margin: 0 0 8px;
+            color: #0f7a18;
+            font-size: 25px;
+        }
+
+        .encabezado p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .etiqueta {
+            width: 80mm;
+            min-height: 40mm;
+            margin: 0 auto;
+            padding: 3mm;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: white;
+            color: black;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .empresa {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .5px;
+        }
+
+        .nombre-pieza {
+            margin: 6px 0 4px;
+            font-size: 10px;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .codigo-barras {
+            display: block;
+            width: 100%;
+            height: 19mm;
+            margin: 2px auto;
+            object-fit: contain;
+        }
+
+        .codigo-texto {
+            margin-top: 2px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .acciones {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .boton {
+            padding: 13px 20px;
+            border: none;
+            border-radius: 9px;
+            background: #169c21;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .boton-secundario {
+            background: #e2e8f0;
+            color: #172335;
+        }
+
+        .nota {
+            margin-top: 20px;
+            color: #64748b;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @page {
+            size: 80mm 40mm;
+            margin: 0;
+        }
+
+        @media print {
+            html, body {
+                width: 80mm;
+                min-height: 40mm;
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+
+            .encabezado,
+            .acciones,
+            .nota {
+                display: none !important;
+            }
+
+            .contenedor {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+            }
+
+            .etiqueta {
+                width: 80mm;
+                min-height: 40mm;
+                margin: 0;
+                padding: 3mm;
+                border: none;
+                border-radius: 0;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <header class="encabezado">
+        <h1>Etiqueta de herramienta</h1>
+        <p>Vista previa para impresión</p>
+    </header>
+
+    <div class="etiqueta">
+
+        <div class="empresa">
+            ENGRANES Y RECTIFICADOS
+        </div>
+
+        <div class="nombre-pieza">
+            {% if pieza.article %}
+                {{ pieza.article.name }}
+            {% else %}
+                {{ pieza.name }}
+            {% endif %}
+        </div>
+
+        <img
+            class="codigo-barras"
+            src="{{ imagen_codigo }}"
+            alt="Código de barras {{ codigo }}"
+        >
+
+        <div class="codigo-texto">
+            {{ codigo }}
+        </div>
+
+    </div>
+
+    <div class="acciones">
+
+        <button
+            type="button"
+            class="boton"
+            onclick="window.print()"
+        >
+            Imprimir etiqueta
+        </button>
+
+        <a
+            href="{% url 'consultar_piezas_individuales_almacen' %}"
+            class="boton boton-secundario"
+        >
+            Regresar a piezas individuales
+        </a>
+
+    </div>
+
+    <p class="nota">
+        Tamaño propuesto: 80 × 40 mm.
+        Al imprimir, selecciona escala del 100 %
+        y desactiva encabezados y pies de página.
+    </p>
+
+</div>
+
+</body>
+</html>

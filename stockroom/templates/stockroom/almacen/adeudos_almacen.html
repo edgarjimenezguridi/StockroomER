@@ -706,6 +706,43 @@ document.addEventListener("DOMContentLoaded", function () {
             const url = new URL(enlace.href);
             actualizarAdeudos(url);
         });
+
+    
+    // Actualizar los adeudos automáticamente cada 10 segundos.
+    // No interrumpir la escritura ni el escaneo.
+    setInterval(function () {
+        if (document.hidden) {
+            return;
+        }
+
+        const activo = document.activeElement;
+
+        if (
+            activo &&
+            (
+                activo.tagName === "INPUT" ||
+                activo.tagName === "TEXTAREA" ||
+                activo.tagName === "SELECT"
+            )
+        ) {
+            return;
+        }
+
+        // No interrumpir una búsqueda que todavía
+        // está esperando su resultado.
+        if (temporizador !== null) {
+            clearTimeout(temporizador);
+            temporizador = null;
+        }
+
+        const url = new URL(window.location.href);
+
+        // Evitar repetir una solicitud de escaneo.
+        url.searchParams.delete("scan");
+
+        actualizarAdeudos(url);
+    }, 10000);
+
 });
 </script>
 {% endblock %}
