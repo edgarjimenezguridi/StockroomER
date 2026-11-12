@@ -18,3 +18,19 @@ db.sqlite3-*
 *.log
 
 config/local_settings.py
+
+# Respaldos de bases de datos
+db_respaldo_*
+*.sqlite3
+*.sqlite3-*
+
+# Archivos generados en produccion
+staticfiles/
+
+# Respaldos temporales
+*.bak
+
+# Scripts locales de diagnóstico y mantenimiento
+corregir_prestamo_legacy.py
+diagnostico_herramienta.py
+errores_tests.txt

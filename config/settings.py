@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +21,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-from .local_settings import SECRET_KEY
+
+# Permite usar una clave desde el entorno en producción
+# y conservar local_settings.py durante el desarrollo.
+
+SECRET_KEY = os.environ.get("STOCKROOM_SECRET_KEY", "")
+
+if not SECRET_KEY:
+    try:
+        from .local_settings import SECRET_KEY
+    except ModuleNotFoundError as exc:
+        if exc.name != "config.local_settings":
+            raise
+
+        from django.core.exceptions import ImproperlyConfigured
+
+        raise ImproperlyConfigured(
+            "Configura STOCKROOM_SECRET_KEY o crea "
+            "config/local_settings.py con SECRET_KEY."
+        ) from exc
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
