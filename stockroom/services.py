@@ -42,35 +42,53 @@ def register_stock_entry(entry):
 
     return entry
 
+
 def register_quantity_issue(issue):
     if issue.pk is not None or not issue._state.adding:
         raise ValidationError(
             "Solo se pueden registrar entregas nuevas."
         )
+
     if issue.tool_id:
         return register_individual_issue(issue)
 
     with transaction.atomic():
+        # Una entrega nueva siempre debe iniciar
+        # sin cantidades previamente devueltas.
+        if issue.returned_quantity != 0:
+            raise ValidationError(
+                "Una entrega nueva no puede tener "
+                "piezas ya devueltas."
+            )
+
+        # Obtener la modalidad real del artículo.
+        article = Article.objects.get(
+            quantity_stock__pk=issue.stock_id
+        )
+
+        # Establecer el valor correcto ANTES
+        # de ejecutar las validaciones del modelo.
+        issue.requires_return = (
+            article.return_mode
+            == Article.ReturnMode.RETURNABLE
+        )
+
         issue.full_clean()
 
+        # Impedir entregas a trabajadores inactivos.
         if not Employee.objects.filter(
             pk=issue.employee_id,
             is_active=True,
         ).exists():
             raise ValidationError(
-                "El trabajador debe estar activo para recibir herramientas."
+                "El trabajador debe estar activo "
+                "para recibir herramientas."
             )
 
-        article = Article.objects.get(
-            quantity_stock__pk=issue.stock_id
-        )
-
-        issue.requires_return = (
-            article.return_mode == Article.ReturnMode.RETURNABLE
-        )
-
         changes = {
-            "available_quantity": F("available_quantity") - issue.quantity,
+            "available_quantity": (
+                F("available_quantity") - issue.quantity
+            ),
         }
 
         if issue.requires_return:
@@ -78,6 +96,8 @@ def register_quantity_issue(issue):
                 F("loaned_quantity") + issue.quantity
             )
 
+        # Actualización condicionada para evitar
+        # descontar existencias insuficientes.
         updated = QuantityStock.objects.filter(
             pk=issue.stock_id,
             article__is_active=True,
@@ -88,15 +108,16 @@ def register_quantity_issue(issue):
 
         if updated != 1:
             raise ValidationError(
-                "No se pudo registrar la entrega. Verifica que haya "
-                "suficientes piezas disponibles y que el artículo esté "
-                "activo, con control por cantidad y la misma modalidad "
-                "de devolución. Recarga el formulario e intenta de nuevo."
+                "No se pudo registrar la entrega. "
+                "Verifica que haya suficientes piezas "
+                "disponibles y que el artículo esté activo. "
+                "Recarga el formulario e intenta de nuevo."
             )
 
         issue.save(force_insert=True)
 
     return issue
+
 
 def register_quantity_return(return_record):
     if return_record.pk is not None or not return_record._state.adding:

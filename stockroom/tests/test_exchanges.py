@@ -195,3 +195,123 @@ class ExchangeTests(TestCase):
                 replacement_for__isnull=False
             ).exists()
         )
+    
+    def test_devolucion_parcial_actualiza_adeudo(self):
+        employee = Employee.objects.create(
+            employee_id="TEST-PARCIAL",
+            first_name="Trabajador",
+            last_name="Prueba",
+        )
+
+        article = Article.objects.create(
+            article_code="TEST-PARCIAL-ART",
+            name="Herramienta retornable",
+            tracking_mode=Article.TrackingMode.QUANTITY,
+            return_mode=Article.ReturnMode.RETURNABLE,
+        )
+
+        stock = QuantityStock.objects.create(
+            article=article,
+            available_quantity=8,
+        )
+
+        issue = register_quantity_issue(
+            QuantityIssue(
+                stock=stock,
+                employee=employee,
+                quantity=6,
+            )
+        )
+
+        returned = QuantityReturn(
+            issue=issue,
+            quantity=2,
+            condition=QuantityReturn.Condition.GOOD,
+        )
+
+        register_quantity_return(returned)
+
+        stock.refresh_from_db()
+        issue.refresh_from_db()
+
+        self.assertEqual(issue.quantity, 6)
+        self.assertEqual(issue.returned_quantity, 2)
+
+        # Quedan cuatro piezas pendientes.
+        self.assertEqual(
+            issue.quantity - issue.returned_quantity,
+            4,
+        )
+
+        # Existencias: 8 - 6 entregadas + 2 devueltas.
+        self.assertEqual(stock.available_quantity, 4)
+        self.assertEqual(stock.loaned_quantity, 4)
+        self.assertEqual(stock.quarantine_quantity, 0)
+
+        self.assertEqual(QuantityReturn.objects.count(), 1)
+
+    def test_cambio_por_cantidad_conserva_adeudos(self):
+        employee = Employee.objects.create(
+            employee_id="TEST-CAMBIO-CANT",
+            first_name="Trabajador",
+            last_name="Prueba",
+        )
+
+        article = Article.objects.create(
+            article_code="TEST-CAMBIO-ART",
+            name="Herramienta de cambio",
+            tracking_mode=Article.TrackingMode.QUANTITY,
+            return_mode=Article.ReturnMode.RETURNABLE,
+        )
+
+        stock = QuantityStock.objects.create(
+            article=article,
+            available_quantity=5,
+        )
+
+        original_issue = register_quantity_issue(
+            QuantityIssue(
+                stock=stock,
+                employee=employee,
+                quantity=3,
+            )
+        )
+
+        returned = QuantityReturn(
+            issue=original_issue,
+            quantity=2,
+            condition=QuantityReturn.Condition.DAMAGED,
+            reason="Herramientas dañadas durante el uso",
+        )
+
+        replacement = register_return_and_exchange(returned)
+
+        stock.refresh_from_db()
+        original_issue.refresh_from_db()
+        replacement.refresh_from_db()
+
+        # La entrega original conserva un adeudo.
+        self.assertEqual(original_issue.returned_quantity, 2)
+        self.assertEqual(
+            original_issue.quantity
+            - original_issue.returned_quantity,
+            1,
+        )
+
+        # El reemplazo genera una nueva entrega
+        # de dos piezas pendientes de devolución.
+        self.assertEqual(replacement.quantity, 2)
+        self.assertEqual(replacement.returned_quantity, 0)
+        self.assertTrue(replacement.requires_return)
+
+        self.assertEqual(replacement.employee_id, employee.pk)
+        self.assertEqual(replacement.replacement_for_id, returned.pk)
+
+        # Dos piezas dañadas pasan a cuarentena.
+        # Las dos piezas de reemplazo salen del almacén.
+        self.assertEqual(stock.available_quantity, 0)
+        self.assertEqual(stock.loaned_quantity, 3)
+        self.assertEqual(stock.quarantine_quantity, 2)
+
+        self.assertEqual(QuantityIssue.objects.count(), 2)
+        self.assertEqual(QuantityReturn.objects.count(), 1)

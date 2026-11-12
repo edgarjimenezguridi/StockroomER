@@ -74,3 +74,57 @@ class StockEntryCorrectionTests(TestCase):
         self.assertEqual(self.stock.available_quantity, 18)
         self.assertEqual(self.entry.corrections.count(), 1)
         self.assertEqual(self.entry.corrections.get().quantity_delta, -2)
+
+    
+    def test_correcciones_sucesivas_no_superan_entrada_original(self):
+        # Entrada original de 10 piezas.
+        self.corregir(-3)
+        self.corregir(-4)
+
+        self.stock.refresh_from_db()
+
+        self.assertEqual(self.stock.available_quantity, 3)
+        self.assertEqual(self.entry.corrections.count(), 2)
+
+        # Intentar descontar otras 4 debe rechazarse.
+        # En este caso, la validación de existencias
+        # disponibles se ejecuta primero.
+        with self.assertRaisesMessage(
+            ValidationError,
+            "No hay suficientes piezas disponibles",
+        ):
+            self.corregir(-4)
+
+        # Comprobar que el intento fallido
+        # no modificó las existencias.
+        self.stock.refresh_from_db()
+        self.entry.refresh_from_db()
+
+        self.assertEqual(self.stock.available_quantity, 3)
+        self.assertEqual(self.entry.quantity, 10)
+        self.assertEqual(self.entry.corrections.count(), 2)
+
+
+    def test_correccion_positiva_aumenta_existencias(self):
+        correction = self.corregir(5)
+
+        self.stock.refresh_from_db()
+        self.entry.refresh_from_db()
+
+        self.assertEqual(self.stock.available_quantity, 15)
+        self.assertEqual(self.entry.quantity, 10)
+
+        self.assertEqual(correction.quantity_delta, 5)
+        self.assertEqual(correction.recorded_by_id, self.user.pk)
+        self.assertEqual(self.entry.corrections.count(), 1)
+
+    def test_rechaza_correccion_de_cero(self):
+        with self.assertRaises(ValidationError):
+            self.corregir(0)
+
+        self.stock.refresh_from_db()
+
+        self.assertEqual(self.stock.available_quantity, 10)
+        self.assertFalse(self.entry.corrections.exists())
+
+

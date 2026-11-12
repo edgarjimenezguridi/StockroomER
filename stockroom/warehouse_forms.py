@@ -90,7 +90,6 @@ class PrepareWarehouseLineForm(forms.Form):
 
         return cleaned_data
 
-
 class WarehouseReturnForm(forms.Form):
     operation = forms.ChoiceField(
         label="Tipo de operación",
@@ -269,64 +268,6 @@ class WarehouseReturnForm(forms.Form):
                 self.add_error(
                     "replacement_tool",
                     "Los artículos por cantidad no requieren seleccionar una pieza individual.",
-                )
-
-        return cleaned_data
-
-
-class WarehouseDamageResolutionForm(forms.Form):
-    source_return = forms.ModelChoiceField(
-        label="Devolución dañada",
-        queryset=QuantityReturn.objects.none(),
-    )
-    quantity = forms.IntegerField(
-        label="Cantidad que resolverás",
-        min_value=1,
-    )
-    outcome = forms.ChoiceField(
-        label="Resolución",
-        choices=DamageResolution.Outcome.choices,
-    )
-    reason = forms.CharField(
-        label="Motivo de la resolución",
-        max_length=200,
-    )
-    notes = forms.CharField(
-        label="Observaciones",
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["source_return"].queryset = (
-            QuantityReturn.objects.filter(
-                condition=QuantityReturn.Condition.DAMAGED,
-                resolved_quantity__lt=F("quantity"),
-            )
-            .select_related(
-                "issue__employee",
-                "issue__stock__article",
-                "issue__tool__article",
-                "issue__tool",
-            )
-            .order_by("-returned_at", "-pk")
-        )
-
-    def clean(self):
-        cleaned_data = super().clean()
-        damaged_return = cleaned_data.get("source_return")
-        quantity = cleaned_data.get("quantity")
-
-        if damaged_return is not None and quantity is not None:
-            pending = (
-                damaged_return.quantity - damaged_return.resolved_quantity
-            )
-
-            if quantity > pending:
-                self.add_error(
-                    "quantity",
-                    f"Solo quedan {pending} piezas dañadas por resolver.",
                 )
 
         return cleaned_data
