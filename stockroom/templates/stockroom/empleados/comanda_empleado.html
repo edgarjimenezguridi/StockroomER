@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="es-MX">
 <head>
@@ -5,141 +6,217 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Comanda {{ solicitud.pk }} | StockroomER</title>
     <style>
+        :root {
+            --verde: #169c21;
+            --verde-oscuro: #0f7a18;
+            --tinta: #172335;
+            --borde: #d8e2e9;
+        }
+        * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 24px;
-            font-family: Arial, sans-serif;
-            color: #172033;
-            background: #f1f5f9;
+            padding: 24px 12px;
+            background: #edf2f5;
+            color: var(--tinta);
+            font-family: Arial, Helvetica, sans-serif;
         }
-
-        main {
-            max-width: 720px;
-            margin: 24px auto;
-            padding: 28px;
-            background: white;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 12px 8px;
-            text-align: left;
-            border-bottom: 1px solid #ccc;
+        .recibo {
+            width: 80mm;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 4mm;
+            background: #fff;
+            box-shadow: 0 8px 28px rgba(23,35,53,.11);
             overflow-wrap: anywhere;
         }
-
-        .folio {
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .acciones {
-            margin-top: 24px;
-        }
-
-        button {
-            padding: 12px 20px;
-            cursor: pointer;
-        }
-        .codigo-comanda {
-            margin: 20px 0;
-            background: white;
-        }
-
-        .codigo-comanda img {
+        .logo {
             display: block;
-            max-width: 100%;
+            max-width: 57mm;
+            max-height: 18mm;
+            width: auto;
             height: auto;
+            margin: 0 auto 2mm;
+            object-fit: contain;
         }
-
+        .sistema { text-align: center; font-size: 9px; font-weight: bold; letter-spacing: .6px; }
+        h1 { text-align: center; font-size: 15px; line-height: 1.2; margin: 2mm 0 1mm; }
+        .folio { text-align: center; font-size: 12px; font-weight: bold; margin: 0 0 3mm; }
+        .barcode-label {
+            border: 1px solid #a7b4bd;
+            border-radius: 3mm;
+            padding: 2.6mm 2mm 2mm;
+            margin: 0 0 3mm;
+            background: #fff;
+            color: #000;
+            text-align: center;
+            break-inside: avoid;
+        }
+        .barcode-label .empresa {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .35px;
+            text-transform: uppercase;
+        }
+        .barcode-label .tipo { font-size: 9px; margin-top: 1mm; margin-bottom: 1.5mm; }
+        .barcode-label img {
+            display: block;
+            width: 61mm;
+            max-width: 100%;
+            max-height: 25mm;
+            height: auto;
+            margin: 0 auto;
+            object-fit: contain;
+        }
+        .barcode-label .codigo {
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: .3px;
+            margin-top: 1mm;
+            line-height: 1.1;
+        }
+        .separador { border: 0; border-top: 1px dashed #555; margin: 3mm 0; }
+        .datos { display: grid; grid-template-columns: 1fr; gap: 1.5mm; font-size: 10px; }
+        .datos .dato { display: flex; align-items: baseline; gap: 5px; }
+        .datos strong { flex-shrink: 0; }
+        h2 { font-size: 11px; margin: 2mm 0; text-transform: uppercase; }
+        table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 9px; }
+        thead th { border-top: 1px solid #555; border-bottom: 1px solid #555; padding: 1.6mm .8mm; text-align: left; }
+        td { vertical-align: top; padding: 1.8mm .8mm; border-bottom: 1px dotted #aaa; overflow-wrap: anywhere; }
+        th:nth-child(1), td:nth-child(1) { width: 23%; }
+        th:nth-child(2), td:nth-child(2) { width: 62%; }
+        th:nth-child(3), td:nth-child(3) { width: 15%; text-align: center; }
+        tbody tr { break-inside: avoid; }
+        .aviso { font-size: 9px; line-height: 1.35; margin: 3mm 0 0; }
+        .pie { text-align: center; font-size: 9px; margin: 3mm 0 0; font-weight: bold; }
+        .acciones {
+            width: min(80mm, 100%);
+            margin: 14px auto 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .boton {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            padding: 12px;
+            font-size: 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            border: 1px solid var(--borde);
+        }
+        .boton-imprimir { background: var(--verde); color: #fff; border-color: var(--verde); }
+        .boton-volver { background: white; color: var(--tinta); }
+        .nota-pantalla { width: min(80mm, 100%); margin: 8px auto; font-size: 11px; color: #536273; line-height: 1.4; }
+        @page { margin: 0; }
         @media print {
-            body {
-                padding: 0;
-                background: white;
-                color: black;
-            }
-
-            main {
-                margin: 0;
-                padding: 0;
-                max-width: none;
-            }
-
-            .acciones {
-                display: none;
-            }
-
-            tr {
-                break-inside: avoid;
-            }
+            html, body { width: 80mm; margin: 0 !important; padding: 0 !important; background: white !important; color: black !important; }
+            .recibo { width: 80mm; max-width: 80mm; margin: 0; padding: 3mm 4mm 5mm; box-shadow: none; }
+            .acciones, .nota-pantalla { display: none !important; }
+            .barcode-label { border-color: #777; }
+            .separador { border-color: #555; }
+            img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+        @media (max-width: 380px) {
+            body { padding: 12px 4px; }
+            .recibo { padding: 3mm; }
+        }
+        /* Firma de recibido - Comanda térmica */
+        .firma-recibido {
+            margin-top: 30px;
+            padding: 12px 4px 8px;
+            text-align: center;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .linea-firma {
+            width: 82%;
+            height: 42px;
+            margin: 0 auto 8px;
+            border-bottom: 1px solid #111;
+        }
+
+        .firma-recibido p {
+            margin: 5px 0;
+            font-size: 11px;
+        }
+
+        .firma-recibido small {
+            display: block;
+            margin-top: 10px;
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
     </style>
 </head>
 <body>
-    <main>
-        <h1>StockroomER — Solicitud de materiales</h1>
-        <p class="folio">Folio #{{ solicitud.pk }}</p>
-        <div class="codigo-comanda">
-            <img
-                src="{{ barcode_image }}"
-                alt="Código de barras {{ barcode_value }}"
-            >
-        </div>
+    <main class="recibo">
+        <header>
+            <img class="logo" src="{% static 'img/logo_empresa.png' %}" alt="Engranes y Rectificados">
+            <div class="sistema">STOCKROOMER · ALMACÉN</div>
+            <h1>Solicitud de materiales</h1>
+            <p class="folio">Folio #{{ solicitud.pk }}</p>
+        </header>
 
-        <p>
-            <strong>Trabajador:</strong>
-            {{ solicitud.employee.first_name }}
-            {{ solicitud.employee.last_name }}
-        </p>
-        <p>
-            <strong>Número de empleado:</strong>
-            {{ solicitud.employee.employee_id }}
-        </p>
-        <p>
-            <strong>Solicitada:</strong>
-            {{ solicitud.submitted_at|date:"d/m/Y H:i" }}
-        </p>
-        <p>
-            <strong>Estado al consultar:</strong>
-            {{ solicitud.get_status_display }}
-        </p>
+        <section class="barcode-label" aria-label="Código de barras de comanda">
+            <div class="empresa">ENGRANES Y RECTIFICADOS</div>
+            <div class="tipo">Comanda de materiales</div>
+            <img src="{{ barcode_image }}" alt="Código de barras {{ barcode_value }}">
+            <div class="codigo">{{ barcode_value }}</div>
+        </section>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Artículo</th>
-                    <th>Cantidad solicitada</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for line in solicitud.lines.all %}
+        <hr class="separador">
+        <section class="datos" aria-label="Datos de la solicitud">
+            <div class="dato"><strong>Trabajador:</strong><span>{{ solicitud.employee.first_name }} {{ solicitud.employee.last_name }}</span></div>
+            <div class="dato"><strong>N.º empleado:</strong><span>{{ solicitud.employee.employee_id }}</span></div>
+            <div class="dato"><strong>Solicitada:</strong><span>{{ solicitud.submitted_at|date:"d/m/Y H:i" }}</span></div>
+            <div class="dato"><strong>Estado:</strong><span>{{ solicitud.get_status_display }}</span></div>
+        </section>
+
+        <hr class="separador">
+        <section aria-label="Artículos solicitados">
+            <h2>Artículos solicitados</h2>
+            <table>
+                <thead><tr><th>Código</th><th>Artículo</th><th>Cant.</th></tr></thead>
+                <tbody>
+                    {% for line in solicitud.lines.all %}
                     <tr>
                         <td>{{ line.article.article_code }}</td>
                         <td>{{ line.article.name }}</td>
-                        <td>{{ line.requested_quantity }}</td>
+                        <td><strong>{{ line.requested_quantity }}</strong></td>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% empty %}
+                    <tr><td colspan="3">Sin artículos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
-        <p>
-            Esta comanda muestra lo solicitado; no acredita la entrega.
-            Las cantidades recibidas se registran al confirmar con NIP.
-        </p>
+        <p class="aviso"><strong>Importante:</strong>La firma acredita únicamente los materiales efectivamente recibidos. La entrega también debe confirmarse en StockroomER mediante NIP.</p>
 
-        <div class="acciones">
-            <button type="button" onclick="window.print()">
-                Imprimir comanda
-            </button>
-            <p>
-                <a href="{% url 'panel_empleado' %}">Volver a mi panel</a>
-            </p>
-        </div>
+            <div class="firma-recibido">
+                <div class="linea-firma"></div>
+                <p><strong>Firma de recibido</strong></p>
+                <p>
+                    {{ solicitud.employee.first_name }}
+                    {{ solicitud.employee.last_name }}
+                </p>
+                <small>
+                    Confirmo la recepción de los materiales
+                    indicados en esta comanda.
+                </small>
+            </div>
+
+        <p class="pie">ENGRANES Y RECTIFICADOS</p>
     </main>
+    <nav class="acciones" aria-label="Acciones de comanda">
+        <button class="boton boton-imprimir" type="button" onclick="window.print()">Imprimir comanda</button>
+        <a class="boton boton-volver" href="{% url 'panel_empleado' %}">Volver a mi panel</a>
+    </nav>
+    <p class="nota-pantalla">En el diálogo de impresión selecciona la impresora térmica y papel de 80 mm de ancho, sin márgenes ni encabezados del navegador. La longitud del recibo depende del número de artículos.</p>
 </body>
 </html>
