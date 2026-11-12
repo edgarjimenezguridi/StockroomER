@@ -34,3 +34,6 @@ staticfiles/
 corregir_prestamo_legacy.py
 diagnostico_herramienta.py
 errores_tests.txt
+
+# Respaldos automáticos del almacén
+backups/
