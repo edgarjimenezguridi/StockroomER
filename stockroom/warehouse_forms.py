@@ -121,6 +121,24 @@ class WarehouseReturnForm(forms.Form):
         ),
     )
 
+
+    replacement_code = forms.CharField(
+        label="Escanear código de reemplazo",
+        max_length=100,
+        required=False,
+        help_text=(
+            "Escanea el código único de la herramienta, "
+            "por ejemplo TOOL-0002. También puedes "
+            "utilizar el selector manual."
+        ),
+        widget=forms.TextInput(attrs={
+            "autocomplete": "off",
+            "spellcheck": "false",
+            "placeholder": "Escanea o escribe el código de la pieza",
+        }),
+    )
+
+
     reason = forms.CharField(
         label="Motivo del daño",
         max_length=200,
@@ -168,6 +186,49 @@ class WarehouseReturnForm(forms.Form):
         condition = cleaned_data.get("condition")
         replacement_tool = cleaned_data.get("replacement_tool")
         reason = cleaned_data.get("reason", "").strip()
+
+        # Resolver la herramienta escaneada utilizando
+        # el mismo selector protegido que el campo manual.
+        replacement_code = (
+            cleaned_data.get("replacement_code") or ""
+        ).strip()
+
+        if replacement_code:
+            if operation != "exchange" or not self.issue.tool_id:
+                self.add_error(
+                    "replacement_code",
+                    "El escaneo de reemplazo solo se permite "
+                    "para cambios de herramientas individuales.",
+                )
+            else:
+                scanned_tool = (
+                    self.fields["replacement_tool"]
+                    .queryset
+                    .filter(tool_code__iexact=replacement_code)
+                    .first()
+                )
+
+                if scanned_tool is None:
+                    self.add_error(
+                        "replacement_code",
+                        "No se encontró una herramienta disponible "
+                        "del mismo artículo con ese código.",
+                    )
+
+                elif (
+                    replacement_tool is not None
+                    and replacement_tool.pk != scanned_tool.pk
+                ):
+                    self.add_error(
+                        "replacement_code",
+                        "La herramienta escaneada no coincide "
+                        "con la seleccionada manualmente.",
+                    )
+
+                else:
+                    replacement_tool = scanned_tool
+                    cleaned_data["replacement_tool"] = scanned_tool
+
 
         if (
             condition == QuantityReturn.Condition.DAMAGED

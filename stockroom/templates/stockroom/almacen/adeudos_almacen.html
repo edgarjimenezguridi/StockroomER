@@ -1,4 +1,3 @@
-
 {% extends "stockroom/base.html" %}
 
 {% block title %}Consulta de adeudos{% endblock %}
@@ -286,6 +285,48 @@ Consulta las herramientas y materiales pendientes de devolución.
             width: 100%;
         }
     }
+
+    /* Escaneo directo de piezas individuales */
+    .escaneo-pieza {
+        margin: 0 0 22px;
+        padding: 20px;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        background: #f2f8f3;
+    }
+    .escaneo-pieza h3 {
+        margin: 0 0 8px;
+        color: #166534;
+    }
+    .escaneo-pieza p {
+        margin: 0 0 12px;
+        color: #475569;
+    }
+    .escaneo-pieza form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .escaneo-pieza input {
+        box-sizing: border-box;
+        flex: 1 1 250px;
+        min-width: 0;
+        min-height: 50px;
+        padding: 12px 14px;
+        border: 2px solid #cbd5e1;
+        border-radius: 10px;
+        font: inherit;
+        background: #fff;
+    }
+    .escaneo-pieza input:focus {
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    }
+    .escaneo-pieza .boton-empresa {
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 
@@ -328,6 +369,33 @@ Consulta las herramientas y materiales pendientes de devolución.
                 Ver todos los trabajadores
             </a>
         </div>
+    {% endif %}
+
+    <!-- Escanear una herramienta individual sin alterar inventario -->
+    {% if puede_devolver %}
+    <section class="escaneo-pieza" aria-labelledby="titulo-escaneo-pieza">
+        <h3 id="titulo-escaneo-pieza">Escanear herramienta para devolver</h3>
+        <p>
+            Escanea su código único (por ejemplo, TOOL-0001) y presiona Enter.
+            Se abrirá la devolución pendiente, sin registrar movimientos automáticamente.
+        </p>
+        <form method="get" action="{% url 'adeudos_almacen' %}" id="form-escaneo-pieza">
+            <input
+                type="text"
+                name="scan"
+                id="codigo-escaneo-pieza"
+                placeholder="Código de pieza, por ejemplo TOOL-0001"
+                aria-label="Código de herramienta individual"
+                maxlength="100"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                autofocus
+                required
+            >
+            <button type="submit" class="boton-empresa">Buscar devolución</button>
+        </form>
+    </section>
     {% endif %}
 
     <!-- Buscador -->

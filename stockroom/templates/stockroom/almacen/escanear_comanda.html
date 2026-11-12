@@ -10,7 +10,7 @@ Escanear comanda
 {% endblock %}
 
 {% block descripcion %}
-Escanea el código o escribe el folio impreso.
+Escanea el código de barras de una comanda para consultar su solicitud.
 {% endblock %}
 
 {% block extra_css %}
@@ -29,48 +29,171 @@ Escanea el código o escribe el folio impreso.
         max-width: 100%;
     }
 
+    .instrucciones-escaneo {
+        margin-bottom: 24px;
+        padding: 20px;
+        background: #f2f8f3;
+        border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .icono-escaneo {
+        font-size: 42px;
+        margin-bottom: 10px;
+    }
+
+    .instrucciones-escaneo h3 {
+        margin: 0 0 10px;
+        color: #166534;
+        font-size: 19px;
+    }
+
+    .instrucciones-escaneo p {
+        margin: 0;
+        color: #475569;
+        line-height: 1.6;
+    }
+
+    .estado-lector {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 14px;
+        color: #166534;
+        font-weight: 600;
+    }
+
+    .indicador-lector {
+        width: 10px;
+        height: 10px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #16a34a;
+    }
+
     .pagina-escanear form label {
         display: block;
         margin-bottom: 8px;
-        font-weight: 600;
+        font-weight: 700;
+        color: #172335;
     }
 
     .pagina-escanear form input {
         box-sizing: border-box;
         width: 100%;
-        padding: 14px;
-        font-size: 20px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
+        min-height: 58px;
+        padding: 15px;
+        font-size: 22px;
+        font-weight: 600;
+        text-align: center;
+        letter-spacing: 1px;
+        border: 2px solid #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        color: #172335;
     }
 
     .pagina-escanear form input:focus {
-        outline: 2px solid #169c21;
-        outline-offset: 1px;
+        outline: none;
+        border-color: #169c21;
+        box-shadow: 0 0 0 4px rgba(22, 156, 33, .15);
     }
 
     .pagina-escanear .errorlist {
-        color: #b91c1c;
+        margin: 12px 0;
+        padding: 12px 16px;
+        list-style: none;
+        color: #991b1b;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 9px;
+        font-size: 14px;
     }
 
-    .pagina-escanear .acciones {
+    .pagina-escanear .helptext {
+        display: block;
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .acciones {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
         margin-top: 24px;
+    }
+
+    .acciones .boton-empresa {
+        flex: 1;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .boton-empresa:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .nota-escaneo {
+        margin-top: 24px;
+        padding: 15px 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    @media (max-width: 600px) {
+        .acciones {
+            flex-direction: column;
+        }
+
+        .acciones .boton-empresa {
+            box-sizing: border-box;
+            width: 100%;
+        }
     }
 </style>
 {% endblock %}
 
 {% block contenido %}
 
-<form method="post">
+<section class="instrucciones-escaneo">
+    <div class="icono-escaneo">▥</div>
+
+    <h3>Escáner de comandas</h3>
+
+    <p>
+        Coloca el lector sobre el código de barras
+        de la comanda y realiza el escaneo.
+    </p>
+
+    <div class="estado-lector" id="estado-lector" role="status">
+        <span class="indicador-lector"></span>
+        <span id="texto-lector">
+            Campo listo para escanear
+        </span>
+    </div>
+</section>
+
+<form method="post" id="formulario-escaneo">
     {% csrf_token %}
 
     {{ form.as_p }}
 
     <div class="acciones">
-        <button type="submit" class="boton-empresa">
+        <button
+            type="submit"
+            class="boton-empresa"
+            id="boton-abrir"
+        >
             Abrir solicitud
         </button>
 
@@ -83,4 +206,86 @@ Escanea el código o escribe el folio impreso.
     </div>
 </form>
 
+<div class="nota-escaneo">
+    <strong>Importante:</strong>
+    El lector debe estar configurado para enviar
+    Enter después de cada lectura.
+
+    También puedes escribir manualmente un folio
+    como SOL-000001 y presionar Enter.
+
+    El escaneo solamente abre la solicitud.
+    No registra automáticamente entregas de inventario.
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const formulario = document.getElementById(
+        "formulario-escaneo"
+    );
+
+    const campo = document.getElementById("id_code");
+    const boton = document.getElementById("boton-abrir");
+    const texto = document.getElementById("texto-lector");
+
+    if (!formulario || !campo || !boton || !texto) {
+        return;
+    }
+
+    let enviando = false;
+
+    function enfocarCampo() {
+        if (!enviando) {
+            campo.focus();
+        }
+    }
+
+    // Preparar el campo al abrir la pantalla.
+    enfocarCampo();
+
+    // Normalizar el código introducido.
+    campo.addEventListener("input", function () {
+        const valor = campo.value;
+        const normalizado = valor.toUpperCase();
+
+        if (valor !== normalizado) {
+            const posicion = campo.selectionStart;
+            campo.value = normalizado;
+
+            if (posicion !== null) {
+                campo.setSelectionRange(
+                    posicion,
+                    posicion
+                );
+            }
+        }
+
+        texto.textContent = campo.value
+            ? "Código recibido. Presiona Enter o escanea."
+            : "Campo listo para escanear";
+    });
+
+    formulario.addEventListener("submit", function (event) {
+        if (enviando) {
+            event.preventDefault();
+            return;
+        }
+
+        campo.value = campo.value.trim().toUpperCase();
+
+        if (!campo.value) {
+            event.preventDefault();
+            enfocarCampo();
+            return;
+        }
+
+        enviando = true;
+        boton.disabled = true;
+        texto.textContent = "Buscando comanda...";
+    });
+});
+</script>
 {% endblock %}

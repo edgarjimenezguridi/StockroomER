@@ -132,6 +132,7 @@ def register_quantity_return(return_record):
                 "que intentas devolver supera las piezas pendientes."
             )
 
+        
         if issue.tool_id:
             new_status = (
                 Tool.InventoryStatus.AVAILABLE
@@ -150,8 +151,32 @@ def register_quantity_return(return_record):
                     "Revisa su historial antes de registrar la devolución."
                 )
 
+            # Sincronizar el préstamo antiguo vinculado,
+            # únicamente cuando la entrega esté completamente devuelta.
+            if issue.legacy_loan_id:
+                issue.refresh_from_db(
+                    fields=["returned_quantity"]
+                )
+
+                if issue.returned_quantity == issue.quantity:
+                    updated_loan = Loan.objects.filter(
+                        pk=issue.legacy_loan_id,
+                        tool_id=issue.tool_id,
+                        employee_id=issue.employee_id,
+                        returned_at__isnull=True,
+                    ).update(
+                        returned_at=return_record.returned_at
+                    )
+
+                    if updated_loan != 1:
+                        raise ValidationError(
+                            "No se pudo cerrar el préstamo antiguo "
+                            "vinculado. Revisa su historial."
+                        )
+
             return_record.save(force_insert=True)
             return return_record
+
 
         changes = {
             "loaned_quantity": (
@@ -218,14 +243,19 @@ def register_individual_issue(issue):
                 "El trabajador debe estar activo."
             )
 
+        
+        # Impedir nuevas entregas mientras exista cualquier
+        # préstamo antiguo abierto, esté vinculado o no
+        # a una entrega del sistema unificado.
         if Loan.objects.filter(
             tool_id=tool.pk,
             returned_at__isnull=True,
-            unified_issue__isnull=True,
         ).exists():
             raise ValidationError(
-                "Esta pieza tiene un préstamo anterior pendiente."
+                "Esta pieza tiene un préstamo anterior pendiente. "
+                "Registra su devolución antes de entregarla nuevamente."
             )
+
 
         new_status = (
             Tool.InventoryStatus.LOANED

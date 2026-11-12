@@ -151,6 +151,24 @@ Registra la devolución de herramientas y materiales del almacén.
             width: 100%;
         }
     }
+
+    .codigo-reemplazo-info {
+        margin-top: 8px;
+        padding: 11px 14px;
+        border: 1px solid #cfe6d2;
+        border-radius: 9px;
+        background: #f2f8f3;
+        color: #166534;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .codigo-reemplazo-info.error {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
 </style>
 {% endblock %}
 
@@ -209,18 +227,23 @@ Registra la devolución de herramientas y materiales del almacén.
 
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const operation = document.getElementById("id_operation");
     const condition = document.getElementById("id_condition");
     const replacement = document.getElementById("id_replacement_tool");
+    const replacementCode = document.getElementById(
+        "id_replacement_code"
+    );
     const reason = document.getElementById("id_reason");
     const submitButton = document.getElementById("submit-return");
+    const form = document.querySelector(".formulario-devolucion");
 
-    const individualTool = {% if entrega.tool_id %}true{% else %}false{% endif %};
+    const individualTool =
+        {% if entrega.tool_id %}true{% else %}false{% endif %};
 
-    // Mantener compatibilidad con los campos del formulario.
     if (!operation || !condition || !submitButton) {
         return;
     }
@@ -229,24 +252,46 @@ document.addEventListener("DOMContentLoaded", function () {
         ? replacement.closest("p")
         : null;
 
+    const replacementCodeRow = replacementCode
+        ? replacementCode.closest("p")
+        : null;
+
     const reasonRow = reason
         ? reason.closest("p")
         : null;
 
+    let scanInfo = null;
+
+    if (replacementCodeRow) {
+        scanInfo = document.createElement("div");
+        scanInfo.className = "codigo-reemplazo-info";
+        scanInfo.setAttribute("role", "status");
+        scanInfo.textContent =
+            "Escanea el código de la herramienta de reemplazo.";
+
+        replacementCodeRow.appendChild(scanInfo);
+    }
+
     function updateForm() {
         const isExchange = operation.value === "exchange";
         const isDamaged = condition.value === "damaged";
+        const showReplacement = isExchange && individualTool;
 
         if (replacementRow) {
-            replacementRow.hidden = !(isExchange && individualTool);
+            replacementRow.hidden = !showReplacement;
+        }
+
+        if (replacementCodeRow) {
+            replacementCodeRow.hidden = !showReplacement;
         }
 
         if (reasonRow) {
             reasonRow.hidden = !isDamaged;
         }
 
-        if (replacement && !isExchange) {
-            replacement.value = "";
+        if (!showReplacement) {
+            if (replacement) replacement.value = "";
+            if (replacementCode) replacementCode.value = "";
         }
 
         if (reason && !isDamaged) {
@@ -258,10 +303,74 @@ document.addEventListener("DOMContentLoaded", function () {
             : "Guardar devolución";
     }
 
+    if (replacementCode) {
+        replacementCode.addEventListener("input", function () {
+            replacementCode.value =
+                replacementCode.value.toUpperCase();
+
+            // El código escaneado tiene prioridad.
+            // Evitar una selección manual diferente.
+            if (replacement) {
+                replacement.value = "";
+            }
+
+            if (scanInfo) {
+                scanInfo.classList.remove("error");
+
+                scanInfo.textContent = replacementCode.value.trim()
+                    ? "Código capturado. Se validará al guardar el cambio."
+                    : "Escanea el código de la herramienta de reemplazo.";
+            }
+        });
+
+        // La mayoría de los lectores envían Enter.
+        // En esta pantalla Enter NO debe guardar el cambio.
+        replacementCode.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+
+                replacementCode.value =
+                    replacementCode.value.trim().toUpperCase();
+
+                if (scanInfo) {
+                    scanInfo.textContent =
+                        "Lectura capturada. Revisa el formulario " +
+                        "y confirma el cambio con el botón.";
+                }
+            }
+        });
+    }
+
+    if (replacement) {
+        replacement.addEventListener("change", function () {
+            // Si se elige otra pieza manualmente,
+            // retirar el código escaneado anterior.
+            if (replacementCode) {
+                replacementCode.value = "";
+            }
+
+            if (scanInfo) {
+                scanInfo.textContent = replacement.value
+                    ? "Herramienta seleccionada manualmente."
+                    : "Escanea el código de la herramienta de reemplazo.";
+            }
+        });
+    }
+
     operation.addEventListener("change", updateForm);
     condition.addEventListener("change", updateForm);
+
+    if (form) {
+        form.addEventListener("submit", function () {
+            if (replacementCode) {
+                replacementCode.value =
+                    replacementCode.value.trim().toUpperCase();
+            }
+        });
+    }
 
     updateForm();
 });
 </script>
 {% endblock %}
+

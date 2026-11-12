@@ -1,3 +1,4 @@
+
 from django.db.models import (
     Case,
     Count,
@@ -15,16 +16,36 @@ from .models import Article, Loan, QuantityIssue, Tool
 
 
 def piezas_individuales_disponibles():
-    piezas_con_pendiente = QuantityIssue.objects.filter(
-        tool__isnull=False,
-        requires_return=True,
-        returned_quantity__lt=F("quantity"),
-    ).values("tool_id")
+    """
+    Devuelve exclusivamente herramientas individuales que
+    pueden seleccionarse para una nueva entrega.
 
-    prestamos_sin_importar = Loan.objects.filter(
-        returned_at__isnull=True,
-        unified_issue__isnull=True,
-    ).values("tool_id")
+    Se excluyen:
+    - Piezas inactivas.
+    - Piezas con estado diferente de disponible.
+    - Articulos inactivos.
+    - Entregas unificadas pendientes.
+    - Todos los prestamos antiguos abiertos, incluidos
+      los vinculados a una entrega unificada.
+    """
+
+    piezas_con_pendiente = (
+        QuantityIssue.objects.filter(
+            tool__isnull=False,
+            requires_return=True,
+            returned_quantity__lt=F("quantity"),
+        )
+        .values("tool_id")
+    )
+
+    # No ignorar prestamos legacy que ya fueron importados.
+    # Si Loan.returned_at es NULL, la pieza sigue bloqueada.
+    prestamos_abiertos = (
+        Loan.objects.filter(
+            returned_at__isnull=True,
+        )
+        .values("tool_id")
+    )
 
     return (
         Tool.objects.filter(
@@ -34,11 +55,19 @@ def piezas_individuales_disponibles():
             article__tracking_mode=Article.TrackingMode.INDIVIDUAL,
         )
         .exclude(pk__in=piezas_con_pendiente)
-        .exclude(pk__in=prestamos_sin_importar)
+        .exclude(pk__in=prestamos_abiertos)
         .select_related("article")
     )
 
+
 def catalogo_articulos(search=""):
+    """
+    Consulta el catalogo de articulos activos.
+
+    Para articulos individuales, la disponibilidad se
+    calcula utilizando el selector protegido.
+    """
+
     piezas_por_articulo = (
         piezas_individuales_disponibles()
         .filter(article_id=OuterRef("pk"))

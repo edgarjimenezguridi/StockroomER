@@ -1,344 +1,135 @@
-
 {% extends "stockroom/base.html" %}
 
 {% block title %}Consultar piezas individuales{% endblock %}
-
 {% block body_class %}pagina-consultar-piezas{% endblock %}
-
-{% block titulo_pagina %}
-Consultar piezas individuales
-{% endblock %}
-
-{% block descripcion %}
-Consulta las herramientas físicas, sus códigos únicos y sus préstamos pendientes.
-{% endblock %}
+{% block titulo_pagina %}Consultar piezas individuales{% endblock %}
+{% block descripcion %}Consulta las herramientas físicas, sus códigos únicos y sus estados de inventario.{% endblock %}
 
 {% block extra_css %}
 <style>
-    .pagina-consultar-piezas .contenedor-empresa {
-        max-width: 1350px;
+    .pagina-consultar-piezas .contenedor-empresa { max-width: 1350px; }
+    .pagina-consultar-piezas .logo-empresa { width: 360px; max-width: 100%; }
+    .introduccion-piezas, .resumen-piezas {
+        margin: 20px 0 24px; padding: 18px 20px; border: 1px solid #cfe6d2;
+        border-left: 5px solid #169c21; border-radius: 12px;
+        background: #f2f8f3; color: #285b32; line-height: 1.7;
     }
-
-    .pagina-consultar-piezas .logo-empresa {
-        width: 360px;
-        max-width: 100%;
-    }
-
-    .introduccion-piezas {
-        margin: 20px 0 24px;
-        padding: 18px 20px;
-        border: 1px solid #cfe6d2;
-        border-left: 5px solid #169c21;
-        border-radius: 12px;
-        background: #f2f8f3;
-        color: #285b32;
-        line-height: 1.7;
-    }
-
-    .introduccion-piezas p {
-        margin: 0;
-    }
-
+    .introduccion-piezas p { margin: 0; }
     .filtros-piezas {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 12px;
-        margin-bottom: 24px;
-        align-items: end;
+        display: grid; grid-template-columns: 2fr 1fr; gap: 12px;
+        margin-bottom: 24px; align-items: end;
     }
-
     .campo-filtro label {
-        display: block;
-        margin-bottom: 8px;
-        color: #172335;
-        font-size: 14px;
-        font-weight: 700;
+        display: block; margin-bottom: 8px; color: #172335;
+        font-size: 14px; font-weight: 700;
     }
-
-    .campo-filtro input,
-    .campo-filtro select {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 49px;
-        padding: 12px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #ffffff;
-        color: #172335;
-        font: inherit;
-        font-size: 15px;
+    .campo-filtro input, .campo-filtro select {
+        box-sizing: border-box; width: 100%; min-height: 49px;
+        padding: 12px 14px; border: 1px solid #cbd5e1;
+        border-radius: 10px; background: #fff; color: #172335;
+        font: inherit; font-size: 15px;
     }
-
-    .campo-filtro input:focus,
-    .campo-filtro select:focus {
-        outline: none;
-        border-color: #169c21;
-        box-shadow: 0 0 0 3px rgba(22, 156, 33, .15);
+    .campo-filtro input:focus, .campo-filtro select:focus {
+        outline: none; border-color: #169c21;
+        box-shadow: 0 0 0 3px rgba(22,156,33,.15);
     }
-
-    .boton-filtrar {
-        min-height: 49px;
-        padding: 12px 22px;
-        border: none;
-        border-radius: 10px;
-        background: #169c21;
-        color: #ffffff;
-        font: inherit;
-        font-size: 15px;
-        font-weight: 700;
-        cursor: pointer;
+    .resumen-piezas { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; }
+    .resumen-piezas strong { font-size: 27px; color: #0f7a18; }
+    .tabla-piezas { overflow-x: auto; border: 1px solid #dbe3ec; border-radius: 12px; }
+    .tabla-piezas table { width: 100%; min-width: 1100px; border-collapse: collapse; }
+    .tabla-piezas th, .tabla-piezas td {
+        padding: 14px 12px; border-bottom: 1px solid #e2e8f0;
+        text-align: left; vertical-align: middle; font-size: 14px;
     }
-
-    .boton-filtrar:hover {
-        background: #0f7a18;
-    }
-
-    .resumen-piezas {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-        padding: 17px 20px;
-        border: 1px solid #cfe6d2;
-        border-left: 5px solid #169c21;
-        border-radius: 12px;
-        background: #f2f8f3;
-        color: #285b32;
-    }
-
-    .resumen-piezas strong {
-        font-size: 27px;
-        color: #0f7a18;
-    }
-
-    .tabla-piezas {
-        overflow-x: auto;
-        border: 1px solid #dbe3ec;
-        border-radius: 12px;
-    }
-
-    .tabla-piezas table {
-        width: 100%;
-        min-width: 1100px;
-        border-collapse: collapse;
-    }
-
-    .tabla-piezas th,
-    .tabla-piezas td {
-        padding: 14px 12px;
-        border-bottom: 1px solid #e2e8f0;
-        text-align: left;
-        vertical-align: middle;
-        font-size: 14px;
-    }
-
     .tabla-piezas th {
-        background: #e8f5ea;
-        color: #0f7a18;
-        font-weight: 700;
-        white-space: nowrap;
+        background: #e8f5ea; color: #0f7a18;
+        font-weight: 700; white-space: nowrap;
     }
-
-    .tabla-piezas tbody tr:hover {
-        background: #f8fcf9;
-    }
-
-    .tabla-piezas tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .codigo-pieza {
-        color: #172335;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .dato-secundario {
-        display: block;
-        margin-top: 5px;
-        color: #64748b;
-        font-size: 12px;
-    }
-
+    .tabla-piezas tbody tr:hover { background: #f8fcf9; }
+    .tabla-piezas tbody tr:last-child td { border-bottom: none; }
+    .codigo-pieza { color: #172335; font-weight: 700; white-space: nowrap; }
+    .dato-secundario { display: block; margin-top: 5px; color: #64748b; font-size: 12px; }
     .estado-pieza {
-        display: inline-block;
-        padding: 7px 11px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        white-space: nowrap;
+        display: inline-block; padding: 7px 11px; border-radius: 8px;
+        font-size: 12px; font-weight: 700; white-space: nowrap;
     }
-
-    .estado-disponible {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .estado-prestada {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .estado-inactiva {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
+    .estado-disponible { background: #dcfce7; color: #166534; }
+    .estado-prestada { background: #fef3c7; color: #92400e; }
+    .estado-inactiva, .estado-revision { background: #fee2e2; color: #991b1b; }
+    .estado-consumida { background: #e0e7ff; color: #3730a3; }
+    .estado-baja { background: #e2e8f0; color: #334155; }
+    .estado-desconocido { background: #fef3c7; color: #92400e; }
     .boton-editar-pieza {
-        display: inline-block;
-        padding: 10px 15px;
-        border: 1px solid #169c21;
-        border-radius: 9px;
-        background: #e8f5ea;
-        color: #0f7a18;
-        font-size: 13px;
-        font-weight: 700;
-        text-decoration: none;
-        white-space: nowrap;
+        display: inline-block; padding: 10px 15px; border: 1px solid #169c21;
+        border-radius: 9px; background: #e8f5ea; color: #0f7a18;
+        font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap;
     }
-
-    .boton-editar-pieza:hover {
-        background: #d8eddd;
-    }
-
+    .boton-editar-pieza:hover { background: #d8eddd; }
     .paginacion-piezas {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 16px;
-        margin: 25px 0;
+        display: flex; flex-wrap: wrap; justify-content: center;
+        align-items: center; gap: 16px; margin: 25px 0;
     }
-
     .paginacion-piezas a {
-        display: inline-block;
-        padding: 10px 16px;
-        border: 1px solid #cfe6d2;
-        border-radius: 9px;
-        background: #e8f5ea;
-        color: #0f7a18;
-        font-weight: 700;
-        text-decoration: none;
+        display: inline-block; padding: 10px 16px; border: 1px solid #cfe6d2;
+        border-radius: 9px; background: #e8f5ea; color: #0f7a18;
+        font-weight: 700; text-decoration: none;
     }
-
-    .paginacion-piezas a:hover {
-        background: #d8eddd;
-    }
-
-    .paginacion-piezas strong {
-        color: #526174;
-        font-size: 14px;
-    }
-
+    .paginacion-piezas a:hover { background: #d8eddd; }
+    .paginacion-piezas strong { color: #526174; font-size: 14px; }
     .nota-piezas {
-        margin: 24px 0;
-        padding: 17px 20px;
-        border: 1px solid #dbe3ec;
-        border-radius: 12px;
-        background: #f8fafc;
-        color: #526174;
-        font-size: 14px;
-        line-height: 1.7;
+        margin: 24px 0; padding: 17px 20px; border: 1px solid #dbe3ec;
+        border-radius: 12px; background: #f8fafc; color: #526174;
+        font-size: 14px; line-height: 1.7;
     }
-
-    .acciones-piezas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 25px;
-    }
-
-    .acciones-piezas .boton-empresa {
-        min-height: 52px;
-    }
-
+    .acciones-piezas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px; }
+    .acciones-piezas .boton-empresa { min-height: 52px; }
+    .error-busqueda { color: #991b1b; font-weight: 600; margin: 12px 0; }
+    .error-busqueda:empty { display: none; }
     @media (max-width: 750px) {
-        .filtros-piezas {
-            grid-template-columns: 1fr;
-        }
-
-        .acciones-piezas {
-            flex-direction: column;
-        }
-
-        .acciones-piezas .boton-empresa {
-            box-sizing: border-box;
-            width: 100%;
-            text-align: center;
-        }
+        .filtros-piezas { grid-template-columns: 1fr; }
+        .acciones-piezas { flex-direction: column; }
+        .acciones-piezas .boton-empresa { box-sizing: border-box; width: 100%; text-align: center; }
     }
 </style>
 {% endblock %}
 
 {% block contenido %}
-
 {% for message in messages %}
-    <div class="introduccion-piezas" role="status">
-        {{ message }}
-    </div>
+    <div class="introduccion-piezas" role="status">{{ message }}</div>
 {% endfor %}
 
 <section class="introduccion-piezas">
     <p>
-        Consulta cada herramienta registrada individualmente,
-        identifica su código único y revisa si se encuentra
-        disponible o tiene un préstamo pendiente de devolución.
+        Consulta cada herramienta individual, su código único, estado de inventario
+        y trabajador responsable cuando tenga una entrega pendiente.
     </p>
 </section>
 
-<!-- Buscador y filtros -->
-<form method="get" class="filtros-piezas">
-
+<form method="get" class="filtros-piezas" id="form-piezas">
     <div class="campo-filtro">
         <label for="buscar-pieza">Buscar herramienta</label>
-        <input
-            type="search"
-            id="buscar-pieza"
-            name="q"
-            value="{{ busqueda }}"
-            placeholder="Código, artículo, serie o ubicación..."
-            autocomplete="off"
-        >
+        <input type="search" id="buscar-pieza" name="q" value="{{ busqueda }}"
+               placeholder="Código, artículo, serie o ubicación..." autocomplete="off">
     </div>
-
     <div class="campo-filtro">
         <label for="estado-pieza">Estado</label>
         <select id="estado-pieza" name="estado">
             <option value="">Todos los estados</option>
-
-            <option
-                value="disponible"
-                {% if estado == "disponible" %}selected{% endif %}
-            >
-                Disponibles
-            </option>
-
-            <option
-                value="prestada"
-                {% if estado == "prestada" %}selected{% endif %}
-            >
-                Prestadas
-            </option>
-
-            <option
-                value="inactiva"
-                {% if estado == "inactiva" %}selected{% endif %}
-            >
-                Inactivas
-            </option>
+            <option value="disponible" {% if estado == "disponible" %}selected{% endif %}>Disponibles</option>
+            <option value="prestada" {% if estado == "prestada" %}selected{% endif %}>Prestadas</option>
+            <option value="revision" {% if estado == "revision" %}selected{% endif %}>En revisión</option>
+            <option value="consumida" {% if estado == "consumida" %}selected{% endif %}>Entregadas sin devolución</option>
+            <option value="baja" {% if estado == "baja" %}selected{% endif %}>Bajas definitivas</option>
+            <option value="inactiva" {% if estado == "inactiva" %}selected{% endif %}>Inactivas</option>
         </select>
     </div>
-
-
 </form>
 
-<!-- Resumen -->
 <div class="resumen-piezas" id="resumen-piezas">
     <strong>{{ total_piezas }}</strong>
     <span>piezas encontradas</span>
 </div>
 
-<!-- Tabla -->
 <div class="tabla-piezas" id="tabla-piezas">
     <table>
         <thead>
@@ -349,294 +140,160 @@ Consulta las herramientas físicas, sus códigos únicos y sus préstamos pendie
                 <th>Ubicación</th>
                 <th>Estado</th>
                 <th>Trabajador responsable</th>
-                {% if puede_editar %}
-                    <th>Acciones</th>
-                {% endif %}
+                {% if puede_editar %}<th>Acciones</th>{% endif %}
             </tr>
         </thead>
-
         <tbody>
             {% for pieza in piezas %}
-                <tr>
-                    <td>
-                        <span class="codigo-pieza">
-                            {{ pieza.tool_code }}
-                        </span>
-                    </td>
-
-                    <td>
-                        {% if pieza.article %}
-                            {{ pieza.article.name }}
-
-                            <span class="dato-secundario">
-                                {{ pieza.article.article_code }}
-                            </span>
-                        {% else %}
-                            {{ pieza.name }}
-
-                            <span class="dato-secundario">
-                                Sin artículo asociado
-                            </span>
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {{ pieza.serial_number|default:"Sin número de serie" }}
-                    </td>
-
-                    <td>
-                        {{ pieza.location|default:"Sin ubicación" }}
-                    </td>
-
-                    <td>
-                        {% if pieza.prestamo_abierto %}
-                            <span class="estado-pieza estado-prestada">
-                                Prestada
-                            </span>
-
-                        {% elif not pieza.is_active %}
-                            <span class="estado-pieza estado-inactiva">
-                                Inactiva
-                            </span>
-
-                        {% else %}
-                            <span class="estado-pieza estado-disponible">
-                                Disponible
-                            </span>
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {% if pieza.prestamo_abierto %}
-                            {{ pieza.prestamo_abierto.employee }}
-
-                            <span class="dato-secundario">
-                                Desde:
-                                {{ pieza.prestamo_abierto.borrowed_at|date:"d/m/Y H:i" }}
-                            </span>
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-
-                    {% if puede_editar %}
-                        <td>
-                            <a
-                                href="{% url 'editar_pieza_individual_almacen' pieza.pk %}"
-                                class="boton-editar-pieza"
-                            >
-                                ✏️ Editar
-                            </a>
-                        </td>
+            <tr>
+                <td><span class="codigo-pieza">{{ pieza.tool_code }}</span></td>
+                <td>
+                    {% if pieza.article %}
+                        {{ pieza.article.name }}
+                        <span class="dato-secundario">{{ pieza.article.article_code }}</span>
+                    {% else %}
+                        {{ pieza.name }}
+                        <span class="dato-secundario">Sin artículo asociado</span>
                     {% endif %}
-                </tr>
-
+                </td>
+                <td>{{ pieza.serial_number|default:"Sin número de serie" }}</td>
+                <td>{{ pieza.location|default:"Sin ubicación" }}</td>
+                <td>
+                    <span class="estado-pieza estado-{{ pieza.estado_clave }}">
+                        {{ pieza.estado_texto }}
+                    </span>
+                </td>
+                <td>
+                    {% if pieza.trabajador_responsable %}
+                        {{ pieza.trabajador_responsable }}
+                        <span class="dato-secundario">
+                            Desde: {{ pieza.fecha_prestamo|date:"d/m/Y H:i" }}
+                        </span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                {% if puede_editar %}
+                <td>
+                    <a class="boton-editar-pieza" href="{% url 'editar_pieza_individual_almacen' pieza.pk %}">
+                        ✏️ Editar
+                    </a>
+                </td>
+                {% endif %}
+            </tr>
             {% empty %}
-                <tr>
-                    <td colspan="{% if puede_editar %}7{% else %}6{% endif %}">
-                        No se encontraron piezas individuales.
-                    </td>
-                </tr>
+            <tr><td colspan="{% if puede_editar %}7{% else %}6{% endif %}">No se encontraron piezas individuales.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
-<!-- Paginación -->
-<nav
-    class="paginacion-piezas"
-    id="paginacion-piezas"
-    aria-label="Páginas de piezas"
->
-
+<nav class="paginacion-piezas" id="paginacion-piezas" aria-label="Páginas de piezas">
     {% if pagina.has_previous %}
-        <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ pagina.previous_page_number }}">
-            ← Anterior
-        </a>
+    <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ pagina.previous_page_number }}">← Anterior</a>
     {% endif %}
-
-    <strong>
-        Página {{ pagina.number }}
-        de {{ pagina.paginator.num_pages }}
-    </strong>
-
+    <strong>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</strong>
     {% if pagina.has_next %}
-        <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ pagina.next_page_number }}">
-            Siguiente →
-        </a>
+    <a href="?q={{ busqueda|urlencode }}&amp;estado={{ estado|urlencode }}&amp;page={{ pagina.next_page_number }}">Siguiente →</a>
     {% endif %}
-
 </nav>
 
-<!-- Información -->
+<p class="error-busqueda" id="error-busqueda" role="status" aria-live="polite"></p>
+
 <div class="nota-piezas">
-    <strong>Importante:</strong>
-    Una pieza se considera prestada cuando tiene un préstamo
-    abierto sin devolución registrada.
-
-    Las piezas inactivas no deben entregarse.
-
-    Esta pantalla permite consultar información y editar
-    datos físicos, pero no modifica préstamos ni devoluciones.
+    <strong>Importante:</strong> La disponibilidad se determina a partir del estado de inventario
+    y de las entregas o préstamos pendientes. Las piezas en revisión, consumidas, de baja
+    o inactivas no deben considerarse disponibles. Esta pantalla no registra movimientos.
 </div>
 
-<!-- Acciones -->
 <div class="acciones-piezas">
-
     {% if perms.stockroom.add_tool %}
-        <a
-            href="{% url 'registrar_pieza_individual_almacen' %}"
-            class="boton-empresa"
-        >
-            + Registrar pieza individual
-        </a>
+    <a href="{% url 'registrar_pieza_individual_almacen' %}" class="boton-empresa">
+        + Registrar pieza individual
+    </a>
     {% endif %}
-
-    <a
-        href="{% url 'panel_almacen' %}"
-        class="boton-empresa boton-empresa-secundario"
-    >
+    <a href="{% url 'panel_almacen' %}" class="boton-empresa boton-empresa-secundario">
         ← Regresar al panel
     </a>
-
 </div>
-
 {% endblock %}
-
 
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-    const formulario = document.querySelector(".filtros-piezas");
+    const formulario = document.getElementById("form-piezas");
     const buscador = document.getElementById("buscar-pieza");
     const filtroEstado = document.getElementById("estado-pieza");
-
     const tabla = document.getElementById("tabla-piezas");
     const resumen = document.getElementById("resumen-piezas");
     const paginacion = document.getElementById("paginacion-piezas");
-
+    const error = document.getElementById("error-busqueda");
     let temporizador = null;
     let controlador = null;
 
     async function cargarResultados(url) {
-
-        if (controlador) {
-            controlador.abort();
-        }
-
-        controlador = new AbortController();
-        const solicitudActual = controlador;
-
+        if (controlador) controlador.abort();
+        const solicitudActual = new AbortController();
+        controlador = solicitudActual;
+        error.textContent = "";
         try {
             const respuesta = await fetch(url, {
                 method: "GET",
                 credentials: "same-origin",
                 cache: "no-store",
-                redirect: "manual",
                 signal: solicitudActual.signal
             });
-
-            if (
-                !respuesta.ok ||
-                respuesta.type === "opaqueredirect"
-            ) {
+            if (!respuesta.ok || respuesta.redirected) {
                 throw new Error("No se pudo consultar el inventario.");
             }
-
-            const html = await respuesta.text();
-
-            const documento = new DOMParser().parseFromString(
-                html,
-                "text/html"
-            );
-
+            const documento = new DOMParser().parseFromString(await respuesta.text(), "text/html");
             const nuevaTabla = documento.getElementById("tabla-piezas");
             const nuevoResumen = documento.getElementById("resumen-piezas");
             const nuevaPaginacion = documento.getElementById("paginacion-piezas");
-
             if (!nuevaTabla || !nuevoResumen || !nuevaPaginacion) {
-                throw new Error("La respuesta está incompleta.");
+                throw new Error("Respuesta incompleta.");
             }
-
-            // Evita que una búsqueda anterior sobrescriba
-            // los resultados de una búsqueda más reciente.
-            if (controlador !== solicitudActual) {
-                return;
-            }
-
+            if (controlador !== solicitudActual) return;
             tabla.innerHTML = nuevaTabla.innerHTML;
             resumen.innerHTML = nuevoResumen.innerHTML;
             paginacion.innerHTML = nuevaPaginacion.innerHTML;
-
             window.history.replaceState(null, "", url);
-
-        } catch (error) {
-            if (
-                error.name !== "AbortError" &&
-                controlador === solicitudActual
-            ) {
-                console.error("Error al buscar piezas:", error);
+        } catch (err) {
+            if (err.name !== "AbortError" && controlador === solicitudActual) {
+                error.textContent = "No se pudieron actualizar las piezas. Intenta nuevamente.";
+                console.error(err);
             }
-
         } finally {
-            if (controlador === solicitudActual) {
-                controlador = null;
-            }
+            if (controlador === solicitudActual) controlador = null;
         }
     }
 
     function buscarAutomaticamente() {
-        const parametros = new URLSearchParams(
-            new FormData(formulario)
-        );
-
-        // Cada búsqueda comienza desde la primera página.
+        const parametros = new URLSearchParams(new FormData(formulario));
         parametros.delete("page");
-
-        const url = window.location.pathname +
-            "?" + parametros.toString();
-
-        cargarResultados(url);
+        cargarResultados(window.location.pathname + "?" + parametros.toString());
     }
 
-    // Buscar automáticamente mientras escribes.
     buscador.addEventListener("input", function () {
         clearTimeout(temporizador);
-
-        temporizador = setTimeout(
-            buscarAutomaticamente,
-            300
-        );
+        temporizador = setTimeout(buscarAutomaticamente, 300);
     });
-
-    // Actualizar al cambiar el filtro de estado.
     filtroEstado.addEventListener("change", function () {
         clearTimeout(temporizador);
         buscarAutomaticamente();
     });
-
-    // Mantener soporte para Enter.
     formulario.addEventListener("submit", function (event) {
         event.preventDefault();
         clearTimeout(temporizador);
         buscarAutomaticamente();
     });
-
-    // Paginación sin recargar la pantalla.
     paginacion.addEventListener("click", function (event) {
         const enlace = event.target.closest("a");
-
-        if (!enlace) {
-            return;
-        }
-
+        if (!enlace) return;
         event.preventDefault();
         clearTimeout(temporizador);
         cargarResultados(enlace.href);
     });
-
 });
 </script>
 {% endblock %}
-

@@ -510,6 +510,59 @@ def adeudos_almacen(request):
             "No tienes permiso para consultar adeudos."
         )
 
+    # Escaneo directo de una pieza individual.
+    # Solo localiza la entrega pendiente:
+    # no registra ninguna devolución.
+    if "scan" in request.GET:
+        codigo = request.GET.get("scan", "").strip()
+
+        if not request.user.has_perm(
+            "stockroom.add_quantityreturn"
+        ):
+            raise PermissionDenied(
+                "No tienes permiso para registrar devoluciones."
+            )
+
+        if not codigo or len(codigo) > 100:
+            messages.error(
+                request,
+                "Escanea un código de herramienta válido.",
+            )
+            return redirect("adeudos_almacen")
+
+        entregas_encontradas = list(
+            QuantityIssue.objects.filter(
+                tool__tool_code__iexact=codigo,
+                requires_return=True,
+                returned_quantity__lt=F("quantity"),
+            )
+            .order_by("pk")
+            .values_list("pk", flat=True)[:2]
+        )
+
+        if len(entregas_encontradas) == 1:
+            return redirect(
+                "registrar_devolucion_almacen",
+                issue_id=entregas_encontradas[0],
+            )
+
+        if len(entregas_encontradas) > 1:
+            messages.error(
+                request,
+                "Esta herramienta tiene varias entregas "
+                "pendientes. Revisa su historial antes "
+                "de registrar una devolución.",
+            )
+        else:
+            messages.error(
+                request,
+                f"No se encontró una devolución pendiente "
+                f"para la herramienta {codigo}.",
+            )
+
+        return redirect("adeudos_almacen")
+
+
     employee_number = request.GET.get(
         "employee_id", ""
     ).strip()
