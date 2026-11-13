@@ -967,7 +967,15 @@
 
                             {% endif %}
 
-                        </nav>
+                        
+
+                            <a class="accion-almacen" href="{% url 'asignar_stock_inicial_almacen' %}">🧰 Asignar stock inicial</a>
+
+                            <a class="accion-almacen" href="{% url 'stock_asignado_almacen' %}">📋 Stock asignado por trabajador</a>
+
+                            <a class="accion-almacen" href="{% url 'baja_trabajador_almacen' %}">👤 Baja de trabajadores</a>
+
+</nav>
 
                     </section>
 

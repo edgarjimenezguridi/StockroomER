@@ -1,0 +1,80 @@
+{% extends "stockroom/base.html" %}
+{% block title %}Baja de trabajadores{% endblock %}
+{% block titulo_pagina %}Baja de trabajadores{% endblock %}
+{% block descripcion %}Verifica que el trabajador haya devuelto sus herramientas antes de desactivarlo.{% endblock %}
+<a
+    href="{% url 'panel_almacen' %}"
+    style="
+        display: inline-block;
+        margin: 16px 0 22px;
+        padding: 12px 20px;
+        background: #173b2d;
+        color: white;
+        border-radius: 9px;
+        font-weight: 600;
+        text-decoration: none;
+    "
+>
+    ← Volver al panel
+</a>
+{% block extra_css %}
+<style>
+.baja-contenedor {max-width:1050px;margin:auto}
+.baja-contenedor input,.baja-contenedor select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+.baja-contenedor .bloque{background:white;border:1px solid #dbe3ec;border-radius:12px;padding:20px;margin:16px 0}
+.baja-contenedor .alerta{padding:14px;background:#fff7ed;border-left:4px solid #d97706;margin:15px 0}
+.baja-contenedor .ok{padding:14px;background:#e8f5ea;border-left:4px solid #169c21;margin:15px 0}
+.baja-contenedor .tabla{overflow-x:auto}
+.baja-contenedor table{border-collapse:collapse;width:100%;min-width:620px}
+.baja-contenedor th,.baja-contenedor td{border-bottom:1px solid #e2e8f0;padding:12px;text-align:left}
+.baja-contenedor button{background:#a62626;color:white;border:0;padding:12px 20px;border-radius:9px;font-weight:bold;cursor:pointer}
+.baja-contenedor button:disabled{opacity:.45;cursor:not-allowed}
+.baja-contenedor a{color:#0f7a18}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="baja-contenedor">
+  <div class="bloque">
+    <form method="get">
+      <label for="buscar-empleado">Buscar trabajador</label>
+      <input id="buscar-empleado" type="search" name="q" value="{{ query }}" placeholder="Número, nombre o apellido">
+      <button type="submit" style="background:#169c21;margin-top:10px">Buscar</button>
+    </form>
+    {% if employees %}
+      <div class="tabla"><table><thead><tr><th>Número</th><th>Trabajador</th><th>Acción</th></tr></thead><tbody>
+      {% for person in employees %}
+        <tr><td>{{ person.employee_id }}</td><td>{{ person.first_name }} {{ person.last_name }}</td><td><a href="?empleado={{ person.pk }}">Revisar stock y baja</a></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% else %}<p>No se encontraron trabajadores activos.</p>{% endif %}
+  </div>
+  {% if employee %}
+    <div class="bloque">
+      <h2>{{ employee.first_name }} {{ employee.last_name }} — {{ employee.employee_id }}</h2>
+      <p>Estado: <strong>{% if employee.is_active %}Activo{% else %}Inactivo{% endif %}</strong></p>
+      {% if pending %}
+        <div class="alerta"><strong>Baja bloqueada:</strong> tiene {{ pending }} pieza(s) pendientes. Se incluyen stock inicial y préstamos normales.</div>
+        <p><a href="{% url 'stock_asignado_almacen' %}?empleado={{ employee.pk }}">Ver stock asignado y resguardo PDF</a></p>
+        <div class="tabla"><table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Pendientes</th><th>Acción</th></tr></thead><tbody>
+        {% for issue in issues %}
+        <tr><td>{% if issue.tool_id %}{{ issue.tool.name }} — {{ issue.tool.tool_code }}{% else %}{{ issue.stock.article.name }}{% endif %}</td>
+        <td>{% if issue.is_initial_stock %}Stock inicial{% else %}Préstamo normal{% endif %}</td>
+        <td>{{ issue.quantity }} entregadas, {{ issue.returned_quantity }} devueltas</td>
+        <td>{% if puede_devolver %}<a href="{% url 'registrar_devolucion_almacen' issue.pk %}">Registrar devolución</a>{% else %}Solicitar devolución al almacén{% endif %}</td></tr>
+        {% endfor %}
+        {% for loan in legacy %}<tr><td>{{ loan.tool.name }} — {{ loan.tool.tool_code }}</td><td>Préstamo antiguo</td><td>1</td><td>Revisar préstamo antiguo</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% elif employee.is_active %}
+        <div class="ok">Sin herramientas pendientes. La baja puede realizarse.</div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="empleado" value="{{ employee.pk }}">
+          <label for="confirmacion-baja">Escribe <strong>BAJA</strong> para confirmar que deseas desactivar al trabajador:</label>
+          <input id="confirmacion-baja" name="confirmacion" autocomplete="off" required>
+          <button type="submit" style="margin-top:12px">Confirmar baja del trabajador</button>
+        </form>
+      {% else %}<p>El trabajador está inactivo. Sus registros históricos se conservaron.</p>{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

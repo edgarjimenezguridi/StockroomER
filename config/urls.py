@@ -4,6 +4,7 @@ URL configuration for StockroomER.
 """
 
 from django.contrib import admin
+from stockroom.employee_offboarding_views import baja_trabajador_almacen
 from stockroom.boss_auth import AccesoJefeView
 from django.urls import path
 from stockroom.boss_views import (
@@ -350,6 +351,12 @@ urlpatterns = [
         "almacen/stock-asignado/<int:employee_id>/resguardo/",
         resguardo_stock_pdf_almacen,
         name="resguardo_stock_pdf_almacen",
+    ),
+    # Fase 17 - Baja de trabajadores
+    path(
+        "almacen/trabajadores/baja/",
+        baja_trabajador_almacen,
+        name="baja_trabajador_almacen",
     ),
 
 
