@@ -1,3 +1,4 @@
+{% load loan_status %}
 {% load static %}
 <!doctype html>
 <html lang="es-MX">
@@ -217,7 +218,8 @@
             <div class="stat"><div class="label">Solicitudes recientes</div><div class="value">{{ my_requests|length }}</div><div class="hint">Últimas 10</div></div>
             <div class="stat"><div class="label">Entregas pendientes</div><div class="value">{{ pending_issues|length }}</div><div class="hint">Con devolución pendiente</div></div>
         </div>
-        <div class="layout">
+        {% mostrar_alertas_prestamos 'worker' %}
+<div class="layout">
             <div class="stack">
                 <section class="panel" id="carrito" aria-labelledby="cart-title">
                     <div class="panel-head"><div><h2 id="cart-title">Mi carrito</h2><p>Revisa las cantidades antes de enviar tu solicitud.</p></div><span class="count">{{ cart_lines|length }} artículos</span></div>

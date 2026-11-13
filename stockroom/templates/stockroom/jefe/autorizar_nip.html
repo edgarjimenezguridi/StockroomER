@@ -1,0 +1,30 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Autorizar NIP de trabajador{% endblock %}
+{% block titulo_pagina %}Activación inicial de NIP{% endblock %}
+{% block descripcion %}Autorizaciones exclusivas de jefatura{% endblock %}
+{% block extra_css %}
+<style>
+.nip-admin{max-width:730px;margin:18px auto;border:1px solid #d9e6dd;border-radius:16px;background:white;padding:24px}
+.nip-admin textarea{width:100%;max-width:100%;box-sizing:border-box;border-radius:8px;padding:12px;font:inherit;overflow-wrap:anywhere}
+.nip-admin button{background:#168e25;color:white;padding:13px 18px;border:0;border-radius:9px;font:inherit;font-weight:bold;cursor:pointer}
+.nip-admin .warning{padding:12px;background:#fff6dc;border-left:4px solid #bd8100}
+@media(max-width:600px){.nip-admin{padding:15px}.nip-admin button{width:100%}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="nip-admin">
+ <p><a href="{% url 'personal_jefe' %}">← Personal y permisos</a></p>
+ <h2>{{ credential.employee.first_name }} {{ credential.employee.last_name }}</h2>
+ <p>Número: <strong>{{ credential.employee.employee_id }}</strong></p>
+ {% if error %}<p role="alert" style="color:#a12218">{{ error }}</p>{% endif %}
+ {% if authorization %}
+   <p class="warning">Código generado. Expira en <strong>5 minutos</strong>. Entrega el código al trabajador de forma privada, preferiblemente en persona. No lo compartas por canales públicos.</p>
+   <label for="token"><strong>Código de autorización:</strong></label>
+   <textarea id="token" rows="5" readonly>{{ authorization }}</textarea>
+   <p>El trabajador lo introduce en la pantalla que aparece automáticamente al identificarse sin NIP. Esta autorización sirve solo para el primer registro y deja de funcionar después de activar el NIP.</p>
+ {% else %}
+   <p>Esta operación no modifica el NIP, solamente crea una autorización temporal para el registro inicial.</p>
+   <form method="post">{% csrf_token %}<button type="submit">Generar autorización inicial</button></form>
+ {% endif %}
+</div>
+{% endblock %}

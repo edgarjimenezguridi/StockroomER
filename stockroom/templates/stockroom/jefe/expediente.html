@@ -1,0 +1,16 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Expediente de trabajador{% endblock %}
+{% block titulo_pagina %}Expediente de {{ empleado.first_name }} {{ empleado.last_name }}{% endblock %}
+{% block descripcion %}Historial de préstamos y autorizaciones{% endblock %}
+{% block extra_css %}<style>.exp-wrap{max-width:1200px;margin:auto}.exp-card{padding:18px;border:1px solid #dce5eb;border-radius:15px;margin:16px 0;background:white}.exp-scroll{max-width:100%;overflow:auto}.exp-table{border-collapse:collapse;width:100%;min-width:650px}.exp-table th,.exp-table td{border-bottom:1px solid #dce5eb;padding:12px;text-align:left}.exp-table th{background:#eaf4eb}.exp-nav a{color:#0f7a18;font-weight:bold}</style>{% endblock %}
+{% block contenido %}
+<div class="exp-wrap"><p class="exp-nav"><a href="{% url 'personal_jefe' %}">← Volver a personal</a></p>
+ <section class="exp-card"><h2>{{ empleado.employee_id }} · {{ empleado.first_name }} {{ empleado.last_name }}</h2><p>Estado: {% if empleado.is_active %}Activo{% else %}Inactivo{% endif %}</p><p>Entregas pendientes de devolución: <strong>{{ pendientes }}</strong> · Piezas desechadas definitivamente: <strong>{{ desechadas }}</strong></p><p>El historial permanece incluso después de una baja.</p></section>
+ <section class="exp-card"><h2>Últimas entregas</h2><div class="exp-scroll"><table class="exp-table"><thead><tr><th>Artículo</th><th>Entregadas</th><th>Devueltas</th><th>Fecha</th></tr></thead><tbody>
+ {% for issue in issues %}<tr><td>{% if issue.stock_id %}{{ issue.stock.article.name }}{% elif issue.tool_id %}{{ issue.tool.article.name }}{% else %}—{% endif %}</td><td>{{ issue.quantity }}</td><td>{{ issue.returned_quantity }}</td><td>{{ issue.issued_at|date:'d/m/Y H:i' }}</td></tr>{% empty %}<tr><td colspan="4">Sin entregas registradas.</td></tr>{% endfor %}
+ </tbody></table></div></section>
+ <section class="exp-card"><h2>Autorizaciones recientes</h2><div class="exp-scroll"><table class="exp-table"><thead><tr><th>Artículo</th><th>Estado</th><th>Motivo</th><th>Fecha</th></tr></thead><tbody>
+ {% for a in autorizaciones %}<tr><td>{{ a.article.name }}</td><td>{{ a.get_status_display }}</td><td>{{ a.reason }}</td><td>{{ a.created_at|date:'d/m/Y H:i' }}</td></tr>{% empty %}<tr><td colspan="4">Sin autorizaciones.</td></tr>{% endfor %}
+ </tbody></table></div></section>
+</div>
+{% endblock %}

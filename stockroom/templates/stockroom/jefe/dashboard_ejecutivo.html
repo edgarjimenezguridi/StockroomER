@@ -1,0 +1,83 @@
+<section class="direccion-dashboard" aria-label="Resumen ejecutivo del jefe">
+  <div class="direccion-head">
+    <div><span class="direccion-eyebrow">ENGRANES Y RECTIFICADOS · DIRECCIÓN</span>
+      <h2>Resumen ejecutivo</h2><p>Seguimiento de personal, inventario y bajas definitivas.</p></div>
+    <form method="get" class="direccion-filtro" aria-label="Filtrar gráfica por periodo">
+      <label for="id_periodo_jefe">Periodo de resoluciones</label>
+      <select name="periodo" id="id_periodo_jefe" onchange="this.form.submit()">
+        <option value="7" {% if periodo == '7' %}selected{% endif %}>Últimos 7 días</option>
+        <option value="30" {% if periodo == '30' %}selected{% endif %}>Últimos 30 días</option>
+        <option value="90" {% if periodo == '90' %}selected{% endif %}>Últimos 90 días</option>
+        <option value="todo" {% if periodo == 'todo' %}selected{% endif %}>Todo el historial</option>
+      </select>
+      <noscript><button type="submit">Aplicar</button></noscript>
+    </form>
+  </div>
+  <div class="direccion-indicadores">
+    <article class="direccion-indicador"><span>Trabajadores activos</span><strong>{{ personal_activo }}</strong></article>
+    <article class="direccion-indicador"><span>Artículos activos</span><strong>{{ articulos_activos }}</strong></article>
+    <article class="direccion-indicador"><span>Autorizaciones pendientes</span><strong>{{ autorizaciones_pendientes }}</strong></article>
+    <article class="direccion-indicador"><span>Trabajadores con adeudos vencidos</span><strong>{{ trabajadores_vencidos_dashboard }}</strong></article>
+    <article class="direccion-indicador"><span>Artículos por cantidad bajo mínimo</span><strong>{{ bajo_minimo }}</strong></article>
+    <article class="direccion-indicador"><span>Piezas desechadas (periodo)</span><strong>{{ bajas_total }}</strong></article>
+  </div>
+  <div class="direccion-grafica">
+    <div class="direccion-grafica-head"><div><h3>Piezas desechadas por trabajador</h3>
+      <p>Solo resoluciones de daño con baja definitiva; recuperaciones excluidas de las barras.</p></div>
+      <div class="direccion-totales">{{ bajas_total }} desechadas · {{ recuperadas_total }} recuperadas</div>
+    </div>
+    {% if filas_desechos %}
+      <div class="direccion-barras" role="list" aria-label="Comparativa de bajas definitivas">
+      {% for fila in filas_desechos %}
+        <div class="direccion-barra-fila" role="listitem">
+          <div class="direccion-persona"><strong>{{ fila.nombre }}</strong><small>{{ fila.numero }}</small></div>
+          <div class="direccion-carril" aria-label="{{ fila.desechadas }} piezas desechadas">
+            <div class="direccion-barra" style="width:{{ fila.ancho|stringformat:'.1f' }}%"></div>
+          </div><strong class="direccion-cantidad">{{ fila.desechadas }}</strong>
+        </div>
+      {% endfor %}
+      </div>
+      <div class="direccion-tabla-scroll"><table class="direccion-tabla">
+        <caption>Detalle de resoluciones del periodo seleccionado</caption>
+        <thead><tr><th>Trabajador</th><th>Desechadas</th><th>Recuperadas</th><th>% bajas de piezas resueltas</th></tr></thead>
+        <tbody>{% for fila in filas_desechos %}<tr><td>{{ fila.nombre }} ({{ fila.numero }})</td><td>{{ fila.desechadas }}</td><td>{{ fila.recuperadas }}</td><td>{{ fila.porcentaje }}%</td></tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}
+      <p class="direccion-vacio">No hay resoluciones de daños en el periodo seleccionado.</p>
+    {% endif %}
+    <p class="direccion-nota">Esta métrica describe resultados registrados, no demuestra responsabilidad individual por el daño. Compare también la cantidad y tipo de artículos utilizados antes de evaluar al personal. El porcentaje utiliza solamente piezas resueltas (desechadas + recuperadas).</p>
+  </div>
+</section>
+<style>
+.direccion-dashboard{max-width:100%;margin:0 0 22px;color:#192941}
+.direccion-dashboard *{box-sizing:border-box}
+.direccion-head{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 15px}
+.direccion-eyebrow{display:block;color:#087b20;font-weight:800;font-size:12px;letter-spacing:1px}
+.direccion-head h2{font-size:clamp(21px,3vw,28px);margin:8px 0 4px}
+.direccion-head p,.direccion-grafica-head p{margin:0;color:#58677d;font-size:14px}
+.direccion-filtro{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700}
+.direccion-filtro select{padding:11px;border:1px solid #ccd6df;border-radius:9px;background:#fff;color:#172335;font:inherit;min-height:44px}
+.direccion-indicadores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.direccion-indicador{padding:17px;border:1px solid #dce6e1;border-radius:13px;background:#f6faf7;min-width:0}
+.direccion-indicador span{display:block;font-size:13px;color:#44566d;min-height:32px}
+.direccion-indicador strong{font-size:clamp(25px,3vw,34px);display:block;color:#087b20;margin-top:8px}
+.direccion-grafica{padding:20px;border:1px solid #dce5eb;border-radius:14px;background:#fff}
+.direccion-grafica-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:start;gap:12px;margin-bottom:19px}
+.direccion-grafica h3{font-size:20px;margin:0 0 6px}
+.direccion-totales{font-weight:700;color:#0f7a18;font-size:13px}
+.direccion-barras{display:grid;gap:15px;margin-bottom:23px}
+.direccion-barra-fila{display:grid;grid-template-columns:minmax(110px,185px) minmax(0,1fr) 34px;gap:11px;align-items:center}
+.direccion-persona{min-width:0}.direccion-persona strong{display:block;overflow-wrap:anywhere;font-size:13px}.direccion-persona small{display:block;color:#65758a;margin-top:3px}
+.direccion-carril{height:22px;background:#edf3ef;border-radius:7px;overflow:hidden}
+.direccion-barra{height:100%;background:linear-gradient(90deg,#159c25,#0f6c20);border-radius:7px;min-width:0}
+.direccion-cantidad{text-align:right;font-size:15px}
+.direccion-tabla-scroll{overflow-x:auto}
+.direccion-tabla{width:100%;min-width:500px;border-collapse:collapse;font-size:13px}
+.direccion-tabla caption{text-align:left;color:#56667b;margin-bottom:8px}
+.direccion-tabla th,.direccion-tabla td{padding:11px 8px;border-bottom:1px solid #e3e9eb;text-align:left}
+.direccion-tabla th{background:#eff6f0}
+.direccion-vacio{padding:20px;background:#f5f8f6;border-radius:10px;color:#526579}
+.direccion-nota{font-size:12px;color:#596b80;line-height:1.5;margin:14px 0 0}
+@media(max-width:760px){.direccion-indicadores{grid-template-columns:repeat(2,minmax(0,1fr))}.direccion-grafica{padding:14px}.direccion-barra-fila{grid-template-columns:minmax(90px,115px) minmax(0,1fr) 26px;gap:6px}}
+@media(max-width:420px){.direccion-indicadores{grid-template-columns:1fr 1fr;gap:7px}.direccion-indicador{padding:12px}.direccion-indicador span{font-size:12px;min-height:40px}.direccion-persona strong{font-size:12px}.direccion-head{align-items:stretch}.direccion-filtro select{width:100%}}
+</style>

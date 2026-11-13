@@ -1,0 +1,123 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acceso de jefatura | Engranes y Rectificados</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: #edf2f5;
+            color: #132540;
+            font-family: Arial, sans-serif;
+        }
+
+        .tarjeta {
+            width: 100%;
+            max-width: 460px;
+            padding: 42px;
+            border-radius: 24px;
+            background: white;
+            box-shadow: 0 12px 40px #18324b16;
+        }
+
+        .logo {
+            display: block;
+            width: 100%;
+            max-width: 310px;
+            margin: 0 auto 32px;
+        }
+
+        .etiqueta {
+            color: #087d20;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            margin: 12px 0;
+            font-size: 32px;
+        }
+
+        p {
+            color: #536681;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            margin: 20px 0 8px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 28px;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            background: #087d20;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .error {
+            padding: 12px;
+            margin-top: 16px;
+            border-radius: 8px;
+            background: #fff0ed;
+            color: #a12424;
+        }
+    </style>
+</head>
+<body>
+    <main class="tarjeta">
+        <img class="logo"
+             src="{% static 'img/logo_empresa.png' %}"
+             alt="Engranes y Rectificados">
+
+        <div class="etiqueta">DIRECCIÓN Y JEFATURA</div>
+        <h1>Panel del jefe</h1>
+        <p>Ingresa con tu cuenta de jefatura para consultar y supervisar las operaciones.</p>
+
+        {% if form.errors %}
+            <div class="error">
+                Usuario, contraseña o permisos incorrectos.
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <label for="id_username">Usuario</label>
+            {{ form.username }}
+
+            <label for="id_password">Contraseña</label>
+            {{ form.password }}
+
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <button type="submit">Entrar al panel directivo</button>
+        </form>
+    </main>
+</body>
+</html>

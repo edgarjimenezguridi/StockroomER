@@ -1,0 +1,42 @@
+{% if mode != "invalid" %}
+<style>
+.sr-alerts{margin:20px 0;padding:18px;border:1px solid #d9e4dc;border-radius:14px;background:#fff;color:#172335;font-family:Arial,sans-serif}
+.sr-alerts h2{margin:0 0 10px;font-size:20px;color:#172335}.sr-alerts p{line-height:1.45}
+.sr-alerts .sr-error{background:#fff2f0;border-left:5px solid #c62828;padding:12px;border-radius:8px;margin:12px 0;color:#8c211c}
+.sr-alerts .sr-warning{background:#fff8e8;border-left:5px solid #b45309;padding:12px;border-radius:8px;margin:12px 0;color:#814806}
+.sr-alerts .sr-ok{background:#eef8f0;border-left:5px solid #169c21;padding:12px;border-radius:8px;color:#166534;margin:12px 0}
+.sr-alerts .sr-scroll{overflow-x:auto}.sr-alerts table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px}
+.sr-alerts th{text-align:left;background:#eaf4eb;color:#15441c}.sr-alerts td,.sr-alerts th{padding:10px;border-bottom:1px solid #e4ebea;vertical-align:top}
+.sr-alerts .sr-muted{color:#526174;font-size:13px}.sr-alerts a{color:#0f7a18;font-weight:bold}
+</style>
+<section class="sr-alerts" aria-label="Estado de préstamos">
+{% if mode == 'worker' %}
+  <h2>Control de préstamos y autorizaciones</h2>
+  {% if blocked %}
+    <div class="sr-error" role="alert"><strong>Solicitudes bloqueadas por adeudo vencido.</strong> Debes devolver los préstamos fuera de plazo para poder generar una nueva comanda. La devolución se registra con el almacenista.</div>
+  {% elif upcoming %}
+    <div class="sr-warning"><strong>Préstamos próximos a vencer.</strong> Consulta las fechas límite para evitar el bloqueo de nuevas solicitudes.</div>
+  {% else %}
+    <div class="sr-ok">No tienes préstamos vencidos. Las restricciones por artículo duplicado siguen aplicándose.</div>
+  {% endif %}
+  {% if overdue_rows %}
+  <div class="sr-scroll"><table><thead><tr><th>Artículo vencido</th><th>Pendiente</th><th>Fecha límite</th><th>Días de atraso</th></tr></thead><tbody>
+  {% for row in overdue_rows %}<tr><td>{{ row.article.name|default:"Artículo anterior" }}</td><td>{{ row.quantity }}</td><td>{{ row.deadline|date:"d/m/Y H:i" }}</td><td>{{ row.late_days }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% endif %}
+  {% if upcoming %}<p class="sr-muted"><strong>Por vencer:</strong> {% for item in upcoming %}Entrega #{{ item.issue.pk }} ({{ item.deadline|date:"d/m/Y" }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  <h2 style="margin-top:20px">Mis autorizaciones recientes</h2>
+  {% if approvals %}<div class="sr-scroll"><table><thead><tr><th>Artículo</th><th>Cantidad autorizable</th><th>Estado</th><th>Comanda asociada</th></tr></thead><tbody>
+  {% for approval in approvals %}<tr><td>{{ approval.article.article_code }} — {{ approval.article.name }}</td><td>{{ approval.max_quantity }}</td><td>{{ approval.get_status_display }}</td><td>{% if approval.used_request_id %}#{{ approval.used_request_id }}{% else %}—{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="sr-muted">Todavía no has solicitado autorizaciones de duplicados.</p>{% endif %}
+  <p><a href="{% url 'solicitar_duplicado_empleado' %}">Solicitar autorización de artículo duplicado</a></p>
+{% else %}
+  <h2>{% if mode == 'boss' %}Préstamos vencidos · Control de jefatura{% else %}Adeudos fuera del plazo de 15 días{% endif %}</h2>
+  <p class="sr-muted"><strong>{{ overdue_workers }}</strong> trabajador(es) con préstamos vencidos. Solo se muestran hasta 12 registros; la consulta de adeudos conserva el detalle completo.</p>
+  {% if overdue_rows %}<div class="sr-scroll"><table><thead><tr><th>Trabajador</th><th>Artículo</th><th>Pendiente</th><th>Fecha límite</th><th>Atraso</th></tr></thead><tbody>
+  {% for row in overdue_rows %}<tr><td>{{ row.worker.employee_id }} — {{ row.worker.first_name }} {{ row.worker.last_name }}</td><td>{{ row.article.name|default:"Artículo anterior" }}</td><td>{{ row.quantity }}</td><td>{{ row.deadline|date:"d/m/Y H:i" }}</td><td>{{ row.late_days }} día(s)</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<div class="sr-ok">No hay préstamos vencidos registrados.</div>{% endif %}
+  <p><a href="{% url 'adeudos_almacen' %}">Consultar adeudos completos</a></p>
+{% endif %}
+</section>
+{% endif %}

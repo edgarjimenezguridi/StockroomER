@@ -1,0 +1,27 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Activar mi NIP{% endblock %}
+{% block titulo_pagina %}Configurar mi NIP{% endblock %}
+{% block descripcion %}Primera entrada a StockroomER · Activación de credencial{% endblock %}
+{% block extra_css %}
+<style>
+.nip-card{max-width:680px;margin:18px auto;padding:24px;border:1px solid #d9e6dd;border-radius:16px;background:white}
+.nip-card label{display:block;font-weight:700;margin:16px 0 8px}.nip-card textarea{box-sizing:border-box;display:block;width:100%;padding:13px;border:1px solid #b9c9bd;border-radius:9px;font:inherit;overflow-wrap:anywhere}
+.nip-card button{background:#0f8f26;color:white;border:0;border-radius:9px;padding:15px 22px;font:inherit;font-weight:700;cursor:pointer;margin-top:14px;max-width:100%;min-height:48px}
+.nip-error{color:#a12218}.nip-info{background:#edf8ef;border-left:4px solid #168e25;padding:15px;border-radius:8px}
+@media(max-width:600px){.nip-card{padding:15px}.nip-card button{width:100%}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="nip-card">
+  <h2>¡Bienvenido, {{ credential.employee.first_name }}!</h2>
+  <p>Tu credencial todavía no tiene un NIP registrado. Para proteger tu cuenta, solicita al jefe el código temporal de activación.</p>
+  <p class="nip-info"><strong>Número de empleado:</strong> {{ credential.employee.employee_id }}<br>El código expira en 5 minutos. No es tu NIP personal.</p>
+  <form method="post">{% csrf_token %}
+    <label for="{{ form.authorization.id_for_label }}">{{ form.authorization.label }}</label>
+    {{ form.authorization }}
+    <div class="nip-error">{{ form.authorization.errors }}{{ form.non_field_errors }}</div>
+    <button type="submit">Continuar para crear mi NIP</button>
+  </form>
+  <p><a href="{% url 'acceso_empleado' %}">Volver al acceso de trabajadores</a></p>
+</div>
+{% endblock %}

@@ -1,4 +1,6 @@
 {% extends "stockroom/base.html" %}
+{% load jefe_dashboard %}
+{% load loan_status %}
 {% block title %}Panel del jefe{% endblock %}
 {% block body_class %}pagina-jefe{% endblock %}
 {% block titulo_pagina %}Control de autorizaciones{% endblock %}
@@ -30,6 +32,8 @@
 </style>
 {% endblock %}
 {% block contenido %}
+<div class="jefe-nav"><a href="{% url 'personal_jefe' %}" style="display:inline-block;background:#0f7a18;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700;margin:12px 0;">👥 Personal y permisos</a></div>
+{% dashboard_ejecutivo %}
 <div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>
 {% if messages %}{% for message in messages %}<div class="jefe-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
 <div class="jefe-resumen">
@@ -37,6 +41,7 @@
  <div class="jefe-kpi">Trabajadores con entregas vencidas<strong>{{ trabajadores_vencidos }}</strong></div>
 </div>
 <div class="jefe-notice">Una aprobación de duplicado no desbloquea préstamos vencidos de más de 15 días. El trabajador debe devolverlos primero.</div>
+{% mostrar_alertas_prestamos 'boss' %}
 <section class="jefe-card">
 <h2>Autorizaciones pendientes</h2>
 <div class="jefe-table-wrap"><table class="jefe-table"><thead><tr><th>Trabajador</th><th>Artículo</th><th>Cantidad</th><th>Motivo</th><th>Solicitada</th><th>Decisión</th></tr></thead><tbody>

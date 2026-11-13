@@ -109,7 +109,7 @@ def panel_jefe(request):
 
 
 @never_cache
-@login_required(login_url="acceso_almacen")
+@login_required(login_url="acceso_jefe")
 @require_POST
 def resolver_autorizacion_jefe(request, authorization_id):
     _exigir_jefe(request)

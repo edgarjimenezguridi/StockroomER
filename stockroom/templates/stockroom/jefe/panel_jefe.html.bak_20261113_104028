@@ -1,0 +1,62 @@
+{% extends "stockroom/base.html" %}
+{% load loan_status %}
+{% block title %}Panel del jefe{% endblock %}
+{% block body_class %}pagina-jefe{% endblock %}
+{% block titulo_pagina %}Control de autorizaciones{% endblock %}
+{% block descripcion %}Préstamos duplicados · Aprobaciones exclusivas de jefatura{% endblock %}
+{% block extra_css %}
+<style>
+.pagina-jefe .contenedor-empresa{max-width:1250px}
+.jefe-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px}
+.jefe-kpi{padding:18px;border:1px solid #dbe6de;border-radius:14px;background:#f5faf6}
+.jefe-kpi strong{display:block;font-size:29px;color:#0f7a18;margin-top:8px}
+.jefe-card{border:1px solid #dce5eb;border-radius:14px;padding:20px;margin:18px 0;background:white}
+.jefe-card h2{margin-top:0;font-size:20px;color:#172335}
+.jefe-table-wrap{overflow-x:auto}
+.jefe-table{width:100%;border-collapse:collapse;min-width:780px}
+.jefe-table th{background:#eaf4eb;text-align:left;color:#15441c;font-size:13px}
+.jefe-table th,.jefe-table td{padding:12px 11px;border-bottom:1px solid #e3e9ef;vertical-align:top}
+.jefe-muted{font-size:13px;color:#64748b}
+.jefe-badge{display:inline-block;padding:5px 9px;border-radius:20px;background:#fff4dc;color:#855500;font-size:12px;font-weight:bold}
+.jefe-approved{background:#dcfce7;color:#166534}.jefe-rejected{background:#fee2e2;color:#991b1b}
+.jefe-btn{background:#169c21;border:0;color:#fff;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+.jefe-btn:hover{background:#0f7a18}.jefe-btn-reject{background:#b42318}.jefe-btn-reject:hover{background:#8e1c13}
+.jefe-inline{display:inline-block;margin:2px}
+.jefe-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.jefe-form .full{grid-column:1/-1}.jefe-form label{display:block;font-weight:bold;margin-bottom:6px}
+.jefe-form input,.jefe-form select,.jefe-form textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #bbc9d5;border-radius:8px;background:#fff;font:inherit}
+.jefe-notice{padding:12px 15px;border-radius:10px;background:#fff8e7;border-left:4px solid #c87c0a;margin-bottom:16px}
+.jefe-errors{color:#991b1b;margin:9px 0}.jefe-nav{margin:8px 0 18px}.jefe-nav a{color:#0f7a18;font-weight:bold}
+@media(max-width:650px){.jefe-form{grid-template-columns:1fr}.jefe-card{padding:15px}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>
+{% if messages %}{% for message in messages %}<div class="jefe-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
+<div class="jefe-resumen">
+ <div class="jefe-kpi">Solicitudes por resolver<strong>{{ total_pendientes }}</strong></div>
+ <div class="jefe-kpi">Trabajadores con entregas vencidas<strong>{{ trabajadores_vencidos }}</strong></div>
+</div>
+<div class="jefe-notice">Una aprobación de duplicado no desbloquea préstamos vencidos de más de 15 días. El trabajador debe devolverlos primero.</div>
+{% mostrar_alertas_prestamos 'boss' %}
+<section class="jefe-card">
+<h2>Autorizaciones pendientes</h2>
+<div class="jefe-table-wrap"><table class="jefe-table"><thead><tr><th>Trabajador</th><th>Artículo</th><th>Cantidad</th><th>Motivo</th><th>Solicitada</th><th>Decisión</th></tr></thead><tbody>
+{% for item in pendientes %}<tr>
+<td><strong>{{ item.employee.employee_id }}</strong><div class="jefe-muted">{{ item.employee.first_name }} {{ item.employee.last_name }}</div></td>
+<td>{{ item.article.article_code }}<div class="jefe-muted">{{ item.article.name }}</div></td>
+<td>{{ item.max_quantity }}</td><td>{{ item.reason|linebreaksbr }}</td><td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
+<td><form class="jefe-inline" method="post" action="{% url 'resolver_autorizacion_jefe' item.pk %}">{% csrf_token %}<input type="hidden" name="decision" value="approve"><button type="submit" class="jefe-btn">Aprobar</button></form>
+<form class="jefe-inline" method="post" action="{% url 'resolver_autorizacion_jefe' item.pk %}">{% csrf_token %}<input type="hidden" name="decision" value="reject"><button type="submit" class="jefe-btn jefe-btn-reject">Rechazar</button></form></td>
+</tr>{% empty %}<tr><td colspan="6">No hay solicitudes pendientes de autorización.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="jefe-card"><h2>Registrar solicitud de excepción</h2><p class="jefe-muted">Se utiliza cuando un trabajador necesita otro ejemplar de un artículo que ya tiene solicitado o prestado.</p>
+<form method="post" class="jefe-form">{% csrf_token %}
+{% if form.non_field_errors %}<div class="full jefe-errors">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}<div class="{% if field.name == 'reason' %}full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="jefe-errors">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
+<div class="full"><button class="jefe-btn" type="submit">Registrar para revisión</button></div></form></section>
+<section class="jefe-card"><h2>Historial reciente</h2><div class="jefe-table-wrap"><table class="jefe-table"><thead><tr><th>Trabajador</th><th>Artículo</th><th>Resultado</th><th>Decidió</th><th>Fecha</th><th>Comanda</th></tr></thead><tbody>
+{% for item in historial %}<tr><td>{{ item.employee.employee_id }}</td><td>{{ item.article.article_code }}</td><td><span class="jefe-badge {% if item.status == 'approved' %}jefe-approved{% elif item.status == 'rejected' %}jefe-rejected{% endif %}">{{ item.get_status_display }}</span></td><td>{{ item.decided_by|default:"—" }}</td><td>{{ item.decided_at|date:"d/m/Y H:i" }}</td><td>{% if item.used_request_id %}#{{ item.used_request_id }}{% else %}—{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6">Todavía no hay autorizaciones resueltas.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

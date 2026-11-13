@@ -76,7 +76,9 @@ def activar_nip(request, barcode):
             form.add_error(None, exc)
         else:
             request.session.pop("pin_setup_authorization", None)
-            return HttpResponse("Tu NIP quedó activado.")
+            request.session.pop("pin_setup_pending", None)
+            messages.success(request, "NIP registrado correctamente. Identifícate para ingresar.")
+            return redirect("acceso_empleado")
 
     return render(
         request,
@@ -184,10 +186,13 @@ def acceso_empleado(request):
                         None, "No encontramos una credencial activa."
                     )
                 elif not credential.pin_hash:
-                    selected_form.add_error(
-                        None, "Solicita al almacenista activar tu NIP."
+                    # Solo identifica al trabajador. NO permite crear el NIP
+                    # sin la autorización temporal emitida por jefatura.
+                    request.session["pin_setup_pending"] = signing.dumps(
+                        {"barcode": str(credential.barcode)},
+                        salt="stockroom.worker-pin-onboarding",
                     )
-                    credential = None
+                    return redirect("inicio_nip_trabajador")
                 else:
                     request.session["pending_worker"] = signing.dumps(
                         {"barcode": str(credential.barcode)},

@@ -4,6 +4,7 @@ URL configuration for StockroomER.
 """
 
 from django.contrib import admin
+from stockroom.boss_auth import AccesoJefeView
 from django.urls import path
 from stockroom.boss_views import (
     panel_jefe,
@@ -75,7 +76,22 @@ from stockroom.article_management_views import (
 # Peticiones de duplicados iniciadas por trabajadores.
 from stockroom.worker_exception_views import solicitar_duplicado_empleado
 
+from stockroom.boss_personnel_views import (
+    personal_jefe, estado_trabajador_jefe,
+    expediente_trabajador_jefe, estado_cuenta_jefe,
+)
+
+from stockroom.pin_onboarding_views import inicio_nip_trabajador, autorizar_nip_jefe
+
 urlpatterns = [
+    path("trabajadores/activar-mi-nip/", inicio_nip_trabajador, name="inicio_nip_trabajador"),
+    path("jefe/personal/<int:employee_id>/autorizar-nip/", autorizar_nip_jefe, name="autorizar_nip_jefe"),
+
+    path("jefe/personal/", personal_jefe, name="personal_jefe"),
+    path("jefe/personal/<int:employee_id>/estado/", estado_trabajador_jefe, name="estado_trabajador_jefe"),
+    path("jefe/personal/<int:employee_id>/expediente/", expediente_trabajador_jefe, name="expediente_trabajador_jefe"),
+    path("jefe/cuentas/<int:user_id>/estado/", estado_cuenta_jefe, name="estado_cuenta_jefe"),
+
     path(
         "trabajadores/duplicados/solicitar/",
         solicitar_duplicado_empleado,
@@ -295,6 +311,11 @@ urlpatterns = [
         "jefe/autorizaciones/<int:authorization_id>/resolver/",
         resolver_autorizacion_jefe,
         name="resolver_autorizacion_jefe",
+    ),
+    path(
+        "jefe/acceso/",
+        AccesoJefeView.as_view(),
+        name="acceso_jefe",
     ),
 
 

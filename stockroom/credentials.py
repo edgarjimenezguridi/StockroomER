@@ -19,7 +19,11 @@ def authorize_pin_setup(*, credential, operator):
     if not (
         operator.is_active
         and operator.is_staff
-        and operator.has_perm("stockroom.change_employeecredential")
+        and (
+            operator.is_superuser
+            or operator.groups.filter(name="Jefes").exists()
+            or operator.has_perm("stockroom.change_employeecredential")
+        )
     ):
         raise PermissionDenied(
             "Se requiere un usuario autorizado para activar credenciales."
