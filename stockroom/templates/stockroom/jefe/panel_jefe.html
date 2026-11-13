@@ -32,6 +32,8 @@
 </style>
 {% endblock %}
 {% block contenido %}
+<div style="margin:12px 0"><a href="{% url 'reportes_jefe' %}" style="display:inline-block;background:#168e25;color:white;padding:12px 19px;border-radius:10px;text-decoration:none;font-weight:700">Reportes ejecutivos PDF</a></div>
+
 <div class="jefe-nav"><a href="{% url 'personal_jefe' %}" style="display:inline-block;background:#0f7a18;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700;margin:12px 0;">👥 Personal y permisos</a></div>
 {% dashboard_ejecutivo %}
 <div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>

@@ -510,6 +510,15 @@ class QuantityIssue(models.Model):
         "Fecha de entrega",
         default=timezone.now,
     )
+    # Entrega permanente inicial: conserva adeudo y control de duplicados,
+    # pero no vence a los 15 dias.
+    is_initial_stock = models.BooleanField(
+        "Asignacion de stock inicial",
+        default=False,
+        editable=False,
+        db_index=True,
+    )
+
     requires_return = models.BooleanField(
         "Requiere devolución",
         default=True,

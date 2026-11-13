@@ -142,3 +142,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración local para pruebas dentro del taller
+from . import local_settings
+
+ALLOWED_HOSTS = local_settings.ALLOWED_HOSTS

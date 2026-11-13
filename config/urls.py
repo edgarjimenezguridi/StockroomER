@@ -34,7 +34,12 @@ from stockroom.classification_views import (
     administrar_clasificaciones_almacen,
     
 )
+from stockroom.assigned_stock_views import (
+    stock_asignado_almacen,
+    resguardo_stock_pdf_almacen,
+)
 
+from stockroom.initial_stock_views import asignar_stock_inicial_almacen
 from stockroom.individual_tool_views import (
     registrar_pieza_individual_almacen,
 )
@@ -85,7 +90,14 @@ from stockroom.pin_onboarding_views import inicio_nip_trabajador, autorizar_nip_
 
 from stockroom.pin_reset_views import autorizar_reset_nip_jefe, recuperar_nip_trabajador
 
+from stockroom.boss_audit_views import auditoria_jefe
+
+from stockroom.boss_reports import reportes_jefe, descargar_reporte_jefe
+
 urlpatterns = [
+    path("jefe/reportes/", reportes_jefe, name="reportes_jefe"),
+    path("jefe/reportes/pdf/", descargar_reporte_jefe, name="descargar_reporte_jefe"),
+    path("jefe/auditoria/", auditoria_jefe, name="auditoria_jefe"),
     path("trabajadores/recuperar-nip/", recuperar_nip_trabajador, name="recuperar_nip_trabajador"),
     path("jefe/personal/<int:employee_id>/restablecer-nip/", autorizar_reset_nip_jefe, name="autorizar_reset_nip_jefe"),
 
@@ -321,6 +333,23 @@ urlpatterns = [
         "jefe/acceso/",
         AccesoJefeView.as_view(),
         name="acceso_jefe",
+    ),
+    path(
+        "almacen/stock-inicial/asignar/",
+        asignar_stock_inicial_almacen,
+        name="asignar_stock_inicial_almacen",
+    ),
+        # Fase 16 - Stock asignado por trabajador
+    path(
+        "almacen/stock-asignado/",
+        stock_asignado_almacen,
+        name="stock_asignado_almacen",
+    ),
+
+    path(
+        "almacen/stock-asignado/<int:employee_id>/resguardo/",
+        resguardo_stock_pdf_almacen,
+        name="resguardo_stock_pdf_almacen",
     ),
 
 

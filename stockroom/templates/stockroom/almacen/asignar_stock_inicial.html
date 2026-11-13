@@ -1,0 +1,38 @@
+{% extends "stockroom/base.html" %}
+{% block title %}Asignar stock inicial{% endblock %}
+{% block titulo_pagina %}Stock inicial de herramientas{% endblock %}
+{% block descripcion %}Asigna herramientas permanentes a trabajadores registrados. No vencen a 15 días, pero sí cuentan para duplicados.{% endblock %}
+{% block extra_css %}
+<style>
+.inicial-layout {max-width:850px;margin:auto}
+.inicial-info {background:#e8f5ea;border-left:5px solid #169c21;padding:17px 20px;border-radius:10px;margin-bottom:20px;line-height:1.6}
+.inicial-form {display:grid;gap:16px}
+.inicial-form label {display:block;font-weight:700;color:#172335;margin-bottom:7px}
+.inicial-form select,.inicial-form input {box-sizing:border-box;width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff}
+.inicial-form .errorlist {color:#b91c1c}
+.inicial-table {overflow:auto;margin-top:22px}
+.inicial-table table {border-collapse:collapse;width:100%;min-width:550px}
+.inicial-table td,.inicial-table th {padding:12px;text-align:left;border-bottom:1px solid #dbe3ec}
+.inicial-table th {background:#e8f5ea}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="inicial-layout">
+<div class="inicial-info"><strong>Importante:</strong> se descuenta el inventario disponible y queda un adeudo sin vencimiento. Si el empleado ya tiene ese artículo solicitado o pendiente de devolución, se rechazará la asignación. Elige una herramienta a la vez; puedes repetir el proceso para agregar artículos distintos.</div>
+<form method="post" class="inicial-form">
+{% csrf_token %}
+{{ form.non_field_errors }}
+<div><label for="{{ form.employee.id_for_label }}">{{ form.employee.label }}</label>{{ form.employee }}{{ form.employee.errors }}</div>
+<div><label for="{{ form.article.id_for_label }}">{{ form.article.label }}</label>{{ form.article }}{{ form.article.errors }}</div>
+<div><label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>{{ form.quantity }}{{ form.quantity.errors }}</div>
+<div><label for="{{ form.tool.id_for_label }}">{{ form.tool.label }}</label>{{ form.tool }}{{ form.tool.errors }}<small>Solo para piezas individuales. El sistema comprueba que corresponda al artículo elegido.</small></div>
+<button type="submit" class="boton-empresa">Confirmar asignación inicial</button>
+</form>
+<h2>Últimas asignaciones</h2>
+<div class="inicial-table"><table><thead><tr><th>Trabajador</th><th>Herramienta</th><th>Cantidad</th><th>Fecha</th></tr></thead><tbody>
+{% for issue in ultimas %}<tr><td>{{ issue.employee }}</td><td>{% if issue.tool_id %}{{ issue.tool.tool_code }} — {{ issue.tool.name }}{% else %}{{ issue.stock.article.name }}{% endif %}</td><td>{{ issue.quantity }}</td><td>{{ issue.issued_at|date:"d/m/Y H:i" }}</td></tr>
+{% empty %}<tr><td colspan="4">Todavía no hay asignaciones iniciales.</td></tr>{% endfor %}
+</tbody></table></div>
+<p><a href="{% url 'panel_almacen' %}">← Regresar al panel del almacén</a></p>
+</div>
+{% endblock %}

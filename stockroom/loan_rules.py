@@ -23,6 +23,7 @@ def entregas_vencidas(employee_id, *, now=None):
     return QuantityIssue.objects.filter(
         employee_id=employee_id,
         requires_return=True,
+        is_initial_stock=False,
         returned_quantity__lt=F("quantity"),
         issued_at__lt=ahora - timedelta(days=PLAZO_PRESTAMO_DIAS),
     )
@@ -164,7 +165,7 @@ def vincular_autorizacion_si_necesaria(*, employee_id, article_id, quantity, req
 
 
 def fecha_limite(issue):
-    if not issue.requires_return:
+    if not issue.requires_return or issue.is_initial_stock:
         return None
     return issue.issued_at + timedelta(days=PLAZO_PRESTAMO_DIAS)
 
@@ -174,6 +175,8 @@ def estado_prestamo(issue, *, now=None):
         return "consumible"
     if issue.returned_quantity >= issue.quantity:
         return "devuelto"
+    if issue.is_initial_stock:
+        return "stock_inicial"
     restante = fecha_limite(issue) - (now or timezone.now())
     if restante.total_seconds() < 0:
         return "vencido"

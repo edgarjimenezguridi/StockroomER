@@ -1,0 +1,33 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Reportes ejecutivos | StockroomER{% endblock %}
+{% block titulo_pagina %}Reportes ejecutivos{% endblock %}
+{% block descripcion %}Documentos de supervisión · Solo jefatura{% endblock %}
+{% block extra_css %}
+<style>
+.report-wrap{max-width:1100px;margin:0 auto}.report-box{background:white;border:1px solid #dae5dd;border-radius:16px;padding:22px;margin:16px 0}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}
+.report-grid label{display:block;font-weight:700;margin-bottom:7px}.report-grid select,.report-grid input{box-sizing:border-box;width:100%;min-height:45px;padding:10px;border:1px solid #b9cfc0;border-radius:9px;font:inherit}
+.report-button{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:12px 18px;border:0;border-radius:10px;background:#168e25;color:white;text-decoration:none;font-weight:700;cursor:pointer;font:inherit}
+.report-link{color:#0f7a18;font-weight:700}.report-note{color:#536b5b;font-size:13px;line-height:1.5}
+@media(max-width:600px){.report-box{padding:14px}.report-button{width:100%}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="report-wrap">
+ <p><a class="report-link" href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></p>
+ <section class="report-box"><h2>Generar un PDF</h2>
+ <p class="report-note">Los documentos se generan con datos actuales. Descargas exclusivas de jefatura, sin contraseñas, NIP ni códigos secretos.</p>
+ <form method="get" action="{% url 'descargar_reporte_jefe' %}">
+  <div class="report-grid">
+   <div><label for="id_tipo">Reporte</label><select id="id_tipo" name="tipo" required>
+    {% for value,label in tipos.items %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+   </select></div>
+   <div><label for="id_periodo">Período</label><select id="id_periodo" name="periodo"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="todo">Todo el historial</option></select></div>
+   <div><label for="id_desde">Fecha inicial (opcional)</label><input id="id_desde" type="date" name="desde"></div>
+   <div><label for="id_hasta">Fecha final (opcional)</label><input id="id_hasta" type="date" name="hasta"></div>
+  </div>
+  <p class="report-note">Las fechas personalizadas sustituyen el período en auditoría y desechos. Los préstamos vencidos y el inventario bajo mínimo muestran la situación actual.</p>
+  <button type="submit" class="report-button">Descargar PDF</button>
+ </form></section>
+</div>
+{% endblock %}

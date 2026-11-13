@@ -1,0 +1,65 @@
+{% extends "stockroom/base.html" %}
+{% block title %}Stock asignado por trabajador{% endblock %}
+{% block titulo_pagina %}Stock asignado por trabajador{% endblock %}
+{% block descripcion %}Consulta herramientas a resguardo, stock inicial y préstamos normales.{% endblock %}
+{% block extra_css %}
+<style>
+  .consulta-stock{max-width:1180px;margin:auto}
+  .buscador-resguardo{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+  .buscador-resguardo input{flex:1;min-width:220px;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+  .enlace-resguardo,.boton-resguardo{display:inline-block;padding:11px 15px;background:#169c21;color:white!important;text-decoration:none;border:0;border-radius:9px;font-weight:bold;margin:4px 4px 4px 0}
+  .enlace-resguardo.secundario{background:#e8f5ea;color:#0f7a18!important}
+  .tabla-resguardo{overflow-x:auto;border:1px solid #dbe3ec;border-radius:12px;margin:16px 0}
+  .tabla-resguardo table{border-collapse:collapse;width:100%;min-width:760px}
+  .tabla-resguardo th,.tabla-resguardo td{padding:11px;border-bottom:1px solid #e2e8f0;text-align:left}
+  .tabla-resguardo th{background:#e8f5ea;color:#0f7a18}
+  .tarjetas-resguardo{display:flex;gap:12px;flex-wrap:wrap}
+  .tarjetas-resguardo div{background:#f2f8f3;padding:14px 18px;border-radius:10px;min-width:145px}
+  .tarjetas-resguardo strong{display:block;font-size:25px;color:#0f7a18}
+  .tag-inicial{color:#0f7a18;font-weight:bold}
+  .tag-vencido{color:#b91c1c;font-weight:bold}
+  .selector-trabajador{padding:14px;border:1px solid #dbe3ec;border-radius:10px;margin-bottom:9px}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="consulta-stock">
+  <a href="{% url 'panel_almacen' %}" class="enlace-resguardo secundario">← Volver al almacén</a>
+  <a href="{% url 'asignar_stock_inicial_almacen' %}" class="enlace-resguardo secundario">Asignar stock inicial</a>
+  <form method="get" class="buscador-resguardo">
+    <input type="search" name="q" value="{{ query }}" placeholder="Buscar nombre o número de empleado" aria-label="Buscar trabajador">
+    <button type="submit" class="boton-resguardo">Buscar</button>
+    <a href="{% url 'stock_asignado_almacen' %}" class="enlace-resguardo secundario">Limpiar</a>
+  </form>
+  {% if not employee %}
+    <h2>Selecciona un trabajador</h2>
+    {% for worker in workers %}
+      <div class="selector-trabajador">
+        <strong>{{ worker.first_name }} {{ worker.last_name }}</strong> — {{ worker.employee_id }}
+        <a class="enlace-resguardo" href="{% url 'stock_asignado_almacen' %}?empleado={{ worker.pk }}">Ver herramientas asignadas</a>
+      </div>
+    {% empty %}<p>No se encontraron trabajadores activos.</p>{% endfor %}
+  {% else %}
+    <h2>{{ employee.first_name }} {{ employee.last_name }} · {{ employee.employee_id }}</h2>
+    <a href="{% url 'resguardo_stock_pdf_almacen' employee.pk %}" class="enlace-resguardo">Generar resguardo PDF</a>
+    <div class="tarjetas-resguardo">
+      <div><span>Piezas pendientes</span><strong>{{ total_piezas }}</strong></div>
+      <div><span>Stock inicial</span><strong>{{ total_inicial }}</strong></div>
+      <div><span>Préstamos normales</span><strong>{{ total_normales }}</strong></div>
+    </div>
+    <div class="tabla-resguardo"><table>
+      <thead><tr><th>Tipo</th><th>Artículo / pieza</th><th>Código</th><th>Pendientes</th><th>Entrega</th><th>Vencimiento / estado</th><th>Acción</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{% if row.issue.is_initial_stock %}<span class="tag-inicial">Stock inicial</span>{% else %}Préstamo normal{% endif %}</td>
+        <td>{{ row.article.name }}</td><td>{{ row.code }}</td><td>{{ row.pending }}</td>
+        <td>{{ row.issue.issued_at|date:"d/m/Y" }}</td>
+        <td>{% if row.issue.is_initial_stock %}Sin vencimiento{% else %}{{ row.deadline|date:"d/m/Y" }} · {% if row.status == 'vencido' %}<span class="tag-vencido">Vencido</span>{% elif row.status == 'por_vencer' %}Por vencer{% else %}En plazo{% endif %}{% endif %}</td>
+        <td>{% if puede_devolver %}<a href="{% url 'registrar_devolucion_almacen' row.issue.pk %}" class="enlace-resguardo">Registrar devolución</a>{% else %}Solo consulta{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="7">Sin herramientas pendientes de devolución.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  {% endif %}
+</div>
+{% endblock %}

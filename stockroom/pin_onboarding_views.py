@@ -1,5 +1,6 @@
 """Autoservicio de alta inicial de NIP, siempre con autorización emitida por jefatura."""
 from django import forms
+from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -73,6 +74,13 @@ def autorizar_nip_jefe(request, employee_id):
     if request.method == "POST":
         try:
             authorization = authorize_pin_setup(credential=credential, operator=request.user)
+            # Registrar únicamente emisión y responsable: nunca guardar token ni NIP.
+            LogEntry.objects.log_actions(
+                user_id=request.user.pk,
+                queryset=EmployeeCredential.objects.filter(pk=credential.pk),
+                action_flag=CHANGE,
+                change_message="Autorización inicial de NIP emitida",
+            )
         except ValidationError as exc:
             return render(request, "stockroom/jefe/autorizar_nip.html", {
                 "credential": credential, "error": " ".join(exc.messages)

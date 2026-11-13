@@ -1,0 +1,509 @@
+{% load static %}
+<!doctype html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel del trabajador | StockroomER</title>
+    <style>
+        /* Identidad visual compartida con el panel del almacenista */
+        :root {
+            --brand-green: #169c21;
+            --brand-green-dark: #0f7a18;
+            --brand-red: #e53935;
+            --brand-red-dark: #c62828;
+            --brand-dark: #172335;
+            --brand-muted: #526174;
+            --brand-bg: #eef3f7;
+            --brand-card: #ffffff;
+            --brand-soft: #f7fafc;
+            --brand-border: #dbe3ec;
+            --brand-info: #e8f5ea;
+            --brand-info-text: #0f7a18;
+            --brand-warning: #fff4e8;
+            --brand-warning-text: #b45309;
+            /* Alias para conservar las clases del panel rediseñado */
+            --navy: var(--brand-dark);
+            --blue: var(--brand-green);
+            --blue-hover: var(--brand-green-dark);
+            --pale: var(--brand-info);
+            --bg: var(--brand-bg);
+            --white: var(--brand-card);
+            --ink: var(--brand-dark);
+            --muted: var(--brand-muted);
+            --border: var(--brand-border);
+            --green: var(--brand-green-dark);
+            --green-bg: var(--brand-info);
+            --amber: var(--brand-warning-text);
+            --amber-bg: var(--brand-warning);
+            --radius: 16px;
+            --shadow: 0 8px 28px rgba(23, 35, 53, .07);
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+        button, input { font: inherit; }
+        button, .button { cursor: pointer; }
+        button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--brand-green); outline-offset: 2px; }
+        a { color: var(--blue); }
+        .topbar { background: var(--brand-card); color: var(--brand-dark); border-bottom: 4px solid var(--brand-green); }
+        .topbar-inner { max-width: 1240px; margin: auto; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-logo { width: clamp(170px, 23vw, 270px); max-height: 90px; height: auto; object-fit: contain; display: block; }
+        .brand-name { font-size: 19px; font-weight: 800; line-height: 1.1; }
+        .brand-sub { color: var(--brand-muted); font-size: 12px; margin-top: 5px; }
+        .top-user { font-size: 13px; color: var(--brand-muted); text-align: right; }
+        .top-user strong { display: block; color: var(--brand-dark); font-size: 15px; }
+        .container { max-width: 1240px; padding: 26px 24px 64px; margin: auto; }
+        .heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 18px; }
+        h1 { margin: 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.2; letter-spacing: -.035em; }
+        .muted { color: var(--muted); }
+        .heading p { margin: 6px 0 0; }
+        .nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+        .nav a { display: inline-flex; align-items: center; padding: 9px 13px; border-radius: 10px; background: white; color: var(--navy); border: 1px solid var(--border); text-decoration: none; font-size: 13px; font-weight: 700; }
+        .nav a:hover { background: var(--pale); border-color: var(--brand-green); }
+        .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stat { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+        .stat .label { font-size: 12px; color: var(--muted); font-weight: 650; }
+        .stat .value { color: var(--brand-green-dark); font-size: 29px; font-weight: 800; letter-spacing: -.035em; margin-top: 3px; }
+        .stat .hint { font-size: 12px; color: var(--muted); }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+        .stack { display: grid; gap: 20px; min-width: 0; }
+        .panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; min-width: 0; scroll-margin-top: 20px; }
+        .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .panel-head h2 { font-size: 20px; margin: 0 0 3px; letter-spacing: -.02em; }
+        .panel-head p { margin: 0; font-size: 13px; color: var(--muted); }
+        .count { background: var(--pale); color: var(--blue); padding: 3px 10px; border-radius: 999px; font-weight: 750; font-size: 12px; white-space: nowrap; }
+        .item { padding: 15px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+        .item:first-of-type { border-top: 0; }
+        .item h3 { margin: 0 0 2px; font-size: 15px; }
+        .item p { margin: 5px 0; }
+        .code { color: var(--muted); font-size: 12px; }
+        .form-inline { display: flex; gap: 9px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
+        .form-inline label { display: block; color: var(--muted); font-size: 12px; font-weight: 650; margin-bottom: 4px; }
+        .qty { width: 100px; border: 1px solid #b8c9d7; border-radius: 9px; padding: 10px 12px; min-height: 42px; }
+        .btn { border: 1px solid transparent; border-radius: 10px; padding: 10px 15px; min-height: 42px; background: var(--blue); color: white; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn:hover { background: var(--blue-hover); color: #fff; }
+        .btn-secondary { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand-green-dark); }
+        .btn-secondary:hover { background: var(--brand-info); color: var(--brand-green-dark); }
+        .btn-danger { color: var(--brand-red-dark); background: #fff; border-color: #edc9c9; }
+        .btn-danger:hover { background: #fff3f3; color: var(--brand-red-dark); }
+        .btn-large { width: 100%; font-size: 15px; padding: 13px; }
+        .cart-footer { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 17px; }
+        .note { background: #f6f9fb; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; color: var(--muted); font-size: 12px; margin: 12px 0; }
+        .empty { background: #f7fafc; border: 1px dashed #c4d3df; border-radius: 12px; padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+        .pill { display: inline-flex; background: var(--brand-info); color: var(--brand-green-dark); border-radius: 100px; padding: 3px 9px; font-weight: 700; font-size: 12px; }
+        .pill-green { color: var(--brand-green-dark); background: var(--brand-info); }
+        .pill-amber { color: var(--amber); background: var(--amber-bg); }
+        details.item summary { cursor: pointer; list-style-position: inside; }
+        details.item[open] summary { margin-bottom: 10px; }
+        details.item ul { margin: 10px 0; padding-left: 20px; }
+        details.item li { margin: 5px 0; font-size: 13px; }
+        .action-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .debt { border-left: 3px solid var(--brand-warning-text); padding-left: 13px; }
+        .debt strong.amount { display: inline-block; color: var(--amber); background: var(--amber-bg); border-radius: 7px; padding: 3px 8px; margin-top: 5px; }
+        .catalog-panel { margin-top: 20px; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+        .search-field { flex: 1 1 280px; }
+        .search-field label { display: block; font-weight: 700; font-size: 13px; margin-bottom: 7px; }
+        .search-field input { padding: 12px 13px; width: 100%; min-height: 44px; border: 1px solid #b8c9d7; border-radius: 10px; background: #fff; }
+        #search-status { font-size: 13px; margin: 8px 0 0; color: var(--muted); min-height: 0; }
+        /* Tabla del catálogo: mismo lenguaje visual que existencias de almacén */
+        .catalogo { overflow-x: auto; margin-top: 16px; border: 1px solid var(--border); border-radius: 12px; }
+        .catalog-table { border-collapse: collapse; width: 100%; min-width: 990px; }
+        .catalog-table th, .catalog-table td { padding: 13px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; font-size: 13px; }
+        .catalog-table th { background: #e8f5ea; color: #0f7a18; white-space: nowrap; font-weight: 750; }
+        .catalog-table tbody tr:hover { background: #f8fcf9; }
+        .catalog-table tbody tr:last-child td { border-bottom: 0; }
+        .catalog-table .row-code { font-weight: 750; white-space: nowrap; color: #172335; }
+        .catalog-table .article-title { display: block; font-size: 14px; font-weight: 750; color: var(--brand-dark); }
+        .catalog-table .meta-line { display: block; font-size: 11px; color: var(--brand-muted); margin-top: 3px; }
+        .catalog-table .location-chip { background: #f1f6fa; border-radius: 7px; padding: 6px 8px; font-weight: 650; white-space: nowrap; }
+        .catalog-table .num { text-align: center; font-variant-numeric: tabular-nums; }
+        .catalog-table .request-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 7px; }
+        .catalog-table .request-form .qty { width: 66px; min-height: 38px; padding: 7px; text-align: center; }
+        .catalog-table .request-form .btn { min-height: 38px; white-space: nowrap; padding: 8px 10px; }
+        .catalog-table .empty-row { text-align: center; padding: 25px; color: var(--brand-muted); }
+        .catalog-table tr[hidden] { display: none; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+        .catalog-filters { display: grid; grid-template-columns: minmax(250px, 2fr) minmax(150px, 1fr) minmax(145px, 1fr) auto auto; gap: 9px; align-items: end; }
+        .catalog-filters select { width: 100%; min-height: 44px; border: 1px solid #b8c9d7; border-radius: 10px; padding: 9px 10px; background: #fff; color: var(--ink); }
+        .catalog-filters .filter-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 7px; }
+        @media (max-width: 950px) { .catalog-filters { grid-template-columns: 1fr 1fr; } .catalog-filters .search-field { grid-column: 1 / -1; } }
+        @media (max-width: 520px) { .catalog-filters { grid-template-columns: 1fr; } .catalog-filters .search-field { grid-column: auto; } }
+        .messages { margin-bottom: 18px; }
+        .message { padding: 12px 15px; background: var(--brand-info); border-left: 4px solid var(--brand-green); border-radius: 8px; margin: 8px 0; }
+        .footer { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 14px; padding-top: 22px; color: var(--muted); font-size: 12px; }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) {
+            .container { padding: 16px 12px 36px; }
+            .topbar-inner { padding: 14px 12px; }
+            .top-user { display: none; }
+            .stats { gap: 8px; }
+            .stat { padding: 13px 10px; }
+            .stat .value { font-size: 24px; }
+            .stat .label { font-size: 11px; }
+            .stat .hint { font-size: 10px; }
+            .panel { padding: 16px; }
+        }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+            .plazo-prestamo {
+                margin-top: 12px;
+            }
+
+            .badge-vencido,
+            .badge-por-vencer,
+            .badge-en-plazo {
+                display: inline-block;
+                padding: 7px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .badge-vencido {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .badge-por-vencer {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .badge-en-plazo {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <img src="{% static 'img/logo_empresa.png' %}" alt="Engranes y Rectificado" class="brand-logo">
+                <div>
+                    <div class="brand-name">StockroomER</div>
+                    <div class="brand-sub">Engranes y Rectificados · Panel de trabajadores</div>
+                </div>
+            </div>
+            <div class="top-user"><span>Sesión de trabajador</span><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></div>
+        </div>
+    </header>
+    <main class="container">
+        <div class="heading">
+            <div>
+                <h1>Hola, {{ employee.first_name }}</h1>
+                <p class="muted">Consulta herramientas, prepara tu solicitud y revisa tus devoluciones.</p>
+            </div>
+            <span class="pill">Empleado {{ employee.employee_id }}</span>
+        </div>
+        {% if messages %}
+            <div class="messages" role="status" aria-live="polite">
+                {% for message in messages %}<p class="message">{{ message }}</p>{% endfor %}
+            </div>
+        {% endif %}
+        <nav class="nav" aria-label="Secciones del panel">
+            <a href="#catalogo">Catálogo</a>
+            <a href="#carrito">Mi carrito</a>
+            <a href="#solicitudes">Mis solicitudes</a>
+            <a href="#adeudos">Mis devoluciones</a>
+        </nav>
+        <div class="stats">
+            <div class="stat"><div class="label">En el carrito</div><div class="value">{{ cart_lines|length }}</div><div class="hint">Artículos por solicitar</div></div>
+            <div class="stat"><div class="label">Solicitudes recientes</div><div class="value">{{ my_requests|length }}</div><div class="hint">Últimas 10</div></div>
+            <div class="stat"><div class="label">Entregas pendientes</div><div class="value">{{ pending_issues|length }}</div><div class="hint">Con devolución pendiente</div></div>
+        </div>
+        <div class="layout">
+            <div class="stack">
+                <section class="panel" id="carrito" aria-labelledby="cart-title">
+                    <div class="panel-head"><div><h2 id="cart-title">Mi carrito</h2><p>Revisa las cantidades antes de enviar tu solicitud.</p></div><span class="count">{{ cart_lines|length }} artículos</span></div>
+                    {% for line in cart_lines %}
+                        <article class="item">
+                            <h3>{{ line.article.name }}</h3>
+                            <p class="code">{{ line.article.article_code }}</p>
+                            <div class="form-inline">
+                                <form method="post" action="{% url 'guardar_articulo_carrito' line.article_id %}" class="form-inline">
+                                    {% csrf_token %}
+                                    <div><label for="cart-quantity-{{ line.pk }}">Cantidad solicitada</label><input class="qty" id="cart-quantity-{{ line.pk }}" type="number" name="quantity" min="1" step="1" value="{{ line.requested_quantity }}" required></div>
+                                    <button class="btn btn-secondary" type="submit">Actualizar</button>
+                                </form>
+                                <form method="post" action="{% url 'quitar_articulo_carrito' line.pk %}">
+                                    {% csrf_token %}<button class="btn btn-danger" type="submit">Quitar</button>
+                                </form>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="empty">Tu carrito está vacío. Busca herramientas en el catálogo para empezar.</div>
+                    {% endfor %}
+                    {% if cart_lines %}
+                        <div class="cart-footer">
+                            <div class="note">Los artículos del carrito todavía no están reservados ni entregados. Al enviar la solicitud ya no podrás modificar sus cantidades desde aquí.</div>
+                            <form method="post" action="{% url 'enviar_solicitud' cart_lines.0.request_id %}">
+                                {% csrf_token %}<button type="submit" class="btn btn-large">Enviar solicitud al almacén</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </section>
+                <section class="panel" id="solicitudes" aria-labelledby="requests-title">
+                    <div class="panel-head"><div><h2 id="requests-title">Mis solicitudes</h2><p>Consulta el estado de tus últimas 10 solicitudes.</p></div></div>
+                    {% for solicitud in my_requests %}
+                        <details class="item">
+                            <summary><strong>Solicitud #{{ solicitud.pk }}</strong> · <span class="pill">{{ solicitud.get_status_display }}</span></summary>
+                            <p class="code">Enviada: {{ solicitud.submitted_at|date:"d/m/Y H:i" }}</p>
+                            <ul>
+                                {% for line in solicitud.lines.all %}
+                                    <li>{{ line.article.article_code }} — {{ line.article.name }} · <strong>{{ line.requested_quantity }}</strong> piezas</li>
+                                {% endfor %}
+                            </ul>
+                            <div class="action-links">
+                                {% if solicitud.status == "prepared" %}
+                                    <a class="btn" href="{% url 'confirmar_recibido' solicitud.pk %}">Revisar y confirmar recibido</a>
+                                {% endif %}
+                                <a class="btn btn-secondary" href="{% url 'comanda_empleado' solicitud.pk %}">Ver / imprimir comanda</a>
+                            </div>
+                        </details>
+                    {% empty %}
+                        <div class="empty">Todavía no tienes solicitudes enviadas.</div>
+                    {% endfor %}
+                </section>
+            </div>
+            <div class="stack">
+                <section class="panel" id="adeudos" aria-labelledby="pending-title">
+                    <div class="panel-head"><div><h2 id="pending-title">Mis pendientes de devolución</h2><p>Estas piezas siguen registradas a tu nombre.</p></div><span class="count">{{ pending_issues|length }} entregas</span></div>
+                    {% for issue in pending_issues %}
+                        <article class="item debt">
+                            {% if issue.tool_id %}
+                                <h3>{{ issue.tool.name }}</h3>
+                                <p class="code">Pieza: {{ issue.tool.tool_code }}</p>
+                                {% if issue.tool.serial_number %}<p class="code">Serie: {{ issue.tool.serial_number }}</p>{% endif %}
+                            {% else %}
+                                <h3>{{ issue.stock.article.name }}</h3>
+                                <p class="code">Artículo: {{ issue.stock.article.article_code }}</p>
+                            {% endif %}
+                            <strong class="amount">{{ issue.pending_quantity }} por devolver</strong>
+                            <p class="code">Entregadas: {{ issue.quantity }} · Devueltas: {{ issue.returned_quantity }}</p>
+                            <p class="code">Entrega #{{ issue.pk }} · {{ issue.issued_at|date:"d/m/Y H:i" }}</p>
+
+                                <div class="plazo-prestamo">
+                                    <p>
+                                        <strong>Fecha límite de devolución:</strong>
+                                        {{ issue.fecha_limite|date:"d/m/Y H:i" }}
+                                    </p>
+
+                                    {% if issue.estado_plazo == "vencido" %}
+                                        <span class="badge-vencido">
+                                            Préstamo vencido
+                                        </span>
+                                    {% elif issue.estado_plazo == "por_vencer" %}
+                                        <span class="badge-por-vencer">
+                                            Próximo a vencer
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-en-plazo">
+                                            Dentro del plazo
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                        </article>
+                    {% empty %}
+                        <div class="empty">No tienes piezas pendientes de devolución.</div>
+                    {% endfor %}
+                    <div class="note">Para devolver una pieza, entrégala físicamente al almacenista para que registre el movimiento.</div>
+                </section>
+            </div>
+        </div>
+        <section class="panel catalog-panel" id="catalogo" aria-labelledby="catalog-title">
+            <div class="panel-head"><div><h2 id="catalog-title">Catálogo del almacén</h2><p>Consulta disponibilidad y agrega lo que necesitas al carrito.</p></div></div>
+            <form method="get" action="{% url 'panel_empleado' %}" id="catalog-search-form">
+                <div class="catalog-filters">
+                    <div class="search-field">
+                        <label for="catalog-search">Buscar artículo</label>
+                        <input id="catalog-search" type="search" name="q" value="{{ search }}" placeholder="Código, nombre, marca o especificación" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="filter-label" for="filter-category">Categoría</label>
+                        <select id="filter-category"><option value="">Todas las categorías</option></select>
+                    </div>
+                    <div>
+                        <label class="filter-label" for="filter-control">Tipo de control</label>
+                        <select id="filter-control">
+                            <option value="">Todos los controles</option>
+                            <option value="quantity">Por cantidad</option>
+                            <option value="individual">Individual</option>
+                        </select>
+                    </div>
+                    <button class="btn" type="submit">Buscar</button>
+                    <a class="btn btn-secondary" id="show-all-catalog" href="{% url 'panel_empleado' %}#catalogo">Ver todos</a>
+                </div>
+                <p id="search-status" role="status" aria-live="polite"></p>
+            </form>
+            <p class="note">La disponibilidad se consulta en tiempo real. Agregar un artículo al carrito no reserva existencias.</p>
+            <div class="catalogo" aria-live="polite">
+                <table class="catalog-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Artículo</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col">Ubicación</th>
+                            <th scope="col">Control</th>
+                            <th scope="col" class="num">Disponibles</th>
+                            <th scope="col">Solicitar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in articles %}
+                        <tr class="catalog-row"
+                            data-category="{% if article.specification and article.specification.tool_type and article.specification.tool_type.category %}{{ article.specification.tool_type.category.name }}{% else %}Sin categoría{% endif %}"
+                            data-control="{{ article.tracking_mode }}">
+                            <td><span class="row-code">{{ article.article_code }}</span></td>
+                            <td>
+                                <span class="article-title">{{ article.name }}</span>
+                                {% if article.brand %}<span class="meta-line">Marca: {{ article.brand }}</span>{% endif %}
+                                {% if article.specification %}<span class="meta-line">{{ article.specification }}</span>{% endif %}
+                                <span class="meta-line">{{ article.get_return_mode_display }}</span>
+                            </td>
+                            <td>{% if article.specification and article.specification.tool_type and article.specification.tool_type.category %}{{ article.specification.tool_type.category.name }}{% else %}<span class="muted">Sin categoría</span>{% endif %}</td>
+                            <td>{% if article.location %}<span class="location-chip">{{ article.location }}</span>{% else %}<span class="muted">Sin asignar</span>{% endif %}</td>
+                            <td>{{ article.get_tracking_mode_display }}</td>
+                            <td class="num">
+                                {% if article.available_quantity > 0 %}<span class="pill available">{{ article.available_quantity }}</span>
+                                {% else %}<span class="pill unavailable">0</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if article.available_quantity > 0 %}
+                                <form method="post" action="{% url 'guardar_articulo_carrito' article.pk %}" class="request-form">
+                                    {% csrf_token %}
+                                    <label for="quantity-{{ article.pk }}" class="sr-only">Cantidad de {{ article.name }}</label>
+                                    <input class="qty" id="quantity-{{ article.pk }}" type="number" name="quantity" min="1" max="{{ article.available_quantity }}" step="1" value="1" required>
+                                    <button class="btn" type="submit">Agregar</button>
+                                </form>
+                                {% else %}<span class="muted">No disponible</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="empty-row">No se encontraron artículos con esa búsqueda.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <footer class="footer">
+            <span>StockroomER · Engranes y Rectificados</span>
+            <form method="post" action="{% url 'salir_empleado' %}">
+                {% csrf_token %}<button class="btn btn-secondary" type="submit">Cerrar sesión</button>
+            </form>
+        </footer>
+    </main>
+    <script>
+    (() => {
+        const input = document.getElementById("catalog-search");
+        const form = document.getElementById("catalog-search-form");
+        const catalog = document.querySelector(".catalogo");
+        const status = document.getElementById("search-status");
+        if (!input || !form || !catalog || !status) return;
+
+        let timer;
+        let controller;
+        let latestRequest = 0;
+        const categorySelect = document.getElementById("filter-category");
+        const controlSelect = document.getElementById("filter-control");
+        const showAll = document.getElementById("show-all-catalog");
+
+        function applyFilters() {
+            const category = categorySelect.value;
+            const control = controlSelect.value;
+            let visible = 0;
+            for (const row of catalog.querySelectorAll(".catalog-row")) {
+                const match = (!category || row.dataset.category === category)
+                    && (!control || row.dataset.control === control);
+                row.hidden = !match;
+                if (match) visible++;
+            }
+            const previous = catalog.querySelector(".no-filter-results");
+            if (previous) previous.remove();
+            if (!visible && catalog.querySelector(".catalog-row")) {
+                const tr = document.createElement("tr");
+                tr.className = "no-filter-results";
+                const td = document.createElement("td");
+                td.colSpan = 7;
+                td.className = "empty-row";
+                td.textContent = "No hay artículos para estos filtros.";
+                tr.appendChild(td);
+                catalog.querySelector("tbody").appendChild(tr);
+            }
+        }
+
+        function updateCategories() {
+            const selected = categorySelect.value;
+            const categories = [...new Set(
+                Array.from(catalog.querySelectorAll(".catalog-row"), row => row.dataset.category)
+            )].sort((a, b) => a.localeCompare(b, "es"));
+            categorySelect.replaceChildren(new Option("Todas las categorías", ""));
+            for (const category of categories) categorySelect.add(new Option(category, category));
+            categorySelect.value = categories.includes(selected) ? selected : "";
+            applyFilters();
+        }
+        categorySelect.addEventListener("change", applyFilters);
+        controlSelect.addEventListener("change", applyFilters);
+        showAll.addEventListener("click", (event) => {
+            event.preventDefault();
+            input.value = "";
+            categorySelect.value = "";
+            controlSelect.value = "";
+            scheduleSearch(0);
+        });
+        updateCategories();
+
+        async function updateCatalog(requestId) {
+            controller = new AbortController();
+            const url = new URL(form.action, window.location.href);
+            const search = input.value.trim();
+            if (search) url.searchParams.set("q", search);
+            else url.searchParams.delete("q");
+            status.textContent = "Buscando…";
+            try {
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    credentials: "same-origin",
+                    cache: "no-store"
+                });
+                if (requestId !== latestRequest) return;
+                if (response.redirected) {
+                    window.location.assign(response.url);
+                    return;
+                }
+                if (!response.ok) throw new Error("No se pudo consultar el catálogo.");
+                const html = await response.text();
+                if (requestId !== latestRequest) return;
+                const page = new DOMParser().parseFromString(html, "text/html");
+                const updatedCatalog = page.querySelector(".catalogo");
+                if (!updatedCatalog) throw new Error("No se encontró el catálogo.");
+                catalog.replaceChildren(...Array.from(updatedCatalog.childNodes));
+                updateCategories();
+                window.history.replaceState(null, "", url);
+                status.textContent = "";
+            } catch (error) {
+                if (error.name === "AbortError" || requestId !== latestRequest) return;
+                status.textContent = "No se pudo actualizar la lista. Intenta de nuevo o pulsa Buscar.";
+            }
+        }
+        function scheduleSearch(delay) {
+            clearTimeout(timer);
+            if (controller) controller.abort();
+            const requestId = ++latestRequest;
+            timer = setTimeout(() => updateCatalog(requestId), delay);
+        }
+        input.addEventListener("input", () => scheduleSearch(250));
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            scheduleSearch(0);
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Personal y permisos{% endblock %}
+{% block titulo_pagina %}Personal y permisos{% endblock %}
+{% block descripcion %}Altas, bajas, cuentas y expedientes · Jefatura{% endblock %}
+{% block extra_css %}
+<style>
+.persona-main{max-width:1280px;margin:auto}.persona-nav{margin:14px 0}.persona-nav a{color:#0f7a18;font-weight:700}
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px}
+.persona-card{background:#fff;border:1px solid #dce5eb;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 4px 16px #122b2e09}
+.persona-card h2{margin-top:0;font-size:20px;color:#14293b}.persona-form{display:grid;gap:12px}.persona-form label{display:block;font-weight:700;margin-bottom:4px}
+.persona-form input,.persona-buscar input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #bfcbd5;border-radius:9px;font:inherit}
+.persona-form select{width:100%;padding:12px;border:1px solid #bfcbd5;border-radius:9px;font:inherit}
+.persona-button{display:inline-block;background:#168e25;color:#fff;border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;text-decoration:none;font:inherit}
+.persona-button.alt{background:#244560}.persona-button.red{background:#ac2b20}.persona-button:focus-visible{outline:3px solid #f2ae39;outline-offset:2px}
+.persona-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.persona-actions form{display:inline-block}.persona-small{font-size:12px;color:#627487}
+.persona-scroll{max-width:100%;overflow-x:auto}.persona-table{width:100%;border-collapse:collapse;min-width:760px}.persona-table th{text-align:left;background:#eaf4ec;color:#17451e}.persona-table th,.persona-table td{padding:11px;border-bottom:1px solid #e2e8ed;vertical-align:middle}
+.persona-msg{background:#f0faee;border-left:4px solid #168e25;padding:12px;margin:12px 0}.persona-error{color:#ab251d;font-size:13px}.persona-counter{display:flex;gap:12px;flex-wrap:wrap}.persona-counter div{background:#edf7ef;border-radius:12px;padding:12px 18px}.persona-counter strong{font-size:25px;display:block;color:#0f7a18}
+@media(max-width:600px){.persona-card{padding:14px}.persona-actions .persona-button{padding:9px 11px}.persona-table{min-width:660px}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="persona-main">
+  <nav class="persona-nav"><a href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></nav>
+  {% if messages %}{% for message in messages %}<div class="persona-msg" role="status">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="persona-counter"><div>Trabajadores activos<strong>{{ activos }}</strong></div><div>Trabajadores inactivos<strong>{{ inactivos }}</strong></div></div>
+  <p class="persona-small">Los trabajadores usan credencial y NIP; el personal administrativo usa usuario y contraseña de Django. Son accesos independientes.</p>
+  <div class="persona-grid">
+   <section class="persona-card"><h2>Dar de alta a un trabajador</h2><p class="persona-small">Registra a la persona. Después deberá activar su NIP por el proceso habitual.</p>
+    <form method="post" class="persona-form">{% csrf_token %}<input type="hidden" name="tipo" value="empleado">
+     {% for campo in alta_empleado %}<div><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}<div class="persona-error">{{ campo.errors }}</div></div>{% endfor %}
+     <button class="persona-button" type="submit">Crear trabajador</button>
+    </form>
+   </section>
+   <section class="persona-card"><h2>Nueva cuenta administrativa</h2><p class="persona-small">Para personal con acceso al almacén o a jefatura. Contraseña mínima de 12 caracteres. No se crean superusuarios desde aquí.</p>
+    <form method="post" class="persona-form">{% csrf_token %}<input type="hidden" name="tipo" value="cuenta">
+    {% for campo in alta_acceso %}<div><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}<div class="persona-error">{{ campo.errors }}</div></div>{% endfor %}
+    <button class="persona-button" type="submit">Crear cuenta administrativa</button>
+    </form>
+   </section>
+  </div>
+  <section class="persona-card"><h2>Directorio de trabajadores</h2>
+   <form method="get" class="persona-buscar persona-actions"><label for="buscar_personal">Buscar</label><input style="max-width:340px" type="search" id="buscar_personal" name="q" value="{{ q }}" placeholder="Nombre o número de empleado"><button class="persona-button alt" type="submit">Buscar</button></form>
+   <div class="persona-scroll"><table class="persona-table"><thead><tr><th>Número</th><th>Trabajador</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+    {% for e in empleados %}<tr><td>{{ e.employee_id }}</td><td>{{ e.first_name }} {{ e.last_name }}</td><td>{% if e.is_active %}Activo{% else %}Inactivo{% endif %}</td>
+    <td><div class="persona-actions"><a class="persona-button alt" href="{% url 'expediente_trabajador_jefe' e.pk %}">Expediente</a>
+    {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_reset_nip_jefe' e.pk %}">Restablecer NIP</a>{% endif %}
+    {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_nip_jefe' e.pk %}">Activación NIP</a>{% endif %}
+    <form method="post" action="{% url 'estado_trabajador_jefe' e.pk %}">{% csrf_token %}
+     {% if e.is_active %}<input type="hidden" name="accion" value="desactivar"><button class="persona-button red" type="submit" onclick="return confirm('¿Desactivar trabajador? Su historial y adeudos se conservan.')">Dar de baja</button>
+     {% else %}<input type="hidden" name="accion" value="activar"><button class="persona-button" type="submit">Reactivar</button>{% endif %}
+    </form></div></td></tr>{% empty %}<tr><td colspan="4">No hay trabajadores.</td></tr>{% endfor %}
+   </tbody></table></div>
+  </section>
+  <section class="persona-card"><h2>Cuentas y permisos administrativos</h2><p class="persona-small">Solo se permiten roles predefinidos. No puedes modificar tu propia cuenta ni superusuarios. Las cuentas con permisos adicionales se gestionan en Django Admin.</p>
+   <div class="persona-scroll"><table class="persona-table"><thead><tr><th>Cuenta</th><th>Estado</th><th>Grupos</th><th>Acciones</th></tr></thead><tbody>
+    {% for c in cuentas %}<tr><td>{{ c.username }} {% if c.pk == request.user.pk %}(tu cuenta){% endif %}</td><td>{% if c.is_active %}Activa{% else %}Inactiva{% endif %}</td><td>{% for g in c.groups.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}Sin grupos{% endfor %}</td>
+    <td><div class="persona-actions">
+     {% if c.pk != request.user.pk and not c.is_superuser %}
+      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="{% if c.is_active %}desactivar{% else %}activar{% endif %}"><button type="submit" class="persona-button {% if c.is_active %}red{% endif %}" onclick="return confirm('¿Confirmar cambio de acceso?')">{% if c.is_active %}Desactivar{% else %}Reactivar{% endif %}</button></form>
+      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="warehouse"><button type="submit" class="persona-button alt">Almacén</button></form>
+      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="boss"><button type="submit" class="persona-button">Jefatura</button></form>
+     {% else %}<span class="persona-small">Cuenta protegida</span>{% endif %}
+    </div></td></tr>{% empty %}<tr><td colspan="4">No hay cuentas.</td></tr>{% endfor %}
+   </tbody></table></div>
+  </section>
+</div>
+{% endblock %}
