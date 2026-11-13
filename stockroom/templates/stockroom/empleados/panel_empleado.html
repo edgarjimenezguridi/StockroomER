@@ -147,6 +147,36 @@
             .panel { padding: 16px; }
         }
         @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+            .plazo-prestamo {
+                margin-top: 12px;
+            }
+
+            .badge-vencido,
+            .badge-por-vencer,
+            .badge-en-plazo {
+                display: inline-block;
+                padding: 7px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .badge-vencido {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .badge-por-vencer {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .badge-en-plazo {
+                background: #dcfce7;
+                color: #166534;
+            }
+
     </style>
 </head>
 <body>
@@ -256,6 +286,28 @@
                             <strong class="amount">{{ issue.pending_quantity }} por devolver</strong>
                             <p class="code">Entregadas: {{ issue.quantity }} · Devueltas: {{ issue.returned_quantity }}</p>
                             <p class="code">Entrega #{{ issue.pk }} · {{ issue.issued_at|date:"d/m/Y H:i" }}</p>
+
+                                <div class="plazo-prestamo">
+                                    <p>
+                                        <strong>Fecha límite de devolución:</strong>
+                                        {{ issue.fecha_limite|date:"d/m/Y H:i" }}
+                                    </p>
+
+                                    {% if issue.estado_plazo == "vencido" %}
+                                        <span class="badge-vencido">
+                                            Préstamo vencido
+                                        </span>
+                                    {% elif issue.estado_plazo == "por_vencer" %}
+                                        <span class="badge-por-vencer">
+                                            Próximo a vencer
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-en-plazo">
+                                            Dentro del plazo
+                                        </span>
+                                    {% endif %}
+                                </div>
+
                         </article>
                     {% empty %}
                         <div class="empty">No tienes piezas pendientes de devolución.</div>

@@ -5,6 +5,10 @@ URL configuration for StockroomER.
 
 from django.contrib import admin
 from django.urls import path
+from stockroom.boss_views import (
+    panel_jefe,
+    resolver_autorizacion_jefe,
+)
 
 from stockroom.warehouse_views import (
     WarehouseLoginView,
@@ -270,6 +274,19 @@ urlpatterns = [
         imprimir_etiqueta_pieza_almacen,
         name="imprimir_etiqueta_pieza_almacen",
     ),
+
+    # Panel del jefe
+    path(
+        "jefe/panel/",
+        panel_jefe,
+        name="panel_jefe",
+    ),
+    path(
+        "jefe/autorizaciones/<int:authorization_id>/resolver/",
+        resolver_autorizacion_jefe,
+        name="resolver_autorizacion_jefe",
+    ),
+
 
 
 

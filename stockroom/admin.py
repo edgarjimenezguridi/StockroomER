@@ -1241,3 +1241,5 @@ class MaterialRequestLineAdmin(admin.ModelAdmin):
                 request, " ".join(exc.messages), level="error"
             )
             return redirect(request.path)
+# Administración protegida de autorizaciones de duplicados.
+from . import duplicate_authorization_admin  # noqa: E402,F401

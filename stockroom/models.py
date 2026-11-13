@@ -563,6 +563,17 @@ class QuantityIssue(models.Model):
             ),
         ]
 
+    
+    @property
+    def fecha_limite(self):
+        from .loan_rules import fecha_limite_prestamo
+        return fecha_limite_prestamo(self)
+
+    @property
+    def estado_plazo(self):
+        from .loan_rules import estado_plazo_prestamo
+        return estado_plazo_prestamo(self)
+
     def __str__(self):
         if self.tool_id:
             reference = self.tool.tool_code
@@ -864,3 +875,61 @@ class MaterialRequestPiece(models.Model):
             f"Solicitud #{self.line.request_id} — "
             f"{self.tool.tool_code}"
         )
+
+class DuplicateLoanAuthorization(models.Model):
+    """Excepción puntual del jefe para solicitar un artículo repetido."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        APPROVED = "approved", "Aprobada"
+        REJECTED = "rejected", "Rechazada"
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.PROTECT,
+        related_name="duplicate_authorizations", verbose_name="Trabajador",
+    )
+    article = models.ForeignKey(
+        Article, on_delete=models.PROTECT,
+        related_name="duplicate_authorizations", verbose_name="Artículo",
+    )
+    max_quantity = models.PositiveIntegerField(
+        "Cantidad máxima autorizada", validators=[MinValueValidator(1)]
+    )
+    reason = models.TextField("Motivo de la excepción")
+    status = models.CharField(
+        "Estado", max_length=12, choices=Status.choices,
+        default=Status.PENDING, editable=False,
+    )
+    created_at = models.DateTimeField("Solicitada el", auto_now_add=True)
+    decided_at = models.DateTimeField("Resuelta el", null=True, blank=True, editable=False)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="duplicate_authorizations_decided",
+        null=True, blank=True, editable=False,
+        verbose_name="Autorizada o rechazada por",
+    )
+    used_request = models.ForeignKey(
+        MaterialRequest, on_delete=models.PROTECT,
+        related_name="duplicate_authorizations_used",
+        null=True, blank=True, editable=False,
+        verbose_name="Solicitud que utilizó la autorización",
+    )
+
+    class Meta:
+        verbose_name = "Autorización de préstamo duplicado"
+        verbose_name_plural = "Autorizaciones de préstamos duplicados"
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(max_quantity__gte=1),
+                name="duplicate_authorization_quantity_positive",
+            ),
+            models.UniqueConstraint(
+                fields=["used_request", "article"],
+                condition=models.Q(used_request__isnull=False),
+                name="one_duplicate_authorization_per_line",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.employee_id} / {self.article.article_code} / {self.get_status_display()}"

@@ -1,9 +1,28 @@
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from .loan_rules import (
+    validar_bloqueo_vencimiento,
+    validar_sin_duplicado,
+    vincular_autorizacion_si_necesaria,
+)
 from .models import Employee, MaterialRequest, MaterialRequestLine
 from .selectors import catalogo_articulos
+
+
+def bloquear_trabajador(employee_id):
+    """Comprueba que el trabajador exista y esté activo."""
+    employee = Employee.objects.select_for_update().filter(
+        pk=employee_id,
+        is_active=True,
+    ).first()
+
+    if employee is None:
+        raise ValidationError("El trabajador no está activo.")
+
+    return employee
 
 
 def set_cart_quantity(*, employee_id, article_id, quantity):
@@ -13,11 +32,10 @@ def set_cart_quantity(*, employee_id, article_id, quantity):
         )
 
     with transaction.atomic():
-        if not Employee.objects.filter(
-            pk=employee_id,
-            is_active=True,
-        ).exists():
-            raise ValidationError("El trabajador no está activo.")
+        bloquear_trabajador(employee_id)
+
+        # No permitir nuevas solicitudes con adeudos vencidos.
+        validar_bloqueo_vencimiento(employee_id)
 
         cart, _ = MaterialRequest.objects.get_or_create(
             employee_id=employee_id,
@@ -44,6 +62,14 @@ def set_cart_quantity(*, employee_id, article_id, quantity):
                 "El artículo no existe o está inactivo."
             )
 
+        # No permitir duplicados sin autorización.
+        validar_sin_duplicado(
+            employee_id=employee_id,
+            article_id=article_id,
+            excluir_solicitud_id=cart.pk,
+            quantity=quantity,
+        )
+
         if quantity > article.available_quantity:
             raise ValidationError(
                 f"Actualmente hay {article.available_quantity} "
@@ -56,35 +82,41 @@ def set_cart_quantity(*, employee_id, article_id, quantity):
             defaults={"requested_quantity": quantity},
         )
 
-    return line
+        return line
+
 
 def submit_cart(*, employee_id, cart_id):
     with transaction.atomic():
-        submitted_at = timezone.now()
+        bloquear_trabajador(employee_id)
 
-        updated = MaterialRequest.objects.filter(
+        validar_bloqueo_vencimiento(employee_id)
+
+        cart = MaterialRequest.objects.select_for_update().filter(
             pk=cart_id,
             employee_id=employee_id,
-            employee__is_active=True,
             status=MaterialRequest.Status.DRAFT,
-        ).update(
-            status=MaterialRequest.Status.SUBMITTED,
-            submitted_at=submitted_at,
-            updated_at=submitted_at,
-        )
+        ).first()
 
-        if updated != 1:
+        if cart is None:
             raise ValidationError(
                 "El carrito ya fue enviado o no está disponible."
             )
 
         lines = MaterialRequestLine.objects.filter(
-            request_id=cart_id,
+            request_id=cart.pk,
         )
 
         if not lines.exists():
             raise ValidationError(
                 "Agrega al menos un artículo antes de enviar la solicitud."
+            )
+
+        for line in lines:
+            vincular_autorizacion_si_necesaria(
+                employee_id=employee_id,
+                article_id=line.article_id,
+                quantity=line.requested_quantity,
+                request_id=cart.pk,
             )
 
         if lines.filter(article__is_active=False).exists():
@@ -99,16 +131,11 @@ def submit_cart(*, employee_id, cart_id):
                 "Solicita al almacenista que lo revise."
             )
 
-        return MaterialRequest.objects.get(pk=cart_id)
-
-def submit_cart(*, employee_id, cart_id):
-    with transaction.atomic():
         submitted_at = timezone.now()
 
         updated = MaterialRequest.objects.filter(
-            pk=cart_id,
+            pk=cart.pk,
             employee_id=employee_id,
-            employee__is_active=True,
             status=MaterialRequest.Status.DRAFT,
         ).update(
             status=MaterialRequest.Status.SUBMITTED,
@@ -121,25 +148,4 @@ def submit_cart(*, employee_id, cart_id):
                 "El carrito ya fue enviado o no está disponible."
             )
 
-        lines = MaterialRequestLine.objects.filter(
-            request_id=cart_id,
-        )
-
-        if not lines.exists():
-            raise ValidationError(
-                "Agrega al menos un artículo antes de enviar la solicitud."
-            )
-
-        if lines.filter(article__is_active=False).exists():
-            raise ValidationError(
-                "Tu carrito contiene un artículo desactivado. "
-                "Retíralo antes de enviar la solicitud."
-            )
-
-        if lines.filter(prepared_quantity__gt=0).exists():
-            raise ValidationError(
-                "El carrito tiene cantidades preparadas inesperadas. "
-                "Solicita al almacenista que lo revise."
-            )
-
-        return MaterialRequest.objects.get(pk=cart_id)
+        return MaterialRequest.objects.get(pk=cart.pk)

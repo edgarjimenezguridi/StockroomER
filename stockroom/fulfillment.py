@@ -2,6 +2,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import F
+from .loan_rules import validar_articulo_solicitable
 
 from .models import (
     Article,
@@ -288,6 +289,17 @@ def confirm_request_receipt(
                 "selected_pieces__tool"
             )
         )
+        # Ultima validacion antes de registrar
+        # las entregas y descontar inventario.
+        for line in lines:
+            if line.prepared_quantity > 0:
+                validar_articulo_solicitable(
+                    employee_id=employee.pk,
+                    article_id=line.article_id,
+                    exclude_request_id=request_id,
+                    quantity=line.prepared_quantity,
+                    require_bound=True,
+                )
 
         if not any(line.prepared_quantity > 0 for line in lines):
             raise ValidationError("La solicitud no tiene piezas preparadas.")
