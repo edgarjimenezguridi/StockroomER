@@ -71,7 +71,17 @@ from stockroom.article_management_views import (
 
 
 
+
+# Peticiones de duplicados iniciadas por trabajadores.
+from stockroom.worker_exception_views import solicitar_duplicado_empleado
+
 urlpatterns = [
+    path(
+        "trabajadores/duplicados/solicitar/",
+        solicitar_duplicado_empleado,
+        name="solicitar_duplicado_empleado",
+    ),
+
     # Administrador técnico
     path(
         "admin/",

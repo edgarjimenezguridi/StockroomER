@@ -1,0 +1,63 @@
+{% extends "stockroom/base.html" %}
+{% block title %}Solicitud de artículo duplicado{% endblock %}
+{% block body_class %}pagina-excepcion-trabajador{% endblock %}
+{% block titulo_pagina %}Solicitar artículo duplicado{% endblock %}
+{% block descripcion %}Pide permiso al jefe para solicitar nuevamente un artículo que ya tienes en préstamo.{% endblock %}
+{% block extra_css %}
+<style>
+.pagina-excepcion-trabajador .contenedor-empresa{max-width:1000px}
+.ex-nav{margin:4px 0 24px}.ex-nav a{color:#0f7a18;font-weight:700}
+.ex-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.ex-card{border:1px solid #dbe3ec;border-radius:14px;padding:22px;background:#fff;min-width:0}
+.ex-card h2{margin:0 0 12px;font-size:21px}
+.ex-hint{padding:12px 15px;margin:0 0 18px;border-left:4px solid #169c21;background:#f2f8f3;line-height:1.5}
+.ex-alert{padding:12px 15px;margin:0 0 16px;border-radius:9px;background:#fef2f2;color:#991b1b}
+.ex-success{padding:12px 15px;margin:0 0 16px;border-radius:9px;background:#dcfce7;color:#166534}
+.ex-form label{display:block;font-weight:700;margin-bottom:7px}
+.ex-form p{margin:0 0 17px}.ex-form input,.ex-form select,.ex-form textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #bbc9d5;border-radius:9px;font:inherit}
+.ex-form input:focus,.ex-form select:focus,.ex-form textarea:focus{outline:2px solid #169c21;outline-offset:1px}
+.ex-form .errorlist{color:#991b1b;font-size:13px;padding-left:18px}
+.ex-btn{display:inline-block;background:#169c21;color:#fff;border:0;border-radius:9px;padding:13px 20px;font-weight:700;cursor:pointer;text-decoration:none}
+.ex-btn:hover{background:#0f7a18}
+.ex-item{padding:14px 0;border-bottom:1px solid #e2e8f0}.ex-item:last-child{border:0}
+.ex-item strong{display:block}.ex-muted{color:#64748b;font-size:13px;margin-top:5px}
+.ex-state{display:inline-block;padding:4px 9px;border-radius:20px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:700}
+.ex-state.approved{background:#dcfce7;color:#166534}.ex-state.rejected{background:#fee2e2;color:#991b1b}
+@media(max-width:760px){.ex-columns{grid-template-columns:1fr}.ex-card{padding:16px}}
+</style>
+{% endblock %}
+{% block contenido %}
+<nav class="ex-nav"><a href="{% url 'panel_empleado' %}">← Regresar a mi panel</a></nav>
+<div class="ex-hint"><strong>¿Cómo funciona?</strong> Si ya tienes un artículo prestado o una solicitud activa del mismo artículo, puedes pedir una excepción. Solo el jefe puede aprobarla. No podrás generar nuevas comandas si tienes adeudos vencidos de más de 15 días.</div>
+{% if messages %}{% for message in messages %}<div class="ex-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
+<div class="ex-columns">
+  <section class="ex-card">
+    <h2>Nueva petición</h2>
+    <p class="ex-muted">Trabajador: {{ employee.first_name }} {{ employee.last_name }} · {{ employee.employee_id }}</p>
+    {% if form.non_field_errors %}<div class="ex-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post" class="ex-form">
+      {% csrf_token %}
+      {% for field in form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}
+      <button class="ex-btn" type="submit">Enviar petición</button>
+    </form>
+  </section>
+  <section class="ex-card">
+    <h2>Mis autorizaciones</h2>
+    {% for item in historial %}
+      <div class="ex-item">
+        <strong>{{ item.article.article_code }} — {{ item.article.name }}</strong>
+        <p class="ex-muted">Cantidad: {{ item.max_quantity }} · {{ item.created_at|date:"d/m/Y H:i" }}</p>
+        <span class="ex-state {{ item.status }}">{{ item.get_status_display }}</span>
+        {% if item.status == 'approved' and not item.used_request_id %}
+          <p class="ex-muted">Autorizada. Puedes agregar hasta {{ item.max_quantity }} pieza(s) al carrito, siempre que no tengas adeudos vencidos.</p>
+        {% elif item.used_request_id %}
+          <p class="ex-muted">Utilizada en comanda #{{ item.used_request_id }}.</p>
+        {% endif %}
+        <p class="ex-muted">Motivo: {{ item.reason }}</p>
+      </div>
+    {% empty %}
+      <p class="ex-muted">Todavía no has solicitado excepciones.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

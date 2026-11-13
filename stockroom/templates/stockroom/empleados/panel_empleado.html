@@ -207,6 +207,7 @@
         {% endif %}
         <nav class="nav" aria-label="Secciones del panel">
             <a href="#catalogo">Catálogo</a>
+            <a href="{% url 'solicitar_duplicado_empleado' %}">Solicitar duplicado</a>
             <a href="#carrito">Mi carrito</a>
             <a href="#solicitudes">Mis solicitudes</a>
             <a href="#adeudos">Mis devoluciones</a>
@@ -383,6 +384,7 @@
                                     <button class="btn" type="submit">Agregar</button>
                                 </form>
                                 {% else %}<span class="muted">No disponible</span>{% endif %}
+                                <div style="margin-top:7px;font-size:12px"><a href="{% url 'solicitar_duplicado_empleado' %}?article={{ article.pk }}">Pedir autorización de duplicado</a></div>
                             </td>
                         </tr>
                         {% empty %}
