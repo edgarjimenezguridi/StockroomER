@@ -1,3 +1,4 @@
+from .worker_session_security import pin_session_version
 from django.shortcuts import render, redirect
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseForbidden
@@ -147,6 +148,7 @@ def acceso_empleado(request):
                     request.session.flush()
                     request.session["worker_employee_id"] = employee.pk
                     request.session["worker_credential_id"] = credential.pk
+                    request.session["worker_pin_version"] = pin_session_version(credential.pin_hash)
                     request.session.set_expiry(10 * 60)
 
                     return redirect("panel_empleado")

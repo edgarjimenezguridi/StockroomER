@@ -43,6 +43,7 @@
    <div class="persona-scroll"><table class="persona-table"><thead><tr><th>Número</th><th>Trabajador</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
     {% for e in empleados %}<tr><td>{{ e.employee_id }}</td><td>{{ e.first_name }} {{ e.last_name }}</td><td>{% if e.is_active %}Activo{% else %}Inactivo{% endif %}</td>
     <td><div class="persona-actions"><a class="persona-button alt" href="{% url 'expediente_trabajador_jefe' e.pk %}">Expediente</a>
+    {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_reset_nip_jefe' e.pk %}">Restablecer NIP</a>{% endif %}
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_nip_jefe' e.pk %}">Activación NIP</a>{% endif %}
     <form method="post" action="{% url 'estado_trabajador_jefe' e.pk %}">{% csrf_token %}
      {% if e.is_active %}<input type="hidden" name="accion" value="desactivar"><button class="persona-button red" type="submit" onclick="return confirm('¿Desactivar trabajador? Su historial y adeudos se conservan.')">Dar de baja</button>

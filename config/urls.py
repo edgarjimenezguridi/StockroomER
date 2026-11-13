@@ -83,7 +83,12 @@ from stockroom.boss_personnel_views import (
 
 from stockroom.pin_onboarding_views import inicio_nip_trabajador, autorizar_nip_jefe
 
+from stockroom.pin_reset_views import autorizar_reset_nip_jefe, recuperar_nip_trabajador
+
 urlpatterns = [
+    path("trabajadores/recuperar-nip/", recuperar_nip_trabajador, name="recuperar_nip_trabajador"),
+    path("jefe/personal/<int:employee_id>/restablecer-nip/", autorizar_reset_nip_jefe, name="autorizar_reset_nip_jefe"),
+
     path("trabajadores/activar-mi-nip/", inicio_nip_trabajador, name="inicio_nip_trabajador"),
     path("jefe/personal/<int:employee_id>/autorizar-nip/", autorizar_nip_jefe, name="autorizar_nip_jefe"),
 

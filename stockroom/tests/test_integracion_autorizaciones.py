@@ -1,3 +1,4 @@
+from stockroom.worker_session_security import pin_session_version
 """Pruebas de integración: duplicado -> jefe -> comanda -> entrega y vencimiento.
 
 Django crea una base de pruebas; ninguna operación toca el inventario real.
@@ -75,6 +76,7 @@ class FlujoIntegralAutorizacionesTests(TestCase):
         session = self.client.session
         session["worker_employee_id"] = self.employee.pk
         session["worker_credential_id"] = self.credential.pk
+        session["worker_pin_version"] = pin_session_version(self.credential.pin_hash)
         session.save()
 
     def pedir_y_aprobar(self):

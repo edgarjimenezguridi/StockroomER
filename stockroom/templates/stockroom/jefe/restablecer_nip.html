@@ -1,0 +1,20 @@
+{% extends 'stockroom/base.html' %}
+{% block title %}Restablecer NIP{% endblock %}
+{% block titulo_pagina %}Recuperación de NIP{% endblock %}
+{% block descripcion %}Autorización exclusiva de jefatura{% endblock %}
+{% block contenido %}
+<div style="max-width:650px;margin:20px auto;padding:24px;background:white;border-radius:16px;border:1px solid #dce8de">
+<p><a href="{% url 'personal_jefe' %}">← Personal y permisos</a></p>
+<h2>{{ credential.employee.first_name }} {{ credential.employee.last_name }}</h2>
+<p>Empleado: {{ credential.employee.employee_id }}</p>
+<p>Emite un código de recuperación solo después de verificar personalmente la identidad del trabajador. Al generar otro código, el anterior se revoca.</p>
+{% if error %}<p role="alert" style="color:#a42121">{{ error }}</p>{% endif %}
+{% if code %}<div style="border:2px solid #148c25;border-radius:12px;padding:18px">
+<p><strong>Código de un solo uso (válido 10 minutos)</strong></p>
+<p style="font-size:26px;letter-spacing:3px;overflow-wrap:anywhere"><strong>{{ code }}</strong></p>
+<p>Entrégalo únicamente al trabajador. No se volverá a mostrar.</p></div>
+{% else %}
+<form method="post">{% csrf_token %}<button type="submit" style="background:#168b24;color:white;border:0;padding:14px;border-radius:10px;font-size:16px;cursor:pointer">Generar código temporal</button></form>
+{% endif %}
+</div>
+{% endblock %}

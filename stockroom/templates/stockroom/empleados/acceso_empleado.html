@@ -9,7 +9,8 @@
 {% if credential %}
 <main class="card pin-card"><div class="card-header"><span class="eyebrow">Paso 2 · Identificación</span><h1>Verifica tus datos</h1><p class="subtext">Comprueba que esta sea tu cuenta e ingresa tu NIP personal.</p></div><div class="body-content">
 <div class="intro-box identity"><strong>Trabajador seleccionado</strong><div class="user-line"><span>{{ credential.employee.first_name }} {{ credential.employee.last_name }}</span><span class="pill">No. {{ credential.employee.employee_id }}</span></div></div>
-<form method="post" class="pin-form"><input type="hidden" name="access_method" value="pin">{% csrf_token %}<div class="form-row">{{ pin_form.as_p }}</div><div class="action-area"><button type="submit" class="btn btn-primary btn-full">Ingresar a mi panel</button></div></form>
+<form method="post" class="pin-form"><input type="hidden" name="access_method" value="pin">{% csrf_token %}<div class="form-row">{{ pin_form.as_p }}
+<p style="margin:14px 0"><a href="{% url 'recuperar_nip_trabajador' %}">Olvidé mi NIP</a></p></div><div class="action-area"><button type="submit" class="btn btn-primary btn-full">Ingresar a mi panel</button></div></form>
 <form method="post" class="action-area">{% csrf_token %}<input type="hidden" name="access_method" value="change"><button type="submit" class="btn btn-secondary btn-full">Cambiar trabajador</button></form><p class="footnote">Por seguridad, no compartas tu NIP con otras personas.</p></div></main>
 {% else %}
 <main class="card login-card"><div class="card-header"><span class="eyebrow">Acceso al sistema</span><h1>Bienvenido al almacén</h1><p class="subtext">Identifícate con tu credencial o tu número de empleado. Después confirmarás tu NIP.</p></div><div class="body-content"><div class="login-grid">

@@ -1,3 +1,4 @@
+from stockroom.worker_session_security import pin_session_version
 from datetime import timedelta
 
 from django.test import TestCase
@@ -25,6 +26,7 @@ class WorkerDuplicateExceptionTests(TestCase):
         session = self.client.session
         session['worker_employee_id'] = self.employee.pk
         session['worker_credential_id'] = self.credential.pk
+        session["worker_pin_version"] = pin_session_version(self.credential.pin_hash)
         session.save()
 
     def make_duplicate(self):

@@ -933,3 +933,22 @@ class DuplicateLoanAuthorization(models.Model):
 
     def __str__(self):
         return f"{self.employee.employee_id} / {self.article.article_code} / {self.get_status_display()}"
+
+
+class PinResetAuthorization(models.Model):
+    """Autorización auditada para restablecer un NIP: no almacena el código en claro."""
+    credential = models.ForeignKey(
+        "EmployeeCredential", on_delete=models.PROTECT, related_name="pin_resets"
+    )
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="authorized_pin_resets"
+    )
+    code_digest = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]

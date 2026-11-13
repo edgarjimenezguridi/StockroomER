@@ -1,0 +1,18 @@
+{% load static %}
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recuperar NIP | StockroomER</title><style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#edf3f0;margin:0;padding:20px;color:#173047}
+main{max-width:480px;margin:5vh auto;background:white;padding:clamp(18px,5vw,36px);border-radius:18px;box-shadow:0 9px 25px #16332113}
+img{display:block;width:min(100%,270px);margin:0 auto 22px}h1{font-size:25px}p{line-height:1.5;color:#576c74}
+label{font-weight:700;display:block;margin-top:14px}input{width:100%;padding:13px;margin-top:6px;border-radius:9px;border:1px solid #b5c5ce;font:inherit}
+button{background:#158a22;color:white;border:0;border-radius:9px;padding:14px;width:100%;font-weight:700;font-size:16px;margin-top:18px;cursor:pointer}
+a{display:block;text-align:center;padding:15px;color:#116723}.errorlist{color:#b02121}strong{color:#20313b}
+</style></head><body><main>
+<img src="{% static 'img/logo_empresa.png' %}" alt="Engranes y Rectificados">
+<h1>Restablecer mi NIP</h1><p>Trabajador: <strong>{{ credential.employee.first_name }} {{ credential.employee.last_name }}</strong></p>
+<p>Solicita a jefatura un código de recuperación de 10 dígitos. Caduca en 10 minutos y solo puede utilizarse una vez.</p>
+<form method="post" autocomplete="off">{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% endfor %}
+<button type="submit">Guardar nuevo NIP</button></form>
+<a href="{% url 'acceso_empleado' %}">Regresar al acceso</a>
+</main></body></html>
