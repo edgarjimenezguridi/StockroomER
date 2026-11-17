@@ -139,3 +139,116 @@ class PersonalJefeTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertFalse(self.otro.groups.filter(name='Jefes').exists())
+    
+    def test_expediente_muestra_resumen_de_stock(self):
+        response = self.client.get(
+            reverse(
+                'expediente_trabajador_jefe',
+                args=[self.trabajador.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Herramientas actualmente asignadas',
+        )
+        self.assertEqual(response.context['total_piezas'], 0)
+        self.assertEqual(response.context['total_inicial'], 0)
+        self.assertEqual(response.context['total_normales'], 0)
+
+    def test_almacenista_no_puede_ver_expediente_jefe(self):
+        self.client.force_login(self.otro)
+
+        response = self.client.get(
+            reverse(
+                'expediente_trabajador_jefe',
+                args=[self.trabajador.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_expediente_conserva_historial_de_baja(self):
+        solicitud = EmployeeOffboardingRequest.objects.create(
+            employee=self.trabajador,
+            requested_by=self.jefe,
+        )
+
+        aprobar_baja_trabajador(
+            solicitud_id=solicitud.pk,
+            autorizado_por=self.jefe,
+        )
+
+        response = self.client.get(
+            reverse(
+                'expediente_trabajador_jefe',
+                args=[self.trabajador.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Historial de solicitudes de baja',
+        )
+        self.assertContains(response, 'EMP-PER-1')
+        self.assertFalse(response.context['empleado'].is_active)
+        self.assertEqual(len(response.context['bajas']), 1)
+
+    
+    def test_expediente_muestra_resumen_devoluciones(self):
+        response = self.client.get(
+            reverse(
+                'expediente_trabajador_jefe',
+                args=[self.trabajador.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(
+            response,
+            'Resumen de devoluciones y daños',
+        )
+
+        self.assertContains(
+            response,
+            'Historial de devoluciones',
+        )
+
+        self.assertContains(
+            response,
+            'Resoluciones de herramientas dañadas',
+        )
+
+        self.assertEqual(
+            response.context['total_devueltas'], 0
+        )
+        self.assertEqual(
+            response.context['total_buen_estado'], 0
+        )
+        self.assertEqual(
+            response.context['total_danadas'], 0
+        )
+        self.assertEqual(
+            response.context['total_danos_resueltos'], 0
+        )
+
+    def test_expediente_danos_solo_lectura(self):
+        response = self.client.get(
+            reverse(
+                'expediente_trabajador_jefe',
+                args=[self.trabajador.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.context['devoluciones']), 0
+        )
+        self.assertEqual(
+            len(response.context['resoluciones']), 0
+        )
+
+

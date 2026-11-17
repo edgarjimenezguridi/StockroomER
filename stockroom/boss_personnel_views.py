@@ -11,11 +11,13 @@ from django.db import transaction
 from django.db.models import F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from .assigned_stock_views import _data as obtener_stock_asignado
+from .models import Loan, MaterialRequest, EmployeeOffboardingRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .duplicate_authorization_admin import es_jefe
-from .models import Employee, EmployeeCredential, QuantityIssue, DamageResolution, DuplicateLoanAuthorization
+from .models import Employee, EmployeeCredential, QuantityIssue, DamageResolution, DuplicateLoanAuthorization, QuantityReturn
 
 WAREHOUSE_PERMISSIONS = (
     'view_materialrequest', 'change_materialrequest', 'view_employee',
@@ -104,6 +106,8 @@ def personal_jefe(request):
     jefe_obligatorio(request)
     alta_empleado = EmployeeForm(prefix='empleado')
     alta_acceso = AdminUserForm(prefix='cuenta')
+    empleado_en_edicion = None
+    form_edicion = None
     if request.method == 'POST':
         tipo = request.POST.get('tipo')
         if tipo == 'empleado':
@@ -131,6 +135,37 @@ def personal_jefe(request):
                     _audit(request, user, 'Alta de cuenta administrativa: ' + data['role'], added=True)
                 messages.success(request, 'Cuenta creada. Entrega la contraseña inicial por un canal seguro.')
                 return redirect('personal_jefe')
+
+        elif tipo == 'editar_empleado':
+            empleado_pk = request.POST.get('empleado_pk', '')
+
+            if not empleado_pk.isdigit():
+                raise PermissionDenied('Trabajador inválido.')
+
+            with transaction.atomic():
+                empleado_en_edicion = get_object_or_404(
+                    Employee.objects.select_for_update(),
+                    pk=int(empleado_pk),
+                )
+
+                form_edicion = EmployeeForm(
+                    request.POST,
+                    instance=empleado_en_edicion,
+                    prefix='editar',
+                )
+
+                if form_edicion.is_valid():
+                    empleado = form_edicion.save()
+                    _audit(
+                        request,
+                        empleado,
+                        'Actualización de datos de trabajador',
+                    )
+                    messages.success(
+                        request,
+                        'Datos del trabajador actualizados correctamente.',
+                    )
+                    return redirect('personal_jefe')
         else:
             raise PermissionDenied('Acción no válida.')
 
@@ -139,11 +174,30 @@ def personal_jefe(request):
     if busqueda:
         empleados = empleados.filter(Q(employee_id__icontains=busqueda) | Q(first_name__icontains=busqueda) | Q(last_name__icontains=busqueda))
     cuentas = get_user_model().objects.filter(is_staff=True).prefetch_related('groups').order_by('username')
+
+    if request.method == 'GET':
+        editar_pk = request.GET.get('editar', '')
+
+        if editar_pk:
+            if not editar_pk.isdigit():
+                raise PermissionDenied('Trabajador inválido.')
+
+            empleado_en_edicion = get_object_or_404(
+                Employee,
+                pk=int(editar_pk),
+            )
+            form_edicion = EmployeeForm(
+                instance=empleado_en_edicion,
+                prefix='editar',
+            )
+
     return render(request, 'stockroom/jefe/personal.html', {
         'alta_empleado': alta_empleado, 'alta_acceso': alta_acceso,
         'empleados': empleados[:150], 'cuentas': cuentas[:100], 'q': busqueda,
         'activos': Employee.objects.filter(is_active=True).count(),
         'inactivos': Employee.objects.filter(is_active=False).count(),
+        'empleado_en_edicion': empleado_en_edicion,
+        'form_edicion': form_edicion,
     })
 
 
@@ -205,20 +259,138 @@ def estado_trabajador_jefe(request, employee_id):
 
 
 
+
 @never_cache
 @login_required(login_url='acceso_jefe')
 @require_http_methods(['GET'])
 def expediente_trabajador_jefe(request, employee_id):
     jefe_obligatorio(request)
+
     empleado = get_object_or_404(Employee, pk=employee_id)
-    issues = QuantityIssue.objects.filter(employee=empleado).select_related('stock__article', 'tool__article').order_by('-issued_at')
-    damaged = DamageResolution.objects.filter(source_return__issue__employee=empleado)
-    return render(request, 'stockroom/jefe/expediente.html', {
-        'empleado': empleado, 'issues': issues[:80],
-        'pendientes': issues.filter(requires_return=True, returned_quantity__lt=F('quantity')).count(),
-        'desechadas': damaged.filter(outcome=DamageResolution.Outcome.SCRAPPED).aggregate(total=Sum('quantity'))['total'] or 0,
-        'autorizaciones': DuplicateLoanAuthorization.objects.filter(employee=empleado).select_related('article').order_by('-created_at')[:20],
-    })
+
+    # Entregas históricas: consulta, sin modificar inventario.
+    issues = QuantityIssue.objects.filter(
+        employee=empleado,
+    ).select_related(
+        'stock__article',
+        'tool__article',
+    ).order_by('-issued_at', '-pk')
+
+    # Reutilizamos el cálculo que ya utiliza el almacén.
+    stock_asignado = obtener_stock_asignado(empleado)
+
+    total_piezas = sum(
+        fila['pending'] for fila in stock_asignado
+    )
+    total_inicial = sum(
+        fila['pending']
+        for fila in stock_asignado
+        if fila['issue'].is_initial_stock
+    )
+    total_normales = total_piezas - total_inicial
+
+    prestamos_anteriores = Loan.objects.filter(
+        employee=empleado,
+        returned_at__isnull=True,
+        unified_issue__isnull=True,
+    ).select_related('tool__article').order_by('-borrowed_at')
+
+    solicitudes_activas = MaterialRequest.objects.filter(
+        employee=empleado,
+        status__in=(
+            MaterialRequest.Status.SUBMITTED,
+            MaterialRequest.Status.PREPARED,
+        ),
+    ).order_by('-submitted_at')
+
+    damaged = DamageResolution.objects.filter(
+        source_return__issue__employee=empleado,
+    )
+
+
+    # Fase 19C: historial de devoluciones y daños.
+    # Consultas de solo lectura.
+
+    devoluciones_qs = QuantityReturn.objects.filter(
+        issue__employee=empleado,
+    )
+
+    resumen_devoluciones = devoluciones_qs.aggregate(
+        total=Sum('quantity'),
+        danadas=Sum(
+            'quantity',
+            filter=Q(condition=QuantityReturn.Condition.DAMAGED),
+        ),
+    )
+
+    total_devueltas = resumen_devoluciones['total'] or 0
+    total_danadas = resumen_devoluciones['danadas'] or 0
+    total_buen_estado = total_devueltas - total_danadas
+
+    devoluciones = devoluciones_qs.select_related(
+        'issue__stock__article',
+        'issue__tool__article',
+    ).order_by('-returned_at', '-pk')[:80]
+
+    resoluciones_qs = DamageResolution.objects.filter(
+        source_return__issue__employee=empleado,
+    )
+
+    total_danos_resueltos = (
+        resoluciones_qs.aggregate(total=Sum('quantity'))['total']
+        or 0
+    )
+
+    resoluciones = resoluciones_qs.select_related(
+        'source_return__issue__stock__article',
+        'source_return__issue__tool__article',
+    ).order_by('-resolved_at', '-pk')[:80]
+
+
+    desechadas = damaged.filter(
+        outcome=DamageResolution.Outcome.SCRAPPED,
+    ).aggregate(total=Sum('quantity'))['total'] or 0
+
+    autorizaciones = DuplicateLoanAuthorization.objects.filter(
+        employee=empleado,
+    ).select_related('article').order_by(
+        '-created_at', '-pk'
+    )[:20]
+
+    bajas = EmployeeOffboardingRequest.objects.filter(
+        employee=empleado,
+    ).select_related(
+        'requested_by',
+        'decided_by',
+    ).order_by('-requested_at', '-pk')[:20]
+
+    return render(
+        request,
+        'stockroom/jefe/expediente.html',
+        {
+            'empleado': empleado,
+            'issues': issues[:80],
+            'pendientes': issues.filter(
+                requires_return=True,
+                returned_quantity__lt=F('quantity'),
+            ).count(),
+            'stock_asignado': stock_asignado,
+            'total_piezas': total_piezas,
+            'total_inicial': total_inicial,
+            'total_normales': total_normales,
+            'prestamos_anteriores': prestamos_anteriores,
+            'solicitudes_activas': solicitudes_activas,
+            'desechadas': desechadas,
+            'autorizaciones': autorizaciones,
+            'bajas': bajas,
+            'devoluciones': devoluciones,
+            'resoluciones': resoluciones,
+            'total_devueltas': total_devueltas,
+            'total_buen_estado': total_buen_estado,
+            'total_danadas': total_danadas,
+            'total_danos_resueltos': total_danos_resueltos,
+        },
+    )
 
 
 @never_cache

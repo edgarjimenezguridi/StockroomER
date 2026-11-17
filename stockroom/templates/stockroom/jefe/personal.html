@@ -56,11 +56,66 @@
     </form>
    </section>
   </div>
+
+{% if form_edicion %}
+<section class="persona-card" id="editar-trabajador">
+    <h2>Editar trabajador</h2>
+
+    <p class="persona-small">
+        Modificando:
+        <strong>{{ empleado_en_edicion.employee_id }}</strong>
+        — {{ empleado_en_edicion.first_name }}
+        {{ empleado_en_edicion.last_name }}
+    </p>
+
+    <form method="post" class="persona-form">
+        {% csrf_token %}
+
+        <input type="hidden"
+               name="tipo"
+               value="editar_empleado">
+
+        <input type="hidden"
+               name="empleado_pk"
+               value="{{ empleado_en_edicion.pk }}">
+
+        {% for campo in form_edicion %}
+        <div>
+            <label for="{{ campo.id_for_label }}">
+                {{ campo.label }}
+            </label>
+
+            {{ campo }}
+
+            <div class="persona-error">
+                {{ campo.errors }}
+            </div>
+        </div>
+        {% endfor %}
+
+        {{ form_edicion.non_field_errors }}
+
+        <button type="submit" class="persona-button">
+            Guardar cambios
+        </button>
+
+        <a href="{% url 'personal_jefe' %}"
+           class="persona-button alt">
+            Cancelar
+        </a>
+    </form>
+</section>
+{% endif %}
+
   <section class="persona-card"><h2>Directorio de trabajadores</h2>
    <form method="get" class="persona-buscar persona-actions"><label for="buscar_personal">Buscar</label><input style="max-width:340px" type="search" id="buscar_personal" name="q" value="{{ q }}" placeholder="Nombre o número de empleado"><button class="persona-button alt" type="submit">Buscar</button></form>
    <div class="persona-scroll"><table class="persona-table"><thead><tr><th>Número</th><th>Trabajador</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
     {% for e in empleados %}<tr><td>{{ e.employee_id }}</td><td>{{ e.first_name }} {{ e.last_name }}</td><td>{% if e.is_active %}Activo{% else %}Inactivo{% endif %}</td>
     <td><div class="persona-actions"><a class="persona-button alt" href="{% url 'expediente_trabajador_jefe' e.pk %}">Expediente</a>
+        <a class="persona-button alt"
+            href="{% url 'personal_jefe' %}?editar={{ e.pk }}#editar-trabajador">
+                Editar
+            </a>
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_reset_nip_jefe' e.pk %}">Restablecer NIP</a>{% endif %}
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_nip_jefe' e.pk %}">Activación NIP</a>{% endif %}
     <form me

@@ -1,16 +1,430 @@
+
 {% extends 'stockroom/base.html' %}
+
 {% block title %}Expediente de trabajador{% endblock %}
-{% block titulo_pagina %}Expediente de {{ empleado.first_name }} {{ empleado.last_name }}{% endblock %}
-{% block descripcion %}Historial de préstamos y autorizaciones{% endblock %}
-{% block extra_css %}<style>.exp-wrap{max-width:1200px;margin:auto}.exp-card{padding:18px;border:1px solid #dce5eb;border-radius:15px;margin:16px 0;background:white}.exp-scroll{max-width:100%;overflow:auto}.exp-table{border-collapse:collapse;width:100%;min-width:650px}.exp-table th,.exp-table td{border-bottom:1px solid #dce5eb;padding:12px;text-align:left}.exp-table th{background:#eaf4eb}.exp-nav a{color:#0f7a18;font-weight:bold}</style>{% endblock %}
+{% block body_class %}pagina-expediente{% endblock %}
+{% block titulo_pagina %}Expediente del trabajador{% endblock %}
+{% block descripcion %}Personal · Resguardos · Historial y autorizaciones{% endblock %}
+
+{% block extra_css %}
+<style>
+.exp-wrap{max-width:1200px;margin:auto}
+.exp-card{background:#fff;border:1px solid #dce5eb;border-radius:14px;padding:20px;margin:18px 0}
+.exp-card h2{color:#172335;margin:0 0 15px;font-size:20px}
+.exp-header{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
+.exp-header h2{margin-bottom:5px}
+.exp-muted{color:#64748b;font-size:13px}
+.exp-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.exp-kpi{background:#f5faf6;border:1px solid #dce8df;border-radius:12px;padding:17px}
+.exp-kpi span{display:block;font-size:13px;color:#526174}
+.exp-kpi strong{display:block;color:#0f7a18;font-size:28px;margin-top:7px}
+.exp-badge{display:inline-block;padding:6px 12px;border-radius:25px;font-weight:700;font-size:13px;background:#dcfce7;color:#166534}
+.exp-badge.inactivo{background:#fee2e2;color:#991b1b}
+.exp-scroll{overflow-x:auto}
+.exp-table{border-collapse:collapse;width:100%;min-width:720px}
+.exp-table th,.exp-table td{text-align:left;padding:12px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+.exp-table th{background:#eaf4eb;color:#15441c;font-size:13px}
+.exp-btn{display:inline-block;background:#0f7a18;color:white;text-decoration:none;padding:11px 16px;border-radius:9px;font-weight:700}
+.exp-btn:hover{background:#095c11;color:white}
+.exp-nav{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.exp-empty{color:#64748b}
+@media(max-width:850px){.exp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.exp-card{padding:14px}.exp-kpis{gap:8px}.exp-kpi{padding:12px}.exp-kpi strong{font-size:24px}}
+</style>
+{% endblock %}
+
 {% block contenido %}
-<div class="exp-wrap"><p class="exp-nav"><a href="{% url 'personal_jefe' %}">← Volver a personal</a></p>
- <section class="exp-card"><h2>{{ empleado.employee_id }} · {{ empleado.first_name }} {{ empleado.last_name }}</h2><p>Estado: {% if empleado.is_active %}Activo{% else %}Inactivo{% endif %}</p><p>Entregas pendientes de devolución: <strong>{{ pendientes }}</strong> · Piezas desechadas definitivamente: <strong>{{ desechadas }}</strong></p><p>El historial permanece incluso después de una baja.</p></section>
- <section class="exp-card"><h2>Últimas entregas</h2><div class="exp-scroll"><table class="exp-table"><thead><tr><th>Artículo</th><th>Entregadas</th><th>Devueltas</th><th>Fecha</th></tr></thead><tbody>
- {% for issue in issues %}<tr><td>{% if issue.stock_id %}{{ issue.stock.article.name }}{% elif issue.tool_id %}{{ issue.tool.article.name }}{% else %}—{% endif %}</td><td>{{ issue.quantity }}</td><td>{{ issue.returned_quantity }}</td><td>{{ issue.issued_at|date:'d/m/Y H:i' }}</td></tr>{% empty %}<tr><td colspan="4">Sin entregas registradas.</td></tr>{% endfor %}
- </tbody></table></div></section>
- <section class="exp-card"><h2>Autorizaciones recientes</h2><div class="exp-scroll"><table class="exp-table"><thead><tr><th>Artículo</th><th>Estado</th><th>Motivo</th><th>Fecha</th></tr></thead><tbody>
- {% for a in autorizaciones %}<tr><td>{{ a.article.name }}</td><td>{{ a.get_status_display }}</td><td>{{ a.reason }}</td><td>{{ a.created_at|date:'d/m/Y H:i' }}</td></tr>{% empty %}<tr><td colspan="4">Sin autorizaciones.</td></tr>{% endfor %}
- </tbody></table></div></section>
+<div class="exp-wrap">
+
+    <nav class="exp-nav">
+        <a class="exp-btn" href="{% url 'personal_jefe' %}">
+            ← Personal y permisos
+        </a>
+        <a class="exp-btn" href="{% url 'solicitudes_baja_jefe' %}">
+            Solicitudes de baja
+        </a>
+    </nav>
+
+    <section class="exp-card">
+        <div class="exp-header">
+            <div>
+                <h2>{{ empleado.first_name }} {{ empleado.last_name }}</h2>
+                <p class="exp-muted">
+                    Número de empleado: <strong>{{ empleado.employee_id }}</strong>
+                </p>
+            </div>
+            <span class="exp-badge {% if not empleado.is_active %}inactivo{% endif %}">
+                {% if empleado.is_active %}Activo{% else %}Inactivo{% endif %}
+            </span>
+        </div>
+
+        <div class="exp-kpis">
+            <div class="exp-kpi">
+                <span>Piezas pendientes</span>
+                <strong>{{ total_piezas }}</strong>
+            </div>
+            <div class="exp-kpi">
+                <span>Stock inicial</span>
+                <strong>{{ total_inicial }}</strong>
+            </div>
+            <div class="exp-kpi">
+                <span>Préstamos normales</span>
+                <strong>{{ total_normales }}</strong>
+            </div>
+            <div class="exp-kpi">
+                <span>Piezas desechadas</span>
+                <strong>{{ desechadas }}</strong>
+            </div>
+        </div>
+        <p class="exp-muted">
+            Los indicadores de préstamos incluyen entregas pendientes del
+            sistema unificado. Los préstamos antiguos aparecen por separado.
+            El historial se conserva incluso después de una baja.
+        </p>
+    </section>
+
+    <section class="exp-card">
+        <h2>Herramientas actualmente asignadas</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Código</th>
+                        <th>Tipo</th>
+                        <th>Pendientes</th>
+                        <th>Fecha de entrega</th>
+                        <th>Vencimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in stock_asignado %}
+                    <tr>
+                        <td>{{ fila.article.name }}</td>
+                        <td>{{ fila.code }}</td>
+                        <td>{{ fila.label }}</td>
+                        <td><strong>{{ fila.pending }}</strong></td>
+                        <td>{{ fila.issue.issued_at|date:'d/m/Y' }}</td>
+                        <td>
+                            {% if fila.deadline %}
+                                {{ fila.deadline|date:'d/m/Y' }}
+                            {% else %}
+                                Sin vencimiento
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="exp-empty">
+                            Sin entregas unificadas pendientes.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="exp-card">
+        <h2>Préstamos antiguos pendientes</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Herramienta</th>
+                        <th>Código</th>
+                        <th>Fecha de préstamo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prestamo in prestamos_anteriores %}
+                    <tr>
+                        <td>{{ prestamo.tool.name }}</td>
+                        <td>{{ prestamo.tool.tool_code }}</td>
+                        <td>{{ prestamo.borrowed_at|date:'d/m/Y H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="exp-empty">
+                            Sin préstamos antiguos pendientes.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="exp-card">
+        <h2>Solicitudes activas</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Solicitud</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for solicitud in solicitudes_activas %}
+                    <tr>
+                        <td>#{{ solicitud.pk }}</td>
+                        <td>{{ solicitud.get_status_display }}</td>
+                        <td>{{ solicitud.submitted_at|date:'d/m/Y H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">Sin solicitudes activas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+
+<section class="exp-card">
+    <h2>Resumen de devoluciones y daños</h2>
+
+    <div class="exp-kpis">
+        <div class="exp-kpi">
+            <span>Piezas devueltas</span>
+            <strong>{{ total_devueltas }}</strong>
+        </div>
+
+        <div class="exp-kpi">
+            <span>En buen estado</span>
+            <strong>{{ total_buen_estado }}</strong>
+        </div>
+
+        <div class="exp-kpi">
+            <span>Devueltas dañadas</span>
+            <strong>{{ total_danadas }}</strong>
+        </div>
+
+        <div class="exp-kpi">
+            <span>Daños resueltos</span>
+            <strong>{{ total_danos_resueltos }}</strong>
+        </div>
+    </div>
+
+    <p class="exp-muted">
+        Los indicadores muestran cantidades de piezas,
+        no número de operaciones. Los daños resueltos
+        forman parte de las piezas previamente devueltas
+        como dañadas.
+    </p>
+</section>
+
+<section class="exp-card">
+    <h2>Historial de devoluciones</h2>
+
+    <div class="exp-scroll">
+        <table class="exp-table">
+            <thead>
+                <tr>
+                    <th>Artículo</th>
+                    <th>Cantidad</th>
+                    <th>Condición</th>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for devolucion in devoluciones %}
+                <tr>
+                    <td>
+                        {% if devolucion.issue.stock_id %}
+                            {{ devolucion.issue.stock.article.name }}
+                        {% elif devolucion.issue.tool_id %}
+                            {{ devolucion.issue.tool.article.name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <td>{{ devolucion.quantity }}</td>
+
+                    <td>
+                        {{ devolucion.get_condition_display }}
+                    </td>
+
+                    <td>
+                        {{ devolucion.returned_at|date:'d/m/Y H:i' }}
+                    </td>
+
+                    <td>
+                        {{ devolucion.reason|default:'—' }}
+                    </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        No hay devoluciones registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="exp-card">
+    <h2>Resoluciones de herramientas dañadas</h2>
+
+    <div class="exp-scroll">
+        <table class="exp-table">
+            <thead>
+                <tr>
+                    <th>Artículo</th>
+                    <th>Cantidad</th>
+                    <th>Resolución</th>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for resolucion in resoluciones %}
+                <tr>
+                    <td>
+                        {% if resolucion.source_return.issue.stock_id %}
+                            {{ resolucion.source_return.issue.stock.article.name }}
+                        {% elif resolucion.source_return.issue.tool_id %}
+                            {{ resolucion.source_return.issue.tool.article.name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <td>{{ resolucion.quantity }}</td>
+
+                    <td>
+                        {{ resolucion.get_outcome_display }}
+                    </td>
+
+                    <td>
+                        {{ resolucion.resolved_at|date:'d/m/Y H:i' }}
+                    </td>
+
+                    <td>
+                        {{ resolucion.reason|default:'—' }}
+                    </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        No hay resoluciones de daños registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+
+    <section class="exp-card">
+        <h2>Historial de entregas</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Entregadas</th>
+                        <th>Devueltas</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td>
+                            {% if issue.stock_id %}
+                                {{ issue.stock.article.name }}
+                            {% elif issue.tool_id %}
+                                {{ issue.tool.article.name }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ issue.quantity }}</td>
+                        <td>{{ issue.returned_quantity }}</td>
+                        <td>{{ issue.issued_at|date:'d/m/Y H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">Sin entregas registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="exp-card">
+        <h2>Autorizaciones de préstamos duplicados</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Estado</th>
+                        <th>Motivo</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in autorizaciones %}
+                    <tr>
+                        <td>{{ a.article.name }}</td>
+                        <td>{{ a.get_status_display }}</td>
+                        <td>{{ a.reason }}</td>
+                        <td>{{ a.created_at|date:'d/m/Y H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">Sin autorizaciones registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="exp-card">
+        <h2>Historial de solicitudes de baja</h2>
+        <div class="exp-scroll">
+            <table class="exp-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Solicitó</th>
+                        <th>Resolvió</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for baja in bajas %}
+                    <tr>
+                        <td>{{ baja.requested_at|date:'d/m/Y H:i' }}</td>
+                        <td>{{ baja.get_status_display }}</td>
+                        <td>{{ baja.requested_by|default:'—' }}</td>
+                        <td>{{ baja.decided_by|default:'Pendiente' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">Sin solicitudes de baja registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
 </div>
 {% endblock %}
