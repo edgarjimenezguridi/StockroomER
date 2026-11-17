@@ -77,8 +77,16 @@ class EmployeeAdmin(admin.ModelAdmin):
         "damaged_pieces",
         "is_active",
     )
+
     search_fields = ("employee_id", "first_name", "last_name")
     list_filter = ("is_active",)
+
+        # La baja definitiva solo se autoriza desde el panel del jefe.
+    readonly_fields = ("is_active",)
+
+    # Conservar el historial del trabajador.
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
@@ -1243,3 +1251,4 @@ class MaterialRequestLineAdmin(admin.ModelAdmin):
             return redirect(request.path)
 # Administración protegida de autorizaciones de duplicados.
 from . import duplicate_authorization_admin  # noqa: E402,F401
+

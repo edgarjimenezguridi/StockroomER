@@ -961,3 +961,27 @@ class PinResetAuthorization(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
+
+
+# Fase 18: trazabilidad de solicitudes de baja de trabajadores
+class EmployeeOffboardingRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        APPROVED = "approved", "Aprobada"
+        REJECTED = "rejected", "Rechazada"
+
+    employee = models.ForeignKey("Employee", on_delete=models.PROTECT, related_name="offboarding_requests")
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="requested_employee_offboardings")
+    requested_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="decided_employee_offboardings", null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["employee"], condition=models.Q(status="pending"), name="unique_pending_employee_offboarding"),
+        ]
+
+    def __str__(self):
+        return f"Baja #{self.pk} - {self.employee}"

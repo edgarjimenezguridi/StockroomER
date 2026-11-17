@@ -8,6 +8,42 @@
 {% block extra_css %}
 <style>
 .pagina-jefe .contenedor-empresa{max-width:1250px}
+
+/* Accesos principales del jefe */
+.jefe-accesos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 16px 0 28px;
+}
+
+.jefe-acceso {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    background: #0f7a18;
+    color: white;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    text-align: center;
+    transition: background 0.2s ease;
+}
+
+.jefe-acceso:hover {
+    background: #095c11;
+    color: white;
+}
+
+@media (max-width: 760px) {
+    .jefe-accesos {
+        grid-template-columns: 1fr;
+    }
+}
+
 .jefe-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px}
 .jefe-kpi{padding:18px;border:1px solid #dbe6de;border-radius:14px;background:#f5faf6}
 .jefe-kpi strong{display:block;font-size:29px;color:#0f7a18;margin-top:8px}
@@ -32,10 +68,22 @@
 </style>
 {% endblock %}
 {% block contenido %}
-<div style="margin:12px 0"><a href="{% url 'reportes_jefe' %}" style="display:inline-block;background:#168e25;color:white;padding:12px 19px;border-radius:10px;text-decoration:none;font-weight:700">Reportes ejecutivos PDF</a></div>
 
-<div class="jefe-nav"><a href="{% url 'personal_jefe' %}" style="display:inline-block;background:#0f7a18;color:white;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700;margin:12px 0;">👥 Personal y permisos</a></div>
-{% dashboard_ejecutivo %}
+<div class="jefe-accesos">
+    <a href="{% url 'reportes_jefe' %}" class="jefe-acceso">
+        📄 Reportes ejecutivos PDF
+    </a>
+
+    <a href="/jefe/solicitudes-baja/" class="jefe-acceso">
+        📋 Solicitudes de baja
+    </a>
+
+    <a href="{% url 'personal_jefe' %}" class="jefe-acceso">
+        👥 Personal y permisos
+    </a>
+</div>
+
+
 <div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>
 {% if messages %}{% for message in messages %}<div class="jefe-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
 <div class="jefe-resumen">

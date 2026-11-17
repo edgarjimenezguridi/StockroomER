@@ -147,25 +147,62 @@ def personal_jefe(request):
     })
 
 
+
 @never_cache
 @login_required(login_url='acceso_jefe')
 @require_POST
 def estado_trabajador_jefe(request, employee_id):
     jefe_obligatorio(request)
+
+    accion = request.POST.get('accion')
+
+    # La baja directa está prohibida para todos, incluso para jefatura.
+    # Debe aprobarse una solicitud mediante offboarding_services.
+    if accion == 'desactivar':
+        raise PermissionDenied(
+            'Las bajas deben solicitarse desde almacén y '
+            'autorizarse en Solicitudes de baja.'
+        )
+
+    if accion != 'activar':
+        raise PermissionDenied('Acción inválida.')
+
     with transaction.atomic():
-        empleado = get_object_or_404(Employee.objects.select_for_update(), pk=employee_id)
-        activar = request.POST.get('accion') == 'activar'
-        if request.POST.get('accion') not in ('activar', 'desactivar'):
-            raise PermissionDenied('Acción inválida.')
-        empleado.is_active = activar
+        empleado = get_object_or_404(
+            Employee.objects.select_for_update(),
+            pk=employee_id,
+        )
+
+        if empleado.is_active:
+            messages.info(
+                request,
+                'El trabajador ya se encuentra activo.',
+            )
+            return redirect('personal_jefe')
+
+        empleado.is_active = True
         empleado.save(update_fields=['is_active'])
-        # No se borran credenciales, historial, préstamos ni adeudos.
-        EmployeeCredential.objects.filter(employee=empleado).update(is_active=activar)
-        if activar:
-            EmployeeCredential.objects.get_or_create(employee=empleado)
-        _audit(request, empleado, 'Reactivación' if activar else 'Baja administrativa')
-    messages.success(request, 'Trabajador reactivado.' if activar else 'Trabajador desactivado. Sus adeudos se conservan.')
+
+        EmployeeCredential.objects.filter(
+            employee=empleado,
+        ).update(is_active=True)
+
+        EmployeeCredential.objects.get_or_create(
+            employee=empleado,
+        )
+
+        _audit(
+            request,
+            empleado,
+            'Reactivación de trabajador',
+        )
+
+    messages.success(
+        request,
+        'Trabajador reactivado correctamente.',
+    )
     return redirect('personal_jefe')
+
 
 
 @never_cache

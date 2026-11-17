@@ -3,6 +3,8 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from stockroom.models import Employee, EmployeeCredential
+from stockroom.models import EmployeeOffboardingRequest
+from stockroom.offboarding_services import aprobar_baja_trabajador
 
 
 class PersonalJefeTests(TestCase):
@@ -40,17 +42,51 @@ class PersonalJefeTests(TestCase):
         })
         self.assertEqual(Employee.objects.filter(employee_id='EMP-PER-1').count(), 1)
 
+    
     def test_baja_y_reactivacion_preservan_empleado(self):
-        ruta = reverse('estado_trabajador_jefe', args=[self.trabajador.pk])
-        self.client.post(ruta, {'accion': 'desactivar'})
-        self.trabajador.refresh_from_db()
-        self.assertFalse(self.trabajador.is_active)
-        self.assertFalse(self.trabajador.credential.is_active)
-        self.client.post(ruta, {'accion': 'activar'})
+        ruta = reverse(
+            'estado_trabajador_jefe',
+            args=[self.trabajador.pk],
+        )
+
+        # No permitir bajas por la ruta antigua.
+        response = self.client.post(
+            ruta, {'accion': 'desactivar'}
+        )
+        self.assertEqual(response.status_code, 403)
+
         self.trabajador.refresh_from_db()
         self.assertTrue(self.trabajador.is_active)
+
+        # La baja se aprueba mediante el servicio autorizado.
+        solicitud = EmployeeOffboardingRequest.objects.create(
+            employee=self.trabajador,
+            requested_by=self.jefe,
+        )
+
+        aprobar_baja_trabajador(
+            solicitud_id=solicitud.pk,
+            autorizado_por=self.jefe,
+        )
+
+        self.trabajador.refresh_from_db()
         self.trabajador.credential.refresh_from_db()
+
+        self.assertFalse(self.trabajador.is_active)
+        self.assertFalse(self.trabajador.credential.is_active)
+
+        # Conservar la posibilidad de reactivar.
+        response = self.client.post(
+            ruta, {'accion': 'activar'}
+        )
+        self.assertEqual(response.status_code, 302)
+
+        self.trabajador.refresh_from_db()
+        self.trabajador.credential.refresh_from_db()
+
+        self.assertTrue(self.trabajador.is_active)
         self.assertTrue(self.trabajador.credential.is_active)
+
 
     def test_no_modificar_propia_cuenta(self):
         response = self.client.post(reverse('estado_cuenta_jefe', args=[self.jefe.pk]), {'accion': 'desactivar'})

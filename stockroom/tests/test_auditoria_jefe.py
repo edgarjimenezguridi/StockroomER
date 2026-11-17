@@ -4,6 +4,8 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.urls import reverse
+from stockroom.models import EmployeeOffboardingRequest
+from stockroom.offboarding_services import aprobar_baja_trabajador
 
 from stockroom.boss_audit_views import audit_entries
 from stockroom.models import Employee, EmployeeCredential, PinResetAuthorization
@@ -26,7 +28,7 @@ class AuditoriaJefeTests(TestCase):
 
     def test_jefe_consulta_movimientos_de_personal(self):
         self.client.force_login(self.boss)
-        self.client.post(reverse('estado_trabajador_jefe', args=[self.employee.pk]), {'accion': 'desactivar'})
+        self.aprobar_baja_de_prueba()
         response = self.client.get(reverse('auditoria_jefe'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Baja de trabajador')
@@ -34,7 +36,7 @@ class AuditoriaJefeTests(TestCase):
 
     def test_filtro_excluye_tipo_no_solicitado(self):
         self.client.force_login(self.boss)
-        self.client.post(reverse('estado_trabajador_jefe', args=[self.employee.pk]), {'accion': 'desactivar'})
+        self.aprobar_baja_de_prueba()
         response = self.client.get(reverse('auditoria_jefe'), {'categoria': 'permisos'})
         self.assertNotContains(response, 'Baja de trabajador')
 
@@ -56,3 +58,15 @@ class AuditoriaJefeTests(TestCase):
     def test_pagina_solo_admite_lectura(self):
         self.client.force_login(self.boss)
         self.assertEqual(self.client.post(reverse('auditoria_jefe')).status_code, 405)
+
+
+    def aprobar_baja_de_prueba(self):
+        solicitud = EmployeeOffboardingRequest.objects.create(
+            employee=self.employee,
+            requested_by=self.boss,
+        )
+
+        aprobar_baja_trabajador(
+            solicitud_id=solicitud.pk,
+            autorizado_por=self.boss,
+        )

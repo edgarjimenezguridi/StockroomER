@@ -16,7 +16,14 @@ from .models import PinResetAuthorization
 ALLOWED = {
     'Alta de trabajador desde panel del jefe': ('Alta de trabajador', 'alta'),
     'Reactivación': ('Reactivación de trabajador', 'estado'),
-    'Baja administrativa': ('Baja de trabajador', 'estado'),
+    'Baja de trabajador autorizada por jefatura': (
+        'Baja de trabajador',
+        'estado',
+    ),
+    'Reactivación de trabajador': (
+        'Reactivación de trabajador',
+        'estado',
+    ),
     'Alta de cuenta administrativa: warehouse': ('Alta de cuenta de almacén', 'cuentas'),
     'Alta de cuenta administrativa: boss': ('Alta de cuenta de jefatura', 'cuentas'),
     'Gestión de cuenta: activar': ('Cuenta reactivada', 'cuentas'),

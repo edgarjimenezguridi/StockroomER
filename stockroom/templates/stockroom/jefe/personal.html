@@ -63,10 +63,21 @@
     <td><div class="persona-actions"><a class="persona-button alt" href="{% url 'expediente_trabajador_jefe' e.pk %}">Expediente</a>
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_reset_nip_jefe' e.pk %}">Restablecer NIP</a>{% endif %}
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_nip_jefe' e.pk %}">Activación NIP</a>{% endif %}
-    <form method="post" action="{% url 'estado_trabajador_jefe' e.pk %}">{% csrf_token %}
-     {% if e.is_active %}<input type="hidden" name="accion" value="desactivar"><button class="persona-button red" type="submit" onclick="return confirm('¿Desactivar trabajador? Su historial y adeudos se conservan.')">Dar de baja</button>
-     {% else %}<input type="hidden" name="accion" value="activar"><button class="persona-button" type="submit">Reactivar</button>{% endif %}
-    </form></div></td></tr>{% empty %}<tr><td colspan="4">No hay trabajadores.</td></tr>{% endfor %}
+    <form me
+{% if not e.is_active %}
+    <form method="post" action="{% url 'estado_trabajador_jefe' e.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="activar">
+        <button class="persona-button" type="submit">
+            Reactivar
+        </button>
+    </form>
+{% endif %}
+</div></td></tr>
+{% empty %}
+<tr><td colspan="4">No hay trabajadores.</td></tr>
+{% endfor %}
+
    </tbody></table></div>
   </section>
   <section class="persona-card"><h2>Cuentas y permisos administrativos</h2><p class="persona-small">Solo se permiten roles predefinidos. No puedes modificar tu propia cuenta ni superusuarios. Las cuentas con permisos adicionales se gestionan en Django Admin.</p>
