@@ -4,6 +4,21 @@
 {% block descripcion %}Seguimiento de personal, permisos y credenciales · Solo jefatura{% endblock %}
 {% block extra_css %}
 <style>
+  
+
+.audit-paginacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 20px;
+}
+
+.audit-paginacion .audit-btn {
+    padding: 10px 16px;
+}
+
 .audit-wrap{max-width:1200px;margin:0 auto}.audit-card{background:#fff;padding:20px;border:1px solid #dee7e3;border-radius:16px;margin:14px 0;box-shadow:0 4px 16px #122b2e0a}
 .audit-form{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:end}.audit-form label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}
 .audit-form input,.audit-form select{width:100%;min-height:44px;padding:9px;border:1px solid #bbc9c2;border-radius:8px;font:inherit;box-sizing:border-box}
@@ -21,12 +36,44 @@
  <form method="get" class="audit-form">
   <div><label for="desde">Desde</label><input id="desde" name="desde" type="date" value="{{ desde }}"></div>
   <div><label for="hasta">Hasta</label><input id="hasta" name="hasta" type="date" value="{{ hasta }}"></div>
-  <div><label for="categoria">Tipo</label><select id="categoria" name="categoria"><option value="todos" {% if categoria == 'todos' %}selected{% endif %}>Todos</option><option value="alta" {% if categoria == 'alta' %}selected{% endif %}>Altas</option><option value="estado" {% if categoria == 'estado' %}selected{% endif %}>Bajas y reactivaciones</option><option value="cuentas" {% if categoria == 'cuentas' %}selected{% endif %}>Cuentas</option><option value="permisos" {% if categoria == 'permisos' %}selected{% endif %}>Permisos</option><option value="nip" {% if categoria == 'nip' %}selected{% endif %}>NIP</option></select></div>
+  <div><label for="categoria">Tipo</label><select id="categoria" name="categoria"><option value="todos" {% if categoria == 'todos' %}selected{% endif %}>Todos</option><option value="alta" {% if categoria == 'alta' %}selected{% endif %}>Altas</option><option value="estado" {% if categoria == 'estado' %}selected{% endif %}>Bajas y reactivaciones</option><option value="cuentas" {% if categoria == 'cuentas' %}selected{% endif %}>Cuentas</option><option value="permisos" {% if categoria == 'permisos' %}selected{% endif %}>Permisos</option><option value="nip" {% if categoria == 'nip' %}selected{% endif %}>NIP</option>
+    <option value="datos"
+            {% if categoria == 'datos' %}selected{% endif %}>
+        Modificaciones de trabajadores
+    </option>
+    </select></div>
   <div><label for="q">Trabajador o responsable</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Nombre o número"></div>
   <div class="wide"><button class="audit-btn" type="submit">Filtrar</button></div>
  </form></section>
  <section class="audit-card"><h2>Eventos encontrados: {{ total }}</h2><div class="audit-tablebox"><table class="audit-table"><thead><tr><th>Fecha</th><th>Acción</th><th>Responsable</th><th>Trabajador / cuenta</th><th>Detalle</th></tr></thead><tbody>
  {% for item in eventos %}<tr><td>{{ item.when|date:"d/m/Y H:i" }}</td><td><span class="audit-tag">{{ item.action }}</span></td><td>{{ item.actor }}</td><td>{{ item.subject }}</td><td class="audit-muted">{{ item.detail }}</td></tr>{% empty %}<tr><td colspan="5">No se encontraron movimientos para esos filtros.</td></tr>{% endfor %}
- </tbody></table></div></section>
+ </tbody></table></div>
+
+{% if pagina.paginator.num_pages > 1 %}
+<nav class="audit-paginacion" aria-label="Páginas del historial">
+
+    {% if pagina.has_previous %}
+        <a class="audit-btn"
+           href="?page={{ pagina.previous_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}">
+            ← Anterior
+        </a>
+    {% endif %}
+
+    <span class="audit-muted">
+        Página {{ pagina.number }}
+        de {{ pagina.paginator.num_pages }}
+    </span>
+
+    {% if pagina.has_next %}
+        <a class="audit-btn"
+           href="?page={{ pagina.next_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}">
+            Siguiente →
+        </a>
+    {% endif %}
+
+</nav>
+{% endif %}
+
+</section>
 </div>
 {% endblock %}

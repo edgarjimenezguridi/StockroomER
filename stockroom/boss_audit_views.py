@@ -8,6 +8,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 
 from .duplicate_authorization_admin import es_jefe
 from .models import PinResetAuthorization
@@ -31,6 +32,10 @@ ALLOWED = {
     'Gestión de cuenta: warehouse': ('Permiso asignado: almacén', 'permisos'),
     'Gestión de cuenta: boss': ('Permiso asignado: jefatura', 'permisos'),
     'Autorización inicial de NIP emitida': ('Autorización de NIP inicial', 'nip'),
+    'Actualización de datos de trabajador': (
+        'Datos de trabajador actualizados',
+        'datos',
+    ),
 }
 
 
@@ -119,15 +124,36 @@ def auditoria_jefe(request):
         desde_str = hasta_str = ''
         desde = hasta = timezone.localdate()
     category = request.GET.get('categoria', 'todos')
-    if category not in ('todos', 'alta', 'estado', 'cuentas', 'permisos', 'nip'):
+    if category not in (
+        'todos', 'alta', 'datos', 'estado',
+        'cuentas', 'permisos', 'nip',
+    ):
         category = 'todos'
     search = request.GET.get('q', '').strip()[:80]
-    events = audit_entries(desde=desde, hasta=hasta, categoria=category, texto=search)
-    return render(request, 'stockroom/jefe/auditoria.html', {
-        'eventos': events,
-        'desde': desde_str,
-        'hasta': hasta_str,
-        'categoria': category,
-        'q': search,
-        'total': len(events),
-    })
+    
+    events = audit_entries(
+        desde=desde,
+        hasta=hasta,
+        categoria=category,
+        texto=search,
+    )
+
+    paginador = Paginator(events, 25)
+    pagina = paginador.get_page(
+        request.GET.get("page", "1")
+    )
+
+    return render(
+        request,
+        "stockroom/jefe/auditoria.html",
+        {
+            "eventos": pagina,
+            "pagina": pagina,
+            "desde": desde_str,
+            "hasta": hasta_str,
+            "categoria": category,
+            "q": search,
+            "total": len(events),
+        },
+    )
+
