@@ -143,7 +143,14 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configuración local para pruebas dentro del taller
-from . import local_settings
 
-ALLOWED_HOSTS = local_settings.ALLOWED_HOSTS
+# Configuración específica del entorno de desarrollo.
+# Producción utiliza variables de entorno y no necesita
+# el archivo privado config/local_settings.py.
+
+if os.environ.get(
+    "DJANGO_SETTINGS_MODULE", "config.settings"
+) == "config.settings":
+    from . import local_settings
+
+    ALLOWED_HOSTS = local_settings.ALLOWED_HOSTS
