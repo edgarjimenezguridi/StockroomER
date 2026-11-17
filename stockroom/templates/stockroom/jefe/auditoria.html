@@ -2,78 +2,167 @@
 {% block title %}Auditoría de personal | StockroomER{% endblock %}
 {% block titulo_pagina %}Historial de administración{% endblock %}
 {% block descripcion %}Seguimiento de personal, permisos y credenciales · Solo jefatura{% endblock %}
+
 {% block extra_css %}
 <style>
-  
-
-.audit-paginacion {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-top: 20px;
-}
-
-.audit-paginacion .audit-btn {
-    padding: 10px 16px;
-}
-
-.audit-wrap{max-width:1200px;margin:0 auto}.audit-card{background:#fff;padding:20px;border:1px solid #dee7e3;border-radius:16px;margin:14px 0;box-shadow:0 4px 16px #122b2e0a}
-.audit-form{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:end}.audit-form label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}
-.audit-form input,.audit-form select{width:100%;min-height:44px;padding:9px;border:1px solid #bbc9c2;border-radius:8px;font:inherit;box-sizing:border-box}
-.audit-btn{display:inline-block;background:#128d25;color:#fff;border:0;border-radius:9px;padding:12px 16px;cursor:pointer;text-decoration:none;font-weight:700;text-align:center}
-.audit-tablebox{overflow-x:auto}.audit-table{width:100%;min-width:770px;border-collapse:collapse}.audit-table th{text-align:left;background:#eaf4ec;color:#134c22}.audit-table th,.audit-table td{padding:12px;border-bottom:1px solid #e6ece9;vertical-align:top}
-.audit-muted{color:#586b65;font-size:13px}.audit-tag{display:inline-block;background:#eaf4ec;border-radius:8px;padding:4px 8px;font-weight:700;font-size:12px}.audit-nav a{color:#0f7a18;font-weight:700}
-@media(max-width:850px){.audit-form{grid-template-columns:repeat(2,minmax(0,1fr))}.audit-form .wide{grid-column:1/-1}}@media(max-width:480px){.audit-card{padding:13px}.audit-form{grid-template-columns:1fr}.audit-form .wide{grid-column:auto}}
+.audit-wrap { max-width: 1200px; margin: 0 auto; }
+.audit-card { background: #fff; padding: 20px; border: 1px solid #dee7e3; border-radius: 16px; margin: 14px 0; box-shadow: 0 4px 16px #122b2e0a; }
+.audit-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.audit-form label { display: block; font-weight: 700; font-size: 13px; margin-bottom: 5px; }
+.audit-form input, .audit-form select { width: 100%; min-height: 44px; padding: 9px; border: 1px solid #bbc9c2; border-radius: 8px; font: inherit; box-sizing: border-box; background: #fff; }
+.audit-form input:focus, .audit-form select:focus { outline: 2px solid #168e25; outline-offset: 1px; }
+.audit-btn { display: inline-block; background: #128d25; color: #fff; border: 0; border-radius: 9px; padding: 12px 16px; cursor: pointer; text-decoration: none; font-weight: 700; text-align: center; }
+.audit-btn:hover { background: #0d761c; color: #fff; }
+.audit-tablebox { overflow-x: auto; }
+.audit-table { width: 100%; min-width: 770px; border-collapse: collapse; }
+.audit-table th { text-align: left; background: #eaf4ec; color: #134c22; }
+.audit-table th, .audit-table td { padding: 12px; border-bottom: 1px solid #e6ece9; vertical-align: top; }
+.audit-muted { color: #586b65; font-size: 13px; }
+.audit-tag { display: inline-block; background: #eaf4ec; border-radius: 8px; padding: 4px 8px; font-weight: 700; font-size: 12px; }
+.audit-nav a { color: #0f7a18; font-weight: 700; }
+.audit-paginacion { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 20px; }
+.audit-paginacion .audit-btn { padding: 10px 16px; }
+.audit-auto { display: flex; align-items: center; gap: 7px; margin: 12px 0 0; }
+.audit-auto::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #128d25; flex-shrink: 0; }
+@media (max-width: 850px) { .audit-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .audit-card { padding: 13px; } .audit-form { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
+
 {% block contenido %}
 <div class="audit-wrap">
- <p class="audit-nav"><a href="{% url 'panel_jefe' %}">← Panel directivo</a> · <a href="{% url 'personal_jefe' %}">Personal y permisos</a></p>
- <section class="audit-card"><h2>Consultar movimientos administrativos</h2>
- <p class="audit-muted">Solo lectura. Se muestran hasta 200 eventos recientes por consulta. Nunca se presentan NIP, contraseñas ni códigos de recuperación.</p>
- <form method="get" class="audit-form">
-  <div><label for="desde">Desde</label><input id="desde" name="desde" type="date" value="{{ desde }}"></div>
-  <div><label for="hasta">Hasta</label><input id="hasta" name="hasta" type="date" value="{{ hasta }}"></div>
-  <div><label for="categoria">Tipo</label><select id="categoria" name="categoria"><option value="todos" {% if categoria == 'todos' %}selected{% endif %}>Todos</option><option value="alta" {% if categoria == 'alta' %}selected{% endif %}>Altas</option><option value="estado" {% if categoria == 'estado' %}selected{% endif %}>Bajas y reactivaciones</option><option value="cuentas" {% if categoria == 'cuentas' %}selected{% endif %}>Cuentas</option><option value="permisos" {% if categoria == 'permisos' %}selected{% endif %}>Permisos</option><option value="nip" {% if categoria == 'nip' %}selected{% endif %}>NIP</option>
-    <option value="datos"
-            {% if categoria == 'datos' %}selected{% endif %}>
-        Modificaciones de trabajadores
-    </option>
-    </select></div>
-  <div><label for="q">Trabajador o responsable</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Nombre o número"></div>
-  <div class="wide"><button class="audit-btn" type="submit">Filtrar</button></div>
- </form></section>
- <section class="audit-card"><h2>Eventos encontrados: {{ total }}</h2><div class="audit-tablebox"><table class="audit-table"><thead><tr><th>Fecha</th><th>Acción</th><th>Responsable</th><th>Trabajador / cuenta</th><th>Detalle</th></tr></thead><tbody>
- {% for item in eventos %}<tr><td>{{ item.when|date:"d/m/Y H:i" }}</td><td><span class="audit-tag">{{ item.action }}</span></td><td>{{ item.actor }}</td><td>{{ item.subject }}</td><td class="audit-muted">{{ item.detail }}</td></tr>{% empty %}<tr><td colspan="5">No se encontraron movimientos para esos filtros.</td></tr>{% endfor %}
- </tbody></table></div>
+    <p class="audit-nav">
+        <a href="{% url 'panel_jefe' %}">← Panel directivo</a>
+        ·
+        <a href="{% url 'personal_jefe' %}">Personal y permisos</a>
+    </p>
 
-{% if pagina.paginator.num_pages > 1 %}
-<nav class="audit-paginacion" aria-label="Páginas del historial">
+    <section class="audit-card">
+        <h2>Consultar movimientos administrativos</h2>
+        <p class="audit-muted">
+            Historial administrativo de solo lectura. Se muestran 25 eventos por página.
+            Nunca se presentan NIP, contraseñas ni códigos de recuperación.
+        </p>
 
-    {% if pagina.has_previous %}
-        <a class="audit-btn"
-           href="?page={{ pagina.previous_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}">
-            ← Anterior
-        </a>
-    {% endif %}
+        <form method="get" action="{% url 'auditoria_jefe' %}" class="audit-form" id="form-filtros-auditoria" role="search">
+            <div>
+                <label for="desde">Desde</label>
+                <input id="desde" name="desde" type="date" value="{{ desde }}">
+            </div>
+            <div>
+                <label for="hasta">Hasta</label>
+                <input id="hasta" name="hasta" type="date" value="{{ hasta }}">
+            </div>
+            <div>
+                <label for="categoria">Tipo de movimiento</label>
+                <select id="categoria" name="categoria">
+                    <option value="todos" {% if categoria == 'todos' %}selected{% endif %}>Todos</option>
+                    <option value="alta" {% if categoria == 'alta' %}selected{% endif %}>Altas</option>
+                    <option value="datos" {% if categoria == 'datos' %}selected{% endif %}>Modificaciones de trabajadores</option>
+                    <option value="estado" {% if categoria == 'estado' %}selected{% endif %}>Bajas y reactivaciones</option>
+                    <option value="cuentas" {% if categoria == 'cuentas' %}selected{% endif %}>Cuentas</option>
+                    <option value="permisos" {% if categoria == 'permisos' %}selected{% endif %}>Permisos</option>
+                    <option value="nip" {% if categoria == 'nip' %}selected{% endif %}>NIP</option>
+                </select>
+            </div>
+            <div>
+                <label for="q">Trabajador o cuenta</label>
+                <input id="q" type="search" name="q" value="{{ q }}" placeholder="Nombre o número" autocomplete="off">
+            </div>
+            <div>
+                <label for="responsable">Responsable del movimiento</label>
+                <input id="responsable" name="responsable" type="search" value="{{ responsable }}" placeholder="Usuario administrativo" autocomplete="off">
+            </div>
+        </form>
+        <p class="audit-muted audit-auto" id="estado-filtros-auditoria" role="status" aria-live="polite">
+            Los filtros se aplican automáticamente.
+        </p>
+    </section>
 
-    <span class="audit-muted">
-        Página {{ pagina.number }}
-        de {{ pagina.paginator.num_pages }}
-    </span>
+    <section class="audit-card">
+        <h2>Eventos encontrados: {{ total }}</h2>
+        <div class="audit-tablebox">
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                        <th>Responsable</th>
+                        <th>Trabajador / cuenta</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in eventos %}
+                    <tr>
+                        <td>{{ item.when|date:"d/m/Y H:i" }}</td>
+                        <td><span class="audit-tag">{{ item.action }}</span></td>
+                        <td>{{ item.actor }}</td>
+                        <td>{{ item.subject }}</td>
+                        <td class="audit-muted">{{ item.detail }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">No se encontraron movimientos para esos filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    {% if pagina.has_next %}
-        <a class="audit-btn"
-           href="?page={{ pagina.next_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}">
-            Siguiente →
-        </a>
-    {% endif %}
+        {% if pagina.paginator.num_pages > 1 %}
+        <nav class="audit-paginacion" aria-label="Páginas del historial">
+            {% if pagina.has_previous %}
+                <a class="audit-btn"
+                   href="?page={{ pagina.previous_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}&amp;responsable={{ responsable|urlencode }}">
+                    ← Anterior
+                </a>
+            {% endif %}
 
-</nav>
-{% endif %}
+            <span class="audit-muted">
+                Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+            </span>
 
-</section>
+            {% if pagina.has_next %}
+                <a class="audit-btn"
+                   href="?page={{ pagina.next_page_number }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}&amp;categoria={{ categoria|urlencode }}&amp;q={{ q|urlencode }}&amp;responsable={{ responsable|urlencode }}">
+                    Siguiente →
+                </a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </section>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const formulario = document.getElementById("form-filtros-auditoria");
+    if (!formulario) return;
+
+    const estado = document.getElementById("estado-filtros-auditoria");
+    let temporizador = null;
+
+    function aplicarFiltros() {
+        window.clearTimeout(temporizador);
+        const parametros = new URLSearchParams(new FormData(formulario));
+        parametros.delete("page");
+        if (estado) estado.textContent = "Actualizando resultados…";
+        window.location.assign(formulario.action + "?" + parametros.toString());
+    }
+
+    formulario.querySelectorAll('input[type="search"]').forEach(function (campo) {
+        campo.addEventListener("input", function () {
+            window.clearTimeout(temporizador);
+            temporizador = window.setTimeout(aplicarFiltros, 600);
+        });
+    });
+
+    formulario.querySelectorAll('input[type="date"], select').forEach(function (campo) {
+        campo.addEventListener("change", aplicarFiltros);
+    });
+
+    formulario.addEventListener("submit", function (evento) {
+        evento.preventDefault();
+        aplicarFiltros();
+    });
+});
+</script>
 {% endblock %}
