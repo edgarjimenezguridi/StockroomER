@@ -2,20 +2,27 @@
 from datetime import timedelta
 
 from django import forms
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from .templatetags.jefe_dashboard import indicadores_jefe
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .duplicate_authorization_admin import es_jefe
 from .loan_rules import motivo_duplicado, tiene_adeudos_vencidos
 from .models import (
-    Article, DuplicateLoanAuthorization, Employee, QuantityIssue,
+    Article,
+    DuplicateLoanAuthorization,
+    Employee,
+    MaterialRequest,
+    QuantityIssue,
+    QuantityReturn,
 )
 
 
@@ -102,10 +109,53 @@ def panel_jefe(request):
         returned_quantity__lt=F("quantity"),
         issued_at__lt=timezone.now() - timedelta(days=15),
     ).values("employee_id").distinct().count()
-    return render(request, "stockroom/jefe/panel_jefe.html", {
-        "form": form, "pendientes": pendientes, "historial": historial,
-        "total_pendientes": pendientes.count(), "trabajadores_vencidos": vencidas,
-    })
+
+    # Fase 20A: indicadores operativos de jefatura.
+    # Todas las consultas son de solo lectura.
+
+    solicitudes_activas = MaterialRequest.objects.filter(
+        status__in=[
+            MaterialRequest.Status.SUBMITTED,
+            MaterialRequest.Status.PREPARED,
+        ]
+    ).count()
+
+    piezas_pendientes = (
+        QuantityIssue.objects.filter(
+            requires_return=True,
+            returned_quantity__lt=F("quantity"),
+        ).aggregate(
+            total=Sum(F("quantity") - F("returned_quantity"))
+        )["total"] or 0
+    )
+
+    danos_sin_resolver = (
+        QuantityReturn.objects.filter(
+            condition=QuantityReturn.Condition.DAMAGED,
+        ).aggregate(
+            total=Sum(F("quantity") - F("resolved_quantity"))
+        )["total"] or 0
+    )
+
+    bajo_minimo = indicadores_jefe("30")["bajo_minimo"]
+
+    
+    return render(
+        request,
+        "stockroom/jefe/panel_jefe.html",
+        {
+            "form": form,
+            "pendientes": pendientes,
+            "historial": historial,
+            "total_pendientes": pendientes.count(),
+            "trabajadores_vencidos": vencidas,
+            "solicitudes_activas": solicitudes_activas,
+            "piezas_pendientes": piezas_pendientes,
+            "danos_sin_resolver": danos_sin_resolver,
+            "bajo_minimo": bajo_minimo,
+        },
+    )
+
 
 
 @never_cache

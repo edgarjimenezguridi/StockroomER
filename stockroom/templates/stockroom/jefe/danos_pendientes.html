@@ -1,0 +1,126 @@
+
+{% extends "stockroom/base.html" %}
+
+{% block title %}Daños pendientes | Jefatura{% endblock %}
+{% block body_class %}pagina-jefe{% endblock %}
+{% block titulo_pagina %}Daños pendientes{% endblock %}
+{% block descripcion %}
+Consulta de piezas dañadas sin resolución
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.danos-jefe {
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+.danos-jefe-tarjeta {
+    padding: 22px;
+    border: 1px solid #dce5eb;
+    border-radius: 14px;
+    background: white;
+}
+
+.danos-jefe-total {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f7a18;
+}
+
+.danos-jefe-tabla-wrap {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.danos-jefe-tabla {
+    width: 100%;
+    min-width: 750px;
+    border-collapse: collapse;
+}
+
+.danos-jefe-tabla th,
+.danos-jefe-tabla td {
+    padding: 12px;
+    border-bottom: 1px solid #e3e9ef;
+    text-align: left;
+}
+
+.danos-jefe-tabla th {
+    background: #eaf4eb;
+    color: #15441c;
+}
+
+.danos-jefe-volver {
+    display: inline-block;
+    background: #0f7a18;
+    color: white;
+    padding: 11px 16px;
+    border-radius: 9px;
+    text-decoration: none;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div class="danos-jefe">
+
+    <a class="danos-jefe-volver" href="{% url 'panel_jefe' %}">
+        ← Regresar al panel del jefe
+    </a>
+
+    <section class="danos-jefe-tarjeta">
+        <h2>Daños sin resolver</h2>
+
+        <div class="danos-jefe-total">
+            {{ total_pendientes }}
+        </div>
+
+        <p>
+            Piezas pendientes de evaluación o resolución.
+            Esta pantalla es exclusivamente de consulta.
+        </p>
+
+        <div class="danos-jefe-tabla-wrap">
+            <table class="danos-jefe-tabla">
+                <thead>
+                    <tr>
+                        <th>Trabajador</th>
+                        <th>Artículo</th>
+                        <th>Dañadas</th>
+                        <th>Resueltas</th>
+                        <th>Pendientes</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in registros %}
+                    <tr>
+                        <td>
+                            {{ fila.empleado.first_name }}
+                            {{ fila.empleado.last_name }}
+                            <small>
+                                ({{ fila.empleado.employee_id }})
+                            </small>
+                        </td>
+                        <td>{{ fila.articulo.name }}</td>
+                        <td>{{ fila.devueltas }}</td>
+                        <td>{{ fila.resueltas }}</td>
+                        <td><strong>{{ fila.pendientes }}</strong></td>
+                        <td>{{ fila.fecha|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            No existen daños pendientes de resolución.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

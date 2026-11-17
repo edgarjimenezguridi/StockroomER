@@ -43,6 +43,11 @@
         <a class="exp-btn" href="{% url 'solicitudes_baja_jefe' %}">
             Solicitudes de baja
         </a>
+        <a class="exp-btn"
+        href="{% url 'expediente_pdf_jefe' empleado.pk %}">
+            📄 Descargar expediente PDF
+        </a>
+
     </nav>
 
     <section class="exp-card">
@@ -186,6 +191,11 @@
 
 <section class="exp-card">
     <h2>Resumen de devoluciones y daños</h2>
+
+    <div class="exp-kpi">
+        <span>Daños sin resolver</span>
+        <strong>{{ total_danos_sin_resolver }}</strong>
+    </div>
 
     <div class="exp-kpis">
         <div class="exp-kpi">

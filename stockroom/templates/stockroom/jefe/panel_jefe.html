@@ -44,6 +44,121 @@
     }
 }
 
+/* Fase 20C: Centro de alertas de jefatura */
+
+.jefe-alertas {
+    margin: 24px 0;
+}
+
+.jefe-alertas-encabezado h2 {
+    color: #172335;
+    font-size: 21px;
+    margin: 0 0 7px;
+}
+
+.jefe-alertas-encabezado p {
+    margin: 0 0 16px;
+}
+
+.jefe-alertas-lista {
+    display: grid;
+    gap: 12px;
+}
+
+.jefe-alerta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    border: 1px solid #dce5eb;
+    border-left: 5px solid #0f7a18;
+    border-radius: 11px;
+    background: #fff;
+}
+
+.jefe-alerta strong {
+    display: block;
+    color: #172335;
+    font-size: 15px;
+}
+
+.jefe-alerta p {
+    margin: 6px 0 0;
+    color: #526174;
+    font-size: 13px;
+}
+
+.jefe-alerta a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 40px;
+    padding: 9px 14px;
+    background: #0f7a18;
+    color: #fff;
+    border-radius: 9px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.jefe-alerta a:hover {
+    background: #095c11;
+    color: #fff;
+}
+
+.jefe-alerta-critica {
+    border-left-color: #b42318;
+    background: #fffafa;
+}
+
+.jefe-alerta-advertencia {
+    border-left-color: #d97706;
+    background: #fffdf7;
+}
+
+.jefe-alerta-informativa {
+    border-left-color: #0f7a18;
+}
+
+.jefe-alertas-vacio {
+    padding: 18px;
+    background: #f0faf2;
+    border: 1px solid #cce8d2;
+    border-radius: 11px;
+    color: #166534;
+    font-weight: 700;
+}
+
+/* Mejoras de navegación de alertas */
+
+#autorizaciones-jefe {
+    scroll-margin-top: 24px;
+}
+
+.jefe-alerta a:focus-visible {
+    outline: 3px solid #1b8e2a;
+    outline-offset: 3px;
+}
+
+
+@media (max-width: 650px) {
+    .jefe-alerta {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 15px;
+    }
+
+    .jefe-alerta a {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+
 .jefe-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px}
 .jefe-kpi{padding:18px;border:1px solid #dbe6de;border-radius:14px;background:#f5faf6}
 .jefe-kpi strong{display:block;font-size:29px;color:#0f7a18;margin-top:8px}
@@ -64,6 +179,33 @@
 .jefe-form input,.jefe-form select,.jefe-form textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #bbc9d5;border-radius:8px;background:#fff;font:inherit}
 .jefe-notice{padding:12px 15px;border-radius:10px;background:#fff8e7;border-left:4px solid #c87c0a;margin-bottom:16px}
 .jefe-errors{color:#991b1b;margin:9px 0}.jefe-nav{margin:8px 0 18px}.jefe-nav a{color:#0f7a18;font-weight:bold}
+
+/* Fase 20B: organización del panel de jefatura */
+
+.jefe-operacion {
+    margin: 24px 0;
+}
+
+.jefe-operacion h2 {
+    color: #172335;
+    font-size: 21px;
+    margin: 0 0 7px;
+}
+
+.jefe-operacion > .jefe-muted {
+    margin: 0 0 15px;
+}
+
+.jefe-operacion .jefe-resumen {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+    .jefe-operacion .jefe-resumen {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media(max-width:650px){.jefe-form{grid-template-columns:1fr}.jefe-card{padding:15px}}
 </style>
 {% endblock %}
@@ -83,16 +225,170 @@
     </a>
 </div>
 
+<!-- Fase 20B: dashboard ejecutivo existente -->
+{% dashboard_ejecutivo %}
+
 
 <div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>
 {% if messages %}{% for message in messages %}<div class="jefe-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<div class="jefe-resumen">
- <div class="jefe-kpi">Solicitudes por resolver<strong>{{ total_pendientes }}</strong></div>
- <div class="jefe-kpi">Trabajadores con entregas vencidas<strong>{{ trabajadores_vencidos }}</strong></div>
-</div>
+
+
+<section class="jefe-operacion" aria-label="Indicadores operativos">
+    <h2>Operación del almacén</h2>
+    <p class="jefe-muted">
+        Situación actual de solicitudes, préstamos y daños.
+    </p>
+
+    <div class="jefe-resumen">
+
+        <div class="jefe-kpi">
+            Solicitudes activas de material
+            <strong>{{ solicitudes_activas }}</strong>
+        </div>
+
+        <div class="jefe-kpi">
+            Piezas pendientes de devolución
+            <strong>{{ piezas_pendientes }}</strong>
+        </div>
+
+        <div class="jefe-kpi">
+            Piezas dañadas sin resolver
+            <strong>{{ danos_sin_resolver }}</strong>
+        </div>
+
+    </div>
+</section>
+
+<!-- Fase 20C: alertas prioritarias de jefatura -->
+<section class="jefe-alertas" aria-labelledby="titulo-alertas-jefe">
+    <div class="jefe-alertas-encabezado">
+        <div>
+            <h2 id="titulo-alertas-jefe">Centro de alertas</h2>
+            <p class="jefe-muted">
+                Situaciones que requieren seguimiento.
+                Los datos se actualizan al consultar el panel.
+            </p>
+        </div>
+    </div>
+
+   {% if danos_sin_resolver or trabajadores_vencidos or total_pendientes or solicitudes_activas or piezas_pendientes or bajo_minimo %}
+
+        <div class="jefe-alertas-lista">
+
+            {% if danos_sin_resolver %}
+            <article class="jefe-alerta jefe-alerta-critica">
+                <div>
+                    <strong>⚠️ Daños pendientes de resolución</strong>
+                    <p>
+                        {{ danos_sin_resolver }}
+                        pieza{{ danos_sin_resolver|pluralize:"s" }}
+                        dañada{{ danos_sin_resolver|pluralize:"s" }}
+                        sin resolver.
+                    </p>
+                </div>
+                <a href="{% url 'danos_pendientes_jefe' %}">
+                    Consultar daños
+                </a>
+            </article>
+            {% endif %}
+
+            {% if trabajadores_vencidos %}
+            <article class="jefe-alerta jefe-alerta-advertencia">
+                <div>
+                    <strong>🕒 Trabajadores con entregas vencidas</strong>
+                    <p>
+                        {{ trabajadores_vencidos }}
+                        trabajador{{ trabajadores_vencidos|pluralize:"es" }}
+                        con entregas pendientes de seguimiento.
+                    </p>
+                </div>
+                <a href="{% url 'adeudos_almacen' %}">
+                    Consultar adeudos
+                </a>
+            </article>
+            {% endif %}
+
+            {% if total_pendientes %}
+            <article class="jefe-alerta jefe-alerta-advertencia">
+                <div>
+                    <strong>📋 Autorizaciones pendientes</strong>
+                    <p>
+                        {% if total_pendientes == 1 %}
+                            Hay 1 autorización pendiente de decisión.
+                        {% else %}
+                            Hay {{ total_pendientes }} autorizaciones
+                            pendientes de decisión.
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="#autorizaciones-jefe">
+                    Revisar autorizaciones
+                </a>
+            </article>
+            {% endif %}
+
+            {% if solicitudes_activas %}
+            <article class="jefe-alerta jefe-alerta-informativa">
+                <div>
+                    <strong>📦 Solicitudes activas de material</strong>
+                    <p>
+                        Hay {{ solicitudes_activas }}
+                        solicitud{{ solicitudes_activas|pluralize:"es" }}
+                        en preparación o pendientes de atención.
+                    </p>
+                </div>
+                <a href="{% url 'panel_almacen' %}">
+                    Revisar solicitudes
+                </a>
+            </article>
+            {% endif %}
+
+            {% if piezas_pendientes %}
+            <article class="jefe-alerta jefe-alerta-informativa">
+                <div>
+                    <strong>🔧 Piezas pendientes de devolución</strong>
+                    <p>
+                        Permanecen {{ piezas_pendientes }}
+                        pieza{{ piezas_pendientes|pluralize:"s" }}
+                        prestada{{ piezas_pendientes|pluralize:"s" }}.
+                    </p>
+                </div>
+                <a href="{% url 'adeudos_almacen' %}">
+                    Consultar devoluciones pendientes
+                </a>
+            </article>
+            {% endif %}
+
+            {% if bajo_minimo %}
+            <article class="jefe-alerta jefe-alerta-advertencia">
+                <div>
+                    <strong>📦 Artículos bajo el mínimo</strong>
+                    <p>
+                        Hay {{ bajo_minimo }} artículos que
+                        requieren revisión de existencias.
+                    </p>
+                </div>
+
+                <a href="{% url 'reabastecimiento_almacen' %}">
+                    Revisar reabastecimiento
+                </a>
+            </article>
+            {% endif %}
+
+
+        </div>
+
+    {% else %}
+        <div class="jefe-alertas-vacio" role="status">
+            ✅ Sin alertas operativas pendientes.
+        </div>
+    {% endif %}
+</section>
+
+
 <div class="jefe-notice">Una aprobación de duplicado no desbloquea préstamos vencidos de más de 15 días. El trabajador debe devolverlos primero.</div>
 {% mostrar_alertas_prestamos 'boss' %}
-<section class="jefe-card">
+<section class="jefe-card" id="autorizaciones-jefe">
 <h2>Autorizaciones pendientes</h2>
 <div class="jefe-table-wrap"><table class="jefe-table"><thead><tr><th>Trabajador</th><th>Artículo</th><th>Cantidad</th><th>Motivo</th><th>Solicitada</th><th>Decisión</th></tr></thead><tbody>
 {% for item in pendientes %}<tr>

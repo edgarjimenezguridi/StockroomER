@@ -32,6 +32,47 @@
     border-color: #11801b;
     color: #ffffff;
 }
+
+.persona-estado,
+.persona-rol {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.persona-estado.activo {
+    background: #e5f6e9;
+    color: #126c29;
+}
+
+.persona-estado.inactivo {
+    background: #fce9e7;
+    color: #a52720;
+}
+
+.persona-rol.jefe {
+    background: #e6f1ff;
+    color: #194a82;
+}
+
+.persona-rol.almacen {
+    background: #e5f6e9;
+    color: #126c29;
+}
+
+.persona-rol.administrador {
+    background: #f2eafa;
+    color: #69419b;
+}
+
+.persona-rol {
+    background: #edf1f5;
+    color: #405468;
+}
+
 @media(max-width:600px){.persona-card{padding:14px}.persona-actions .persona-button{padding:9px 11px}.persona-table{min-width:660px}}
 </style>
 {% endblock %}
@@ -118,34 +159,144 @@
             </a>
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_reset_nip_jefe' e.pk %}">Restablecer NIP</a>{% endif %}
     {% if e.is_active %}<a class="persona-button alt" href="{% url 'autorizar_nip_jefe' e.pk %}">Activación NIP</a>{% endif %}
-    <form me
-{% if not e.is_active %}
-    <form method="post" action="{% url 'estado_trabajador_jefe' e.pk %}">
-        {% csrf_token %}
-        <input type="hidden" name="accion" value="activar">
-        <button class="persona-button" type="submit">
-            Reactivar
-        </button>
-    </form>
-{% endif %}
-</div></td></tr>
-{% empty %}
-<tr><td colspan="4">No hay trabajadores.</td></tr>
-{% endfor %}
+
+    {% if not e.is_active %}
+        <form method="post"
+              action="{% url 'estado_trabajador_jefe' e.pk %}">
+            {% csrf_token %}
+            <input type="hidden"
+                   name="accion"
+                   value="activar">
+            <button class="persona-button" type="submit">
+                Reactivar
+            </button>
+        </form>
+    {% endif %}
+
+    </div></td></tr>
+    {% empty %}
+    <tr>
+        <td colspan="4">No hay trabajadores.</td>
+    </tr>
+    {% endfor %}
+
 
    </tbody></table></div>
   </section>
-  <section class="persona-card"><h2>Cuentas y permisos administrativos</h2><p class="persona-small">Solo se permiten roles predefinidos. No puedes modificar tu propia cuenta ni superusuarios. Las cuentas con permisos adicionales se gestionan en Django Admin.</p>
-   <div class="persona-scroll"><table class="persona-table"><thead><tr><th>Cuenta</th><th>Estado</th><th>Grupos</th><th>Acciones</th></tr></thead><tbody>
-    {% for c in cuentas %}<tr><td>{{ c.username }} {% if c.pk == request.user.pk %}(tu cuenta){% endif %}</td><td>{% if c.is_active %}Activa{% else %}Inactiva{% endif %}</td><td>{% for g in c.groups.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}Sin grupos{% endfor %}</td>
-    <td><div class="persona-actions">
-     {% if c.pk != request.user.pk and not c.is_superuser %}
-      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="{% if c.is_active %}desactivar{% else %}activar{% endif %}"><button type="submit" class="persona-button {% if c.is_active %}red{% endif %}" onclick="return confirm('¿Confirmar cambio de acceso?')">{% if c.is_active %}Desactivar{% else %}Reactivar{% endif %}</button></form>
-      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="warehouse"><button type="submit" class="persona-button alt">Almacén</button></form>
-      <form method="post" action="{% url 'estado_cuenta_jefe' c.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="boss"><button type="submit" class="persona-button">Jefatura</button></form>
-     {% else %}<span class="persona-small">Cuenta protegida</span>{% endif %}
-    </div></td></tr>{% empty %}<tr><td colspan="4">No hay cuentas.</td></tr>{% endfor %}
-   </tbody></table></div>
+  <section class="persona-card"><h2>Cuentas y permisos administrativos</h2>
+    
+<p class="persona-small">
+    Los roles administrativos tienen permisos diferentes:
+    <strong>Jefatura</strong> puede supervisar personal,
+    consultar información del almacén y gestionar autorizaciones.
+    <strong>Almacén</strong> puede realizar las operaciones
+    permitidas por su rol.
+    No puedes modificar tu propia cuenta ni cuentas superusuario
+    desde esta pantalla.
+</p>
+
+   
+<div class="persona-scroll">
+    <table class="persona-table">
+        <thead>
+            <tr>
+                <th>Cuenta</th>
+                <th>Estado</th>
+                <th>Rol</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in cuentas %}
+            <tr>
+                <td>
+                    <strong>{{ c.username }}</strong>
+                    {% if c.pk == request.user.pk %}
+                        <span class="persona-small">(tu cuenta)</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if c.is_active %}
+                        <span class="persona-estado activo">Activa</span>
+                    {% else %}
+                        <span class="persona-estado inactivo">Inactiva</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if c.is_superuser %}
+                        <span class="persona-rol administrador">
+                            Superusuario
+                        </span>
+                    {% else %}
+                        {% for g in c.groups.all %}
+                            {% if g.name == "Jefes" %}
+                                <span class="persona-rol jefe">Jefatura</span>
+                            {% elif g.name == "StockroomER - Almacenistas" %}
+                                <span class="persona-rol almacen">
+                                    Almacenista
+                                </span>
+                            {% else %}
+                                <span class="persona-rol">{{ g.name }}</span>
+                            {% endif %}
+                        {% empty %}
+                            <span class="persona-small">Sin rol asignado</span>
+                        {% endfor %}
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="persona-actions">
+                        {% if c.pk != request.user.pk and not c.is_superuser %}
+                            <form method="post"
+                                  action="{% url 'estado_cuenta_jefe' c.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion"
+                                       value="{% if c.is_active %}desactivar{% else %}activar{% endif %}">
+                                <button type="submit"
+                                        class="persona-button {% if c.is_active %}red{% endif %}"
+                                        onclick="return confirm('¿Confirmas cambiar el acceso de esta cuenta?');">
+                                    {% if c.is_active %}Desactivar{% else %}Reactivar{% endif %}
+                                </button>
+                            </form>
+
+                            <form method="post"
+                                  action="{% url 'estado_cuenta_jefe' c.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="warehouse">
+                                <button type="submit"
+                                        class="persona-button alt"
+                                        onclick="return confirm('¿Asignar el rol Almacenista a esta cuenta?');">
+                                    Almacén
+                                </button>
+                            </form>
+
+                            <form method="post"
+                                  action="{% url 'estado_cuenta_jefe' c.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="boss">
+                                <button type="submit"
+                                        class="persona-button"
+                                        onclick="return confirm('¿Asignar el rol Jefatura a esta cuenta?');">
+                                    Jefatura
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="persona-small">Cuenta protegida</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay cuentas administrativas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
   </section>
 </div>
 {% endblock %}

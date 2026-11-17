@@ -15,6 +15,7 @@ from .assigned_stock_views import _data as obtener_stock_asignado
 from .models import Loan, MaterialRequest, EmployeeOffboardingRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
+from .employee_history_summary import calcular_resumen_devoluciones
 
 from .duplicate_authorization_admin import es_jefe
 from .models import Employee, EmployeeCredential, QuantityIssue, DamageResolution, DuplicateLoanAuthorization, QuantityReturn
@@ -94,6 +95,46 @@ def _warehouse_group():
     return group
 
 
+BOSS_READ_PERMISSIONS = (
+    "view_materialrequest",
+    "view_employee",
+    "view_quantityissue",
+    "view_article",
+    "view_quantitystock",
+    "view_tool",
+)
+
+
+def _boss_group():
+    """
+    Prepara el grupo Jefes con sus permisos mínimos
+    de consulta, incluso en instalaciones nuevas.
+    """
+    permissions = list(
+        Permission.objects.filter(
+            content_type__app_label="stockroom",
+            codename__in=BOSS_READ_PERMISSIONS,
+        )
+    )
+
+    found = {permission.codename for permission in permissions}
+    missing = set(BOSS_READ_PERMISSIONS) - found
+
+    if missing:
+        raise ValueError(
+            "Faltan permisos de jefatura: "
+            + ", ".join(sorted(missing))
+        )
+
+    group, _ = Group.objects.get_or_create(name="Jefes")
+
+    # Agrega solo los permisos de lectura necesarios.
+    # Conserva los permisos existentes.
+    group.permissions.add(*permissions)
+
+    return group
+
+
 def _jefes_activos():
     User = get_user_model()
     return User.objects.filter(is_active=True, is_staff=True, groups__name='Jefes').distinct().count() + User.objects.filter(is_active=True, is_staff=True, is_superuser=True).exclude(groups__name='Jefes').count()
@@ -130,7 +171,11 @@ def personal_jefe(request):
                         first_name=data['first_name'], last_name=data['last_name'],
                         email=data['email'], is_staff=True, is_active=True,
                     )
-                    group = _warehouse_group() if data['role'] == 'warehouse' else Group.objects.get_or_create(name='Jefes')[0]
+                    group = (
+                        _warehouse_group()
+                        if data["role"] == "warehouse"
+                        else _boss_group()
+                    )
                     user.groups.add(group)
                     _audit(request, user, 'Alta de cuenta administrativa: ' + data['role'], added=True)
                 messages.success(request, 'Cuenta creada. Entrega la contraseña inicial por un canal seguro.')
@@ -336,10 +381,19 @@ def expediente_trabajador_jefe(request, employee_id):
         source_return__issue__employee=empleado,
     )
 
-    total_danos_resueltos = (
-        resoluciones_qs.aggregate(total=Sum('quantity'))['total']
-        or 0
+    
+    total_danos_resueltos_bd = (
+        resoluciones_qs.aggregate(
+            total=Sum('quantity')
+        )['total'] or 0
     )
+
+    resumen_historial = calcular_resumen_devoluciones(
+        total_devueltas=resumen_devoluciones['total'],
+        total_danadas=resumen_devoluciones['danadas'],
+        total_danos_resueltos=total_danos_resueltos_bd,
+    )
+
 
     resoluciones = resoluciones_qs.select_related(
         'source_return__issue__stock__article',
@@ -385,10 +439,7 @@ def expediente_trabajador_jefe(request, employee_id):
             'bajas': bajas,
             'devoluciones': devoluciones,
             'resoluciones': resoluciones,
-            'total_devueltas': total_devueltas,
-            'total_buen_estado': total_buen_estado,
-            'total_danadas': total_danadas,
-            'total_danos_resueltos': total_danos_resueltos,
+            **resumen_historial,
         },
     )
 
@@ -418,7 +469,11 @@ def estado_cuenta_jefe(request, user_id):
             target.is_active = accion == 'activar'
             target.save(update_fields=['is_active'])
         else:
-            group = _warehouse_group() if accion == 'warehouse' else Group.objects.get_or_create(name='Jefes')[0]
+            group = (
+                _warehouse_group()
+                if accion == "warehouse"
+                else _boss_group()
+            )
             # Revoca grupos de acceso previamente administrados; no altera superusuarios.
             target.groups.remove(*Group.objects.filter(name__in=('Jefes', 'StockroomER - Almacenistas')))
             target.groups.add(group)

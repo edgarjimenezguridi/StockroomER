@@ -7,6 +7,7 @@ from django.contrib import admin
 from stockroom.employee_offboarding_views import baja_trabajador_almacen
 from stockroom.boss_auth import AccesoJefeView
 from django.urls import path
+from stockroom.employee_profile_pdf_views import expediente_pdf_jefe
 from stockroom.boss_views import (
     panel_jefe,
     resolver_autorizacion_jefe,
@@ -30,7 +31,7 @@ from stockroom.warehouse_views import (
     reabastecimiento_almacen,
     agregar_articulo_almacen,
 )
-
+from stockroom.boss_damage_views import danos_pendientes_jefe
 from stockroom.classification_views import (
     administrar_clasificaciones_almacen,
     
@@ -358,8 +359,23 @@ urlpatterns = [
         baja_trabajador_almacen,
         name="baja_trabajador_almacen",
     ),
+    path(
+        "jefe/trabajadores/<int:employee_id>/expediente/pdf/",
+        expediente_pdf_jefe,
+        name="expediente_pdf_jefe",
+    ),
+    path(
+        "jefe/danos-pendientes/",
+        danos_pendientes_jefe,
+        name="danos_pendientes_jefe",
+    ),
 
 
 
+]
 
+# Fase 18: revisión final del jefe
+from stockroom.employee_offboarding_views import solicitudes_baja_jefe
+urlpatterns += [
+    path("jefe/solicitudes-baja/", solicitudes_baja_jefe, name="solicitudes_baja_jefe"),
 ]
