@@ -1,5 +1,5 @@
-
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Preparar artículo{% endblock %}
 
@@ -150,6 +150,23 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
         line-height: 1.6;
     }
 
+    /* Escáner de herramientas individuales */
+    .escaneo-preparacion { margin: 20px 0; padding: 18px; border: 1px solid #cfe6d2;
+        border-radius: 12px; background: #f2f8f3; }
+    .escaneo-preparacion label { display: block; margin-bottom: 8px; font-weight: 700; }
+    .escaneo-preparacion input { box-sizing: border-box; width: 100%; padding: 12px 14px;
+        border: 1px solid #bdd5c1; border-radius: 9px; font: inherit; }
+    .escaneo-preparacion p { margin: 8px 0 0; font-size: 13px; color: #526174; }
+    .escaneo-estado { min-height: 1.5em; font-weight: 700; }
+    .escaneo-estado[data-estado="error"] { color: #a42323; }
+    .escaneo-estado[data-estado="ok"] { color: #0f7a18; }
+    .seleccion-preparacion { border: 1px solid #dbe3ec; border-radius: 10px;
+        padding: 16px; background: #fff; margin-bottom: 16px; }
+    .seleccion-preparacion ul { list-style: none; margin: 10px 0 0; padding: 0; }
+    .seleccion-preparacion li { padding: 8px 4px; border-bottom: 1px solid #edf1f5; }
+    .seleccion-preparacion li:last-child { border-bottom: 0; }
+    .seleccion-contador { font-weight: 700; color: #0f7a18; }
+
     /* Botones */
     .acciones-preparacion {
         display: flex;
@@ -236,6 +253,9 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
             {{ linea.article.name }}
         </dd>
 
+        <dt>Ubicación del artículo</dt>
+        <dd>{{ linea.article.location|default:"Sin ubicación registrada" }}</dd>
+
         <dt>Cantidad solicitada</dt>
         <dd>
             <span class="cantidad-solicitada">
@@ -254,7 +274,23 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
     <form method="post" class="formulario-preparacion">
         {% csrf_token %}
 
-        {{ form.as_p }}
+        {{ form.non_field_errors }}
+        <p>{{ form.quantity.label_tag }} {{ form.quantity }} {{ form.quantity.errors }}</p>
+        {% if form.tools %}
+            <div class="escaneo-preparacion" data-escaneo-preparacion>
+                <label for="codigo-pieza-preparacion">Escanear código de pieza individual</label>
+                <input id="codigo-pieza-preparacion" type="text" autocomplete="off"
+                       spellcheck="false" placeholder="Escanea o escribe el código de la pieza">
+                <p>Al escanear se marcará la pieza disponible correspondiente. No se guardará la preparación automáticamente.</p>
+                <p id="estado-escaneo-preparacion" class="escaneo-estado" role="status" aria-live="polite"></p>
+                <p id="contador-preparacion" class="seleccion-contador" aria-live="polite"></p>
+            </div>
+            <div class="seleccion-preparacion" id="piezas-preparacion">
+                <strong>Piezas disponibles de este artículo</strong>
+                {{ form.tools.errors }}
+                {{ form.tools }}
+            </div>
+        {% endif %}
 
         <div class="acciones-preparacion">
 
@@ -292,4 +328,5 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
 
 </section>
 
+<script src="{% static 'stockroom/js/preparar_comanda_23o.js' %}?v=23o1" defer></script>
 {% endblock %}
