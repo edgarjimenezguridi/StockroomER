@@ -54,6 +54,7 @@ from stockroom.individual_tool_management_views import (
 from stockroom.tool_label_views import (
     imprimir_etiqueta_pieza_almacen,
 )
+from stockroom.article_label_views import imprimir_etiqueta_articulo_almacen
 
 
 from stockroom.views import (
@@ -313,6 +314,13 @@ urlpatterns = [
         "almacen/articulos/<int:article_id>/editar/",
         editar_articulo_almacen,
         name="editar_articulo_almacen",
+    ),
+
+    # Etiqueta imprimible para artículos controlados por cantidad
+    path(
+        "almacen/articulos/<int:article_id>/etiqueta/",
+        imprimir_etiqueta_articulo_almacen,
+        name="imprimir_etiqueta_articulo_almacen",
     ),
 
     # Impresion de etiqueta de herramienta individual

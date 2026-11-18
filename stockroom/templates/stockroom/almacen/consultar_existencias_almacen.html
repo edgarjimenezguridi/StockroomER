@@ -478,6 +478,7 @@ Consulta la disponibilidad actual de herramientas y materiales del almacén.
     }
 
     .boton-editar-articulo:hover { background: #e3f3e6; }
+    td .boton-editar-articulo { margin: 2px 5px 2px 0; }
     .boton-editar-articulo:focus-visible {
         outline: 3px solid #f59e0b;
         outline-offset: 2px;
@@ -626,9 +627,7 @@ Consulta la disponibilidad actual de herramientas y materiales del almacén.
                 <th class="numero">En revisión</th>
 
                 <th class="numero">Bajas</th>
-                {% if perms.stockroom.change_article %}
-                    <th>Acciones</th>
-                {% endif %}
+                <th>Etiquetas y acciones</th>
 
             </tr>
 
@@ -768,10 +767,18 @@ Consulta la disponibilidad actual de herramientas y materiales del almacén.
 
                     </td>
 
-                    {% if perms.stockroom.change_article %}
-
-                        <td>
-
+                    <td>
+                        {% if registro.articulo.tracking_mode == "quantity" %}
+                            <a class="boton-editar-articulo"
+                               href="{% url 'imprimir_etiqueta_articulo_almacen' registro.articulo.pk %}"
+                               target="_blank" rel="noopener"
+                               aria-label="Imprimir etiqueta de {{ registro.articulo.article_code }}">
+                                🖨️ Etiqueta
+                            </a>
+                        {% else %}
+                            <span class="ubicacion-sin-asignar">Etiqueta por pieza individual</span>
+                        {% endif %}
+                        {% if perms.stockroom.change_article %}
                             <a class="boton-editar-articulo"
 
                                href="{% url 'editar_articulo_almacen' registro.articulo.pk %}"
@@ -782,9 +789,8 @@ Consulta la disponibilidad actual de herramientas y materiales del almacén.
 
                             </a>
 
-                        </td>
-
-                    {% endif %}
+                        {% endif %}
+                    </td>
 
                 </tr>
 
@@ -792,7 +798,7 @@ Consulta la disponibilidad actual de herramientas y materiales del almacén.
 
                 <tr>
 
-                    <td colspan="{% if perms.stockroom.change_article %}12{% else %}11{% endif %}">
+                    <td colspan="12">
 
                         No se encontraron artículos.
 

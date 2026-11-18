@@ -1,9 +1,4 @@
 
-import base64
-
-from barcode import Code128
-from barcode.writer import SVGWriter
-
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
@@ -11,6 +6,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from .models import Tool
+from .label_barcodes import imagen_codigo_128
 
 
 @never_cache
@@ -40,23 +36,7 @@ def imprimir_etiqueta_pieza_almacen(request, tool_id):
 
     codigo = pieza.tool_code
 
-    # Code 128 admite codigos alfanumericos.
-    codigo_svg = Code128(
-        codigo,
-        writer=SVGWriter(),
-    ).render(
-        writer_options={
-            "write_text": False,
-            "module_height": 12,
-            "module_width": 0.25,
-            "quiet_zone": 2.5,
-        }
-    )
-
-    imagen_codigo = (
-        "data:image/svg+xml;base64,"
-        + base64.b64encode(codigo_svg).decode("ascii")
-    )
+    imagen_codigo = imagen_codigo_128(codigo)
 
     return render(
         request,
