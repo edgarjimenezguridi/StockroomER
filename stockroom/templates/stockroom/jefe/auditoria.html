@@ -31,11 +31,10 @@
 
 {% block contenido %}
 <div class="audit-wrap">
-    <p class="audit-nav">
-        <a href="{% url 'panel_jefe' %}">← Panel directivo</a>
-        ·
-        <a href="{% url 'personal_jefe' %}">Personal y permisos</a>
-    </p>
+    <nav class="sr-nav" aria-label="Navegación de jefatura">
+  <a class="sr-btn sr-btn-secondary" href="{% url 'panel_jefe' %}">← Panel directivo</a>
+  <a class="sr-btn sr-btn-secondary" href="{% url 'personal_jefe' %}">Personal y permisos</a>
+</nav>
 
     <section class="audit-card">
         <h2>Consultar movimientos administrativos</h2>

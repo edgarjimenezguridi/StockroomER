@@ -27,7 +27,7 @@
 </style>
 {% endblock %}
 {% block contenido %}
-<nav class="ex-nav"><a href="{% url 'panel_empleado' %}">← Regresar a mi panel</a></nav>
+<nav class="sr-nav"><a class="sr-btn sr-btn-secondary" href="{% url 'panel_empleado' %}">← Regresar a mi panel</a></nav>
 <div class="ex-hint"><strong>¿Cómo funciona?</strong> Si ya tienes un artículo prestado o una solicitud activa del mismo artículo, puedes pedir una excepción. Solo el jefe puede aprobarla. No podrás generar nuevas comandas si tienes adeudos vencidos de más de 15 días.</div>
 {% if messages %}{% for message in messages %}<div class="ex-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
 <div class="ex-columns">
@@ -38,7 +38,7 @@
     <form method="post" class="ex-form">
       {% csrf_token %}
       {% for field in form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}
-      <button class="ex-btn" type="submit">Enviar petición</button>
+      <button class="sr-btn" type="submit">Enviar petición</button>
     </form>
   </section>
   <section class="ex-card">

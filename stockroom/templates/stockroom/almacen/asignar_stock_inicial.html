@@ -18,6 +18,7 @@
 {% endblock %}
 {% block contenido %}
 <div class="inicial-layout">
+<nav class="sr-nav"><a class="sr-btn sr-btn-secondary" href="{% url 'panel_almacen' %}">← Regresar al panel de almacén</a></nav>
 <div class="inicial-info"><strong>Importante:</strong> se descuenta el inventario disponible y queda un adeudo sin vencimiento. Si el empleado ya tiene ese artículo solicitado o pendiente de devolución, se rechazará la asignación. Elige una herramienta a la vez; puedes repetir el proceso para agregar artículos distintos.</div>
 <form method="post" class="inicial-form">
 {% csrf_token %}
@@ -26,13 +27,13 @@
 <div><label for="{{ form.article.id_for_label }}">{{ form.article.label }}</label>{{ form.article }}{{ form.article.errors }}</div>
 <div><label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>{{ form.quantity }}{{ form.quantity.errors }}</div>
 <div><label for="{{ form.tool.id_for_label }}">{{ form.tool.label }}</label>{{ form.tool }}{{ form.tool.errors }}<small>Solo para piezas individuales. El sistema comprueba que corresponda al artículo elegido.</small></div>
-<button type="submit" class="boton-empresa">Confirmar asignación inicial</button>
+<button type="submit" class="sr-btn">Confirmar asignación inicial</button>
 </form>
 <h2>Últimas asignaciones</h2>
 <div class="inicial-table"><table><thead><tr><th>Trabajador</th><th>Herramienta</th><th>Cantidad</th><th>Fecha</th></tr></thead><tbody>
 {% for issue in ultimas %}<tr><td>{{ issue.employee }}</td><td>{% if issue.tool_id %}{{ issue.tool.tool_code }} — {{ issue.tool.name }}{% else %}{{ issue.stock.article.name }}{% endif %}</td><td>{{ issue.quantity }}</td><td>{{ issue.issued_at|date:"d/m/Y H:i" }}</td></tr>
 {% empty %}<tr><td colspan="4">Todavía no hay asignaciones iniciales.</td></tr>{% endfor %}
 </tbody></table></div>
-<p><a href="{% url 'panel_almacen' %}">← Regresar al panel del almacén</a></p>
+
 </div>
 {% endblock %}

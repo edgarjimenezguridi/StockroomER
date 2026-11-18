@@ -14,7 +14,7 @@
 {% endblock %}
 {% block contenido %}
 <div class="report-wrap">
- <p><a class="report-link" href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></p>
+ <nav class="sr-nav"><a class="sr-btn sr-btn-secondary" href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></nav>
  <section class="report-box"><h2>Generar un PDF</h2>
  <p class="report-note">Los documentos se generan con datos actuales. Descargas exclusivas de jefatura, sin contraseñas, NIP ni códigos secretos.</p>
  <form method="get" action="{% url 'descargar_reporte_jefe' %}">
@@ -27,7 +27,7 @@
    <div><label for="id_hasta">Fecha final (opcional)</label><input id="id_hasta" type="date" name="hasta"></div>
   </div>
   <p class="report-note">Las fechas personalizadas sustituyen el período en auditoría y desechos. Los préstamos vencidos y el inventario bajo mínimo muestran la situación actual.</p>
-  <button type="submit" class="report-button">Descargar PDF</button>
+  <button type="submit" class="sr-btn">Descargar PDF</button>
  </form></section>
 </div>
 {% endblock %}
