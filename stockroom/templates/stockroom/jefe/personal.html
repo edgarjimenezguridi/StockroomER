@@ -4,7 +4,7 @@
 {% block descripcion %}Altas, bajas, cuentas y expedientes · Jefatura{% endblock %}
 {% block extra_css %}
 <style>
-.persona-main{max-width:1280px;margin:auto}.persona-nav{margin:14px 0}.persona-nav a{color:#0f7a18;font-weight:700}
+.persona-main{max-width:1280px;margin:auto}.persona-nav{margin:14px 0;display:flex;flex-wrap:wrap;gap:10px}
 .persona-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px}
 .persona-card{background:#fff;border:1px solid #dce5eb;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 4px 16px #122b2e09}
 .persona-card h2{margin-top:0;font-size:20px;color:#14293b}.persona-form{display:grid;gap:12px}.persona-form label{display:block;font-weight:700;margin-bottom:4px}
@@ -79,7 +79,7 @@
 {% block contenido %}
 <div class="persona-main">
   <p><a class="btn-corporativo" href="{% url 'auditoria_jefe' %}">Historial de administración</a></p>
-  <nav class="persona-nav"><a href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></nav>
+  <nav class="persona-nav" aria-label="Navegación de jefatura"><a class="sr-btn sr-btn-secondary" href="{% url 'panel_jefe' %}">← Volver al panel directivo</a></nav>
   {% if messages %}{% for message in messages %}<div class="persona-msg" role="status">{{ message }}</div>{% endfor %}{% endif %}
   <div class="persona-counter"><div>Trabajadores activos<strong>{{ activos }}</strong></div><div>Trabajadores inactivos<strong>{{ inactivos }}</strong></div></div>
   <p class="persona-small">Los trabajadores usan credencial y NIP; el personal administrativo usa usuario y contraseña de Django. Son accesos independientes.</p>

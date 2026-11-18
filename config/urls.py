@@ -5,7 +5,7 @@ URL configuration for StockroomER.
 
 from django.contrib import admin
 from stockroom.employee_offboarding_views import baja_trabajador_almacen
-from stockroom.boss_auth import AccesoJefeView
+from stockroom.boss_auth import AccesoJefeView, salir_jefe
 from django.urls import path
 from stockroom.employee_profile_pdf_views import expediente_pdf_jefe
 from stockroom.boss_views import (
@@ -331,6 +331,7 @@ urlpatterns = [
     ),
 
     # Panel del jefe
+    path("jefe/salir/", salir_jefe, name="salir_jefe"),
     path(
         "jefe/panel/",
         panel_jefe,
@@ -388,4 +389,15 @@ urlpatterns = [
 from stockroom.employee_offboarding_views import solicitudes_baja_jefe
 urlpatterns += [
     path("jefe/solicitudes-baja/", solicitudes_baja_jefe, name="solicitudes_baja_jefe"),
+]
+
+
+from stockroom.warehouse_lookup_views import buscar_almacen
+
+urlpatterns += [
+    path(
+        "almacen/buscar/",
+        buscar_almacen,
+        name="buscar_almacen",
+    ),
 ]

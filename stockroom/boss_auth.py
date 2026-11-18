@@ -2,6 +2,12 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from django.urls import reverse_lazy
 
 
@@ -32,3 +38,14 @@ class AccesoJefeView(LoginView):
     template_name = "stockroom/jefe/acceso.html"
     authentication_form = AccesoJefeForm
     next_page = reverse_lazy("panel_jefe")
+
+
+@never_cache
+@login_required(login_url="acceso_jefe")
+@require_POST
+def salir_jefe(request):
+    """Cierre de sesión de jefatura: explícito y protegido por CSRF."""
+    if not es_jefe(request.user):
+        raise PermissionDenied("Solo jefatura puede utilizar este acceso.")
+    logout(request)
+    return redirect("acceso_jefe")

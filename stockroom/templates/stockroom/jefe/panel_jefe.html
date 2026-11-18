@@ -9,6 +9,11 @@
 <style>
 .pagina-jefe .contenedor-empresa{max-width:1250px}
 
+/* Cierre seguro visible exclusivamente en el panel principal de jefatura. */
+.jefe-toolbar { display:flex; justify-content:flex-end; margin:0 0 18px; }
+.jefe-toolbar form { margin:0; }
+.jefe-toolbar .sr-btn { min-height:44px; }
+
 /* Accesos principales del jefe */
 .jefe-accesos {
     display: grid;
@@ -210,6 +215,13 @@
 </style>
 {% endblock %}
 {% block contenido %}
+<div class="jefe-toolbar" aria-label="Acciones de sesión de jefatura">
+    <form method="post" action="{% url 'salir_jefe' %}">
+        {% csrf_token %}
+        <button type="submit" class="sr-btn sr-btn-danger">Cerrar sesión</button>
+    </form>
+</div>
+
 
 <div class="jefe-accesos">
     <a href="{% url 'reportes_jefe' %}" class="jefe-acceso">

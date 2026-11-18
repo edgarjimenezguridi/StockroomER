@@ -17,11 +17,13 @@ class InitialStockForm(forms.Form):
     employee = forms.ModelChoiceField(
         label="Trabajador", queryset=Employee.objects.filter(is_active=True).order_by("last_name", "first_name"),
         empty_label="Selecciona un trabajador",
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar trabajador por número o nombre"}),
     )
     article = forms.ModelChoiceField(
         label="Artículo", queryset=Article.objects.filter(
             is_active=True, return_mode=Article.ReturnMode.RETURNABLE
         ).order_by("name", "article_code"), empty_label="Selecciona una herramienta",
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código de artículo"}),
     )
     quantity = forms.IntegerField(label="Cantidad", min_value=1, initial=1)
     tool = forms.ModelChoiceField(
@@ -29,6 +31,7 @@ class InitialStockForm(forms.Form):
         queryset=Tool.objects.filter(is_active=True, inventory_status=Tool.InventoryStatus.AVAILABLE)
         .select_related("article").order_by("tool_code"),
         empty_label="Sin pieza individual",
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código único de pieza"}),
     )
 
     def clean(self):

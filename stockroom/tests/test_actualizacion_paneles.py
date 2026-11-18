@@ -32,7 +32,20 @@ class ActualizacionPanelesTests(SimpleTestCase):
 
     def test_actualizador_protege_sesion_y_formularios(self):
         js = SCRIPT.read_text(encoding="utf-8")
-        for seguridad in ('credentials: "same-origin"', 'redirect: "manual"', 'cache: "no-store"',
-                          'document.hidden', 'consultando', 'actual.contains(document.activeElement)',
-                          'stockroom:panel-actualizado'):
-            self.assertIn(seguridad, js)
+        for seguridad in (
+            'credentials: "same-origin"',
+            'redirect: "manual"',
+            'cache: "no-store"',
+            'document.hidden',
+            'consultando',
+            'actual.contains(activo)',
+            'activo.matches("input, select, textarea, [contenteditable]")',
+            'const formularios = actual.querySelectorAll("form")',
+            'stockroom:panel-actualizado',
+        ):
+            with self.subTest(seguridad=seguridad):
+                self.assertIn(seguridad, js)
+
+        # No bloquear el refresco por un boton enfocado o por el cursor encima.
+        self.assertNotIn('actual.contains(document.activeElement)', js)
+        self.assertNotIn('actual.matches(":hover")', js)

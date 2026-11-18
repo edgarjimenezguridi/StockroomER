@@ -2,7 +2,9 @@
 {% block title %}Asignar stock inicial{% endblock %}
 {% block titulo_pagina %}Stock inicial de herramientas{% endblock %}
 {% block descripcion %}Asigna herramientas permanentes a trabajadores registrados. No vencen a 15 días, pero sí cuentan para duplicados.{% endblock %}
+{% load static %}
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'stockroom/css/busqueda_escaneo.css' %}">
 <style>
 .inicial-layout {max-width:850px;margin:auto}
 .inicial-info {background:#e8f5ea;border-left:5px solid #169c21;padding:17px 20px;border-radius:10px;margin-bottom:20px;line-height:1.6}
@@ -36,4 +38,5 @@
 </tbody></table></div>
 
 </div>
+<script src="{% static 'stockroom/js/busqueda_escaneo.js' %}" defer></script>
 {% endblock %}

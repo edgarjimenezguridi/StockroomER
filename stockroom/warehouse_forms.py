@@ -276,6 +276,7 @@ class WarehouseStockEntryForm(forms.Form):
     stock = forms.ModelChoiceField(
         label="Artículo",
         queryset=QuantityStock.objects.none(),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar o escanear código de artículo"}),
     )
     quantity = forms.IntegerField(
         label="Cantidad recibida",
@@ -364,6 +365,7 @@ class WarehouseStockCorrectionForm(forms.Form):
     entry = forms.ModelChoiceField(
         label="Entrada que vas a corregir",
         queryset=StockEntry.objects.none(),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar entrada por código de artículo"}),
     )
     quantity_delta = forms.IntegerField(
         label="Ajuste de cantidad",

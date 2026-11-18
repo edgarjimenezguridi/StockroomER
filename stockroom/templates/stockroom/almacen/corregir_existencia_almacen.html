@@ -1,5 +1,5 @@
-
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Corregir existencias{% endblock %}
 
@@ -14,6 +14,7 @@ Registra ajustes de inventario de forma controlada.
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'stockroom/css/busqueda_escaneo.css' %}">
 <style>
     .pagina-corregir-existencias .contenedor-empresa {
         max-width: 760px;
@@ -155,4 +156,5 @@ Registra ajustes de inventario de forma controlada.
         </div>
     </form>
 
+<script src="{% static 'stockroom/js/busqueda_escaneo.js' %}" defer></script>
 {% endblock %}

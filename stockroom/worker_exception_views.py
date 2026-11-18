@@ -7,18 +7,19 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F, Q
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from .loan_rules import motivo_duplicado, validar_bloqueo_vencimiento
-from .models import Article, DuplicateLoanAuthorization, Employee, EmployeeCredential
+from .models import Article, DuplicateLoanAuthorization, Employee, EmployeeCredential, Loan, QuantityIssue
 
 
 class WorkerExceptionForm(forms.Form):
     article = forms.ModelChoiceField(
-        label="Artículo a solicitar nuevamente",
-        queryset=Article.objects.filter(is_active=True).order_by("article_code"),
+        label="Artículo que tienes pendiente de devolución",
+        queryset=Article.objects.none(),
         empty_label="Selecciona un artículo",
     )
     max_quantity = forms.IntegerField(
@@ -27,12 +28,38 @@ class WorkerExceptionForm(forms.Form):
         max_value=100000,
         widget=forms.NumberInput(attrs={"min": "1", "step": "1"}),
     )
+    def __init__(self, *args, employee, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["article"].queryset = articulos_con_devolucion_pendiente(employee.pk)
+
     reason = forms.CharField(
         label="Motivo de la solicitud",
         max_length=1000,
         min_length=10,
         widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Explica por qué necesitas otra pieza del mismo artículo"}),
     )
+
+
+
+def articulos_con_devolucion_pendiente(employee_id):
+    """Solo artículos retornables entregados con saldo pendiente."""
+    pendientes = QuantityIssue.objects.filter(
+        employee_id=employee_id,
+        requires_return=True,
+        returned_quantity__lt=F("quantity"),
+    )
+    stock_ids = pendientes.exclude(stock__isnull=True).values("stock__article_id")
+    tool_ids = pendientes.exclude(tool__isnull=True).values("tool__article_id")
+    legacy_ids = Loan.objects.filter(
+        employee_id=employee_id,
+        returned_at__isnull=True,
+        unified_issue__isnull=True,
+    ).values("tool__article_id")
+    return Article.objects.filter(
+        Q(pk__in=stock_ids) | Q(pk__in=tool_ids) | Q(pk__in=legacy_ids),
+        is_active=True,
+        return_mode=Article.ReturnMode.RETURNABLE,
+    ).distinct().order_by("article_code")
 
 
 def _empleado_autenticado(request):
@@ -63,6 +90,7 @@ def solicitar_duplicado_empleado(request):
     form = WorkerExceptionForm(
         request.POST if request.method == "POST" else None,
         initial=inicial,
+        employee=employee,
     )
 
     if request.method == "POST" and form.is_valid():
@@ -72,6 +100,9 @@ def solicitar_duplicado_empleado(request):
                 # Misma serialización por empleado que carrito y envío.
                 Employee.objects.select_for_update().get(pk=employee.pk, is_active=True)
                 validar_bloqueo_vencimiento(employee.pk)
+
+                if not articulos_con_devolucion_pendiente(employee.pk).filter(pk=article.pk).exists():
+                    raise ValidationError("Ya no tienes una devolución pendiente de este artículo.")
 
                 if not motivo_duplicado(employee_id=employee.pk, article_id=article.pk):
                     raise ValidationError(

@@ -1,0 +1,6 @@
+/* Escáner + búsqueda reutilizable */
+.sr-scan-lookup{display:grid;gap:6px;margin:8px 0 9px}
+.sr-scan-lookup label{font-weight:700;color:#172335}
+.sr-scan-lookup input{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;border:1px solid #b6c7d4;border-radius:9px;padding:10px 12px;font:inherit;background:#fff}
+.sr-scan-lookup input:focus{outline:2px solid #159526;outline-offset:1px}
+.sr-scan-hint{color:#556579;font-size:12px}

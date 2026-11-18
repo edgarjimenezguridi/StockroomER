@@ -30,6 +30,15 @@ class WorkerDuplicateExceptionTests(TestCase):
         session.save()
 
     def make_duplicate(self):
+        # Una solicitud activa sin entrega no basta para habilitar duplicado.
+        # Se crea un artículo entregado que sigue pendiente de devolución.
+        stock, _ = QuantityStock.objects.get_or_create(
+            article=self.article, defaults={"available_quantity": 0, "loaned_quantity": 1}
+        )
+        QuantityIssue.objects.create(
+            employee=self.employee, stock=stock, quantity=1,
+            returned_quantity=0, requires_return=True,
+        )
         solicitud = MaterialRequest.objects.create(employee=self.employee, status=MaterialRequest.Status.SUBMITTED)
         MaterialRequestLine.objects.create(request=solicitud, article=self.article, requested_quantity=1)
 
@@ -73,7 +82,7 @@ class WorkerDuplicateExceptionTests(TestCase):
 
     def test_prestamo_vencido_bloquea_peticion(self):
         self.make_duplicate()
-        stock = QuantityStock.objects.create(article=self.article, available_quantity=0, loaned_quantity=1)
+        stock = QuantityStock.objects.get(article=self.article)
         QuantityIssue.objects.create(
             employee=self.employee, stock=stock, quantity=1, returned_quantity=0,
             requires_return=True, issued_at=timezone.now() - timedelta(days=16),

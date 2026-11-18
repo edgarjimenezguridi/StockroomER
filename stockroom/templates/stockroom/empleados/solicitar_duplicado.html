@@ -28,13 +28,14 @@
 {% endblock %}
 {% block contenido %}
 <nav class="sr-nav"><a class="sr-btn sr-btn-secondary" href="{% url 'panel_empleado' %}">← Regresar a mi panel</a></nav>
-<div class="ex-hint"><strong>¿Cómo funciona?</strong> Si ya tienes un artículo prestado o una solicitud activa del mismo artículo, puedes pedir una excepción. Solo el jefe puede aprobarla. No podrás generar nuevas comandas si tienes adeudos vencidos de más de 15 días.</div>
+<div class="ex-hint"><strong>¿Cómo funciona?</strong> Solo puedes solicitar un duplicado de un artículo que ya te entregaron y que aún tienes pendiente de devolución. Solo el jefe puede aprobarla. No podrás generar nuevas comandas si tienes adeudos vencidos de más de 15 días.</div>
 {% if messages %}{% for message in messages %}<div class="ex-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
 <div class="ex-columns">
   <section class="ex-card">
     <h2>Nueva petición</h2>
     <p class="ex-muted">Trabajador: {{ employee.first_name }} {{ employee.last_name }} · {{ employee.employee_id }}</p>
     {% if form.non_field_errors %}<div class="ex-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if not form.article.field.queryset.exists %}<p class="ex-muted">No tienes artículos pendientes de devolución para solicitar un duplicado.</p>{% endif %}
     <form method="post" class="ex-form">
       {% csrf_token %}
       {% for field in form %}<p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</p>{% endfor %}

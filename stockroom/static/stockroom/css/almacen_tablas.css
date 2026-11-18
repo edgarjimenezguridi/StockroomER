@@ -1,0 +1,70 @@
+/* StockroomER 23F: tablas consistentes en el panel del almacén. */
+/* El alcance evita alterar otras pantallas y sus formularios. */
+body .tablas {
+    overflow-x: auto;
+    border: 1px solid #dbe5e1;
+    border-radius: 12px;
+    background: #fff;
+    margin-top: 12px;
+    -webkit-overflow-scrolling: touch;
+}
+body .almacen-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    font-size: 14px;
+    color: #172335;
+}
+body .almacen-tabla th,
+body .almacen-tabla td {
+    padding: 13px 16px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #e2eae5;
+    line-height: 1.45;
+}
+body .almacen-tabla thead th {
+    background: #e8f4ea;
+    color: #165827;
+    font-weight: 750;
+    white-space: nowrap;
+}
+body .almacen-tabla tbody tr:nth-child(even) {
+    background: #f8fbf9;
+}
+body .almacen-tabla tbody tr:hover {
+    background: #eff8f1;
+}
+body .almacen-tabla tbody tr:last-child td {
+    border-bottom: 0;
+}
+body .almacen-tabla .almacen-boton-tabla {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid #0f7a18;
+    border-radius: 9px;
+    background: #0f7a18;
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 0.15s ease;
+}
+body .almacen-tabla .almacen-boton-tabla:hover {
+    background: #095b12;
+    color: #fff;
+    text-decoration: none;
+}
+body .almacen-tabla .almacen-boton-tabla:focus-visible {
+    outline: 3px solid #f59e0b;
+    outline-offset: 2px;
+}
+@media (max-width: 650px) {
+    body .almacen-tabla th,
+    body .almacen-tabla td { padding: 10px 12px; }
+}
