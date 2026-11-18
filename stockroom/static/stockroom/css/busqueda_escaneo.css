@@ -1,6 +1,15 @@
-/* Escáner + búsqueda reutilizable */
-.sr-scan-lookup{display:grid;gap:6px;margin:8px 0 9px}
+/* StockroomER 23J — estilo compartido para buscadores de almacén */
+.sr-scan-lookup{display:grid;gap:7px;margin:8px 0 10px}
 .sr-scan-lookup label{font-weight:700;color:#172335}
-.sr-scan-lookup input{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;border:1px solid #b6c7d4;border-radius:9px;padding:10px 12px;font:inherit;background:#fff}
+.sr-scan-toolbar{display:flex;gap:9px;align-items:stretch;flex-wrap:wrap}
+.sr-scan-lookup input{box-sizing:border-box;flex:1 1 250px;min-width:0;min-height:44px;border:1px solid #b6c7d4;border-radius:9px;padding:10px 12px;font:inherit;background:#fff;color:#172335}
 .sr-scan-lookup input:focus{outline:2px solid #159526;outline-offset:1px}
-.sr-scan-hint{color:#556579;font-size:12px}
+.sr-scan-clear{min-height:44px;padding:9px 14px;border:1px solid #b6c7d4;border-radius:9px;color:#17462a;background:#edf7ef;font:inherit;font-weight:650;cursor:pointer}
+.sr-scan-clear:hover{background:#dcefe0;border-color:#5d9b71}
+.sr-scan-clear:focus-visible{outline:2px solid #159526;outline-offset:2px}
+.sr-scan-hint{display:block;color:#526274;font-size:12px;line-height:1.45;min-height:18px}
+.sr-scan-hint[data-state="error"]{color:#a12626;font-weight:650}
+.sr-scan-hint[data-state="empty"]{color:#805a0e;font-weight:650}
+.sr-scan-hint[data-state="success"]{color:#176b35;font-weight:650}
+.sr-scan-hint[data-state="loading"]{color:#315d86}
+@media(max-width:520px){.sr-scan-toolbar{display:grid}.sr-scan-lookup input,.sr-scan-clear{width:100%}}

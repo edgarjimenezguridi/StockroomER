@@ -1,5 +1,5 @@
-/* StockroomER 23I: búsqueda remota para selects ModelChoiceField.
- * Escanear o buscar solo selecciona una opción: NO envía formularios.
+/* StockroomER 23J: búsquedas remotas accesibles para escáner y teclado.
+ * Nunca envía formularios ni modifica existencias. El servidor valida el POST.
  */
 (function () {
   "use strict";
@@ -10,60 +10,108 @@
   function iniciar(select) {
     if (!select.dataset.srLookupType || select.dataset.srScanReady) return;
     select.dataset.srScanReady = "1";
+
     const container = document.createElement("div");
     container.className = "sr-scan-lookup";
     const label = document.createElement("label");
-    label.textContent = select.dataset.srScanLabel || "Buscar o escanear";
     const input = document.createElement("input");
+    const status = document.createElement("small");
+    const toolbar = document.createElement("div");
+    const clearButton = document.createElement("button");
+    const key = select.id || select.name || "buscar";
+
+    label.textContent = select.dataset.srScanLabel || "Buscar o escanear";
+    input.id = `sr-scan-${key}`;
+    label.htmlFor = input.id;
     input.type = "search";
     input.autocomplete = "off";
     input.spellcheck = false;
-    input.placeholder = "Escribe nombre, número o escanea el código";
-    input.setAttribute("aria-label", label.textContent);
-    const hint = document.createElement("small");
-    hint.className = "sr-scan-hint";
-    hint.setAttribute("role", "status");
-    hint.textContent = "Busca y después selecciona el resultado. Escanear no registra movimientos.";
-    container.append(label, input, hint);
+    input.maxLength = 80;
+    input.placeholder = "Escribe el nombre, número o escanea el código";
+    clearButton.type = "button";
+    clearButton.className = "sr-scan-clear";
+    clearButton.textContent = "Limpiar selección";
+    clearButton.title = "Borra la selección y permite buscar otra vez";
+    status.className = "sr-scan-hint";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.textContent = "Busca un registro y selecciónalo; escanear no registra movimientos.";
+    toolbar.className = "sr-scan-toolbar";
+    toolbar.append(input, clearButton);
+    container.append(label, toolbar, status);
     select.before(container);
-    select.setAttribute("aria-label", "Selecciona un resultado de búsqueda");
+    select.setAttribute("aria-label", "Selecciona el resultado correcto");
 
-    // Un valor ya elegido se conserva en POST con errores de validación.
     let requestId = 0;
     let timer = null;
     let controller = null;
-    function mostrar(items) {
-      const anterior = select.value;
+    let searching = false;
+
+    function setStatus(message, kind) {
+      status.textContent = message;
+      status.dataset.state = kind || "info";
+      container.dataset.state = kind || "info";
+    }
+    function cancel() {
+      ++requestId; // invalida también respuestas anteriores que ya iban en camino
+      window.clearTimeout(timer);
+      if (controller) controller.abort();
+      controller = null;
+      searching = false;
+      input.removeAttribute("aria-busy");
+    }
+    function resetOptions() {
+      select.replaceChildren(new Option("Selecciona un resultado", ""));
+      select.value = "";
+      select.dispatchEvent(new Event("change", {bubbles: true}));
+    }
+    function clear() {
+      cancel();
+      input.value = "";
+      resetOptions();
+      setStatus("Selección borrada. Escribe o escanea otro código.", "info");
+      input.focus();
+    }
+    clearButton.addEventListener("click", clear);
+
+    function show(items) {
+      const previous = select.value;
       select.replaceChildren(new Option("Selecciona un resultado", ""));
       items.forEach(item => {
-        const opt = new Option(item.text, String(item.id));
-        select.add(opt);
+        if (!item || item.id === undefined || typeof item.text !== "string") return;
+        select.add(new Option(item.text, String(item.id)));
       });
-      if (items.some(item => String(item.id) === anterior)) select.value = anterior;
-      else select.value = "";
-      hint.textContent = !items.length ? "Sin coincidencias. Verifica el código o nombre."
-        : `${items.length} resultado(s). Selecciona el registro correcto para continuar.`;
+      const keep = Array.from(select.options).some(o => o.value && o.value === previous);
+      select.value = keep ? previous : "";
+      if (!items.length) {
+        setStatus("Sin coincidencias. Verifica el código o intenta con el nombre.", "empty");
+      } else {
+        setStatus(`${items.length} resultado(s). Elige el registro correcto.`, "success");
+      }
     }
-    async function buscar() {
+
+    async function search() {
       const q = input.value.trim().slice(0, 80);
-      const ticket = ++requestId;
-      if (controller) controller.abort();
+      cancel();
+      const ticket = requestId;
       if (!q) {
-        // Evitar perder un valor ya elegido al limpiar la búsqueda.
-        const elegido = select.selectedOptions[0];
-        if (!select.value || !elegido) mostrar([]);
-        hint.textContent = "Escanea o escribe para buscar (hasta 20 coincidencias).";
+        // Al limpiar el texto no se borra una opción seleccionada; el botón sí la borra.
+        setStatus(select.value ? "Registro seleccionado. Puedes limpiar la selección para cambiarlo." :
+          "Escribe o escanea para buscar (hasta 20 resultados).", "info");
         return;
       }
-      controller = new AbortController();
-      hint.textContent = "Buscando…";
+      const currentController = new AbortController();
+      controller = currentController;
+      searching = true;
+      input.setAttribute("aria-busy", "true");
+      setStatus("Buscando coincidencias…", "loading");
       try {
         const url = new URL(endpoint, window.location.href);
         url.searchParams.set("tipo", select.dataset.srLookupType);
         url.searchParams.set("q", q);
         const response = await fetch(url.toString(), {
           method: "GET", credentials: "same-origin", cache: "no-store",
-          redirect: "manual", signal: controller.signal,
+          redirect: "manual", signal: currentController.signal,
           headers: {"Accept": "application/json"}
         });
         if (!response.ok || response.redirected || response.type === "opaqueredirect" ||
@@ -71,41 +119,58 @@
           throw new Error("Consulta no autorizada o conexión interrumpida");
         }
         const data = await response.json();
-        if (ticket !== requestId || !Array.isArray(data.results)) return;
-        mostrar(data.results);
-        // Un lector suele enviar Enter. Selección automática solo si
-        // existe UNA coincidencia cuyo código coincida exactamente.
-        const coincidenciaExacta = data.results.filter(item =>
-          String(item.text).split(" — ")[0].trim().toLowerCase() === q.toLowerCase());
-        if (coincidenciaExacta.length === 1) {
-          select.value = String(coincidenciaExacta[0].id);
-          select.dispatchEvent(new Event("change", {bubbles: true}));
-          hint.textContent = "Código localizado. Verifica el registro y confirma manualmente.";
+        if (ticket !== requestId || input.value.trim().slice(0, 80) !== q || !Array.isArray(data.results)) return;
+        show(data.results);
+        // Solo selecciona automáticamente códigos exactos; nunca registra el formulario.
+        // No selecciona automáticamente entradas históricas: pueden tener varias coincidencias.
+        if (select.dataset.srLookupType !== "entradas_correccion") {
+          const exact = data.results.filter(item =>
+            String(item.text || "").split(" — ")[0].trim().toLocaleLowerCase("es-MX") === q.toLocaleLowerCase("es-MX"));
+          if (exact.length === 1) {
+            select.value = String(exact[0].id);
+            select.dispatchEvent(new Event("change", {bubbles: true}));
+            setStatus("Código exacto localizado. Verifica el registro antes de confirmar.", "success");
+          }
         }
       } catch (error) {
         if (error.name !== "AbortError" && ticket === requestId) {
-          hint.textContent = "No se pudo consultar. Revisa tu conexión y vuelve a intentar.";
+          setStatus("No se pudo buscar. Revisa la conexión o la sesión e intenta otra vez.", "error");
+        }
+      } finally {
+        if (ticket === requestId) {
+          searching = false;
+          controller = null;
+          input.removeAttribute("aria-busy");
         }
       }
     }
+
     input.addEventListener("input", () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(buscar, 250);
+      // Invalidar la respuesta anterior inmediatamente, sin esperar al debounce.
+      cancel();
+      if (!input.value.trim()) {
+        setStatus(select.value ? "Selección conservada; usa Limpiar selección para cambiarla." :
+          "Escribe o escanea para buscar.", "info");
+        return;
+      }
+      timer = window.setTimeout(search, 250);
     });
     input.addEventListener("keydown", event => {
       if (event.key === "Enter") {
-        event.preventDefault();
+        event.preventDefault(); // El Enter del lector nunca envía el formulario.
         window.clearTimeout(timer);
-        buscar();
+        search();
       }
     });
     select.addEventListener("change", () => {
-      if (select.value) hint.textContent = "Registro seleccionado. Revisa los datos antes de confirmar.";
+      if (select.value && !searching) setStatus("Registro seleccionado. Revisa los datos antes de confirmar.", "success");
     });
+    // En un POST inválido Django puede devolver la opción ya elegida.
+    if (select.value) setStatus("Registro seleccionado. Puedes cambiarlo con Limpiar selección.", "success");
   }
-  function arrancar() {
+  function start() {
     document.querySelectorAll("select[data-sr-scan][data-sr-lookup-type]").forEach(iniciar);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", arrancar);
-  else arrancar();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 })();
