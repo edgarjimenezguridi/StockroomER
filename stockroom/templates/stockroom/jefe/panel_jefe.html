@@ -246,7 +246,7 @@
         <a class="jefe-acceso" href="{% url 'consultas_operativas_jefe' 'solicitudes' %}">Consultar solicitudes</a>
     </nav>
 
-    <div class="jefe-resumen">
+    <div class="jefe-resumen" data-sr-live="jefe-resumen">
 
         <div class="jefe-kpi">
             Solicitudes activas de material
@@ -267,7 +267,7 @@
 </section>
 
 <!-- Fase 20C: alertas prioritarias de jefatura -->
-<section class="jefe-alertas" aria-labelledby="titulo-alertas-jefe">
+<section data-sr-live="jefe-alertas" class="jefe-alertas" aria-labelledby="titulo-alertas-jefe">
     <div class="jefe-alertas-encabezado">
         <div>
             <h2 id="titulo-alertas-jefe">Centro de alertas</h2>
@@ -395,7 +395,7 @@
 
 <div class="jefe-notice">Una aprobación de duplicado no desbloquea préstamos vencidos de más de 15 días. El trabajador debe devolverlos primero.</div>
 {% mostrar_alertas_prestamos 'boss' %}
-<section class="jefe-card" id="autorizaciones-jefe">
+<section class="jefe-card" id="autorizaciones-jefe" data-sr-live="jefe-autorizaciones">
 <h2>Autorizaciones pendientes</h2>
 <div class="jefe-table-wrap"><table class="jefe-table"><thead><tr><th>Trabajador</th><th>Artículo</th><th>Cantidad</th><th>Motivo</th><th>Solicitada</th><th>Decisión</th></tr></thead><tbody>
 {% for item in pendientes %}<tr>
@@ -415,4 +415,9 @@
 {% for item in historial %}<tr><td>{{ item.employee.employee_id }}</td><td>{{ item.article.article_code }}</td><td><span class="jefe-badge {% if item.status == 'approved' %}jefe-approved{% elif item.status == 'rejected' %}jefe-rejected{% endif %}">{{ item.get_status_display }}</span></td><td>{{ item.decided_by|default:"—" }}</td><td>{{ item.decided_at|date:"d/m/Y H:i" }}</td><td>{% if item.used_request_id %}#{{ item.used_request_id }}{% else %}—{% endif %}</td></tr>
 {% empty %}<tr><td colspan="6">Todavía no hay autorizaciones resueltas.</td></tr>{% endfor %}
 </tbody></table></div></section>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'stockroom/js/panel_actualizacion.js' %}" defer></script>
 {% endblock %}

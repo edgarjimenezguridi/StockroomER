@@ -691,7 +691,7 @@
 
                 <h2>Resumen del almacén</h2>
 
-                <div class="resumen-almacen">
+                <div class="resumen-almacen" data-sr-live="almacen-resumen">
 
                     <div class="tarjeta-indicador indicador-azul">
 
@@ -995,7 +995,7 @@
 
         </header>
 
-        <section  id="solicitudes-por-preparar">
+        <section id="solicitudes-por-preparar" data-sr-live="almacen-por-preparar">
 
             <h2>Por preparar</h2>
 
@@ -1065,7 +1065,7 @@
 
         </section>
 
-        <section id="solicitudes-por-confirmar">
+        <section id="solicitudes-por-confirmar" data-sr-live="almacen-por-confirmar">
 
             <h2>Pendientes de confirmar recibido</h2>
 
@@ -1346,152 +1346,9 @@
 
     </script>
 
-    <script>
 
-    document.addEventListener("DOMContentLoaded", function () {
 
-        const INTERVALO = 10000; // 10 segundos
-
-        let actualizando = false;
-
-        async function actualizarSolicitudes() {
-
-            // No consultar si la pestaña está oculta.
-
-            if (document.hidden || actualizando) {
-
-                return;
-
-            }
-
-            actualizando = true;
-
-            try {
-
-                const respuesta = await fetch(window.location.pathname, {
-
-                    method: "GET",
-
-                    credentials: "same-origin",
-
-                    cache: "no-store",
-
-                    redirect: "manual"
-
-                });
-
-                // Si la sesión terminó o el servidor falla,
-
-                // conservamos la información visible.
-
-                if (!respuesta.ok || respuesta.type === "opaqueredirect") {
-
-                    return;
-
-                }
-
-                const html = await respuesta.text();
-
-                const documentoNuevo = new DOMParser().parseFromString(
-
-                    html,
-
-                    "text/html"
-
-                );
-
-                const secciones = [
-
-                    "solicitudes-por-preparar",
-
-                    "solicitudes-por-confirmar"
-
-                ];
-
-                secciones.forEach(function (id) {
-
-                    const actual = document.getElementById(id);
-
-                    const nueva = documentoNuevo.getElementById(id);
-
-                    if (!actual || !nueva) return;
-
-                    // No interrumpir a alguien que esté
-
-                    // interactuando dentro de la sección.
-
-                    if (actual.contains(document.activeElement)) {
-
-                        return;
-
-                    }
-
-                    if (actual.innerHTML !== nueva.innerHTML) {
-
-                        actual.innerHTML = nueva.innerHTML;
-
-                    }
-
-                });
-
-                const contadores = [
-
-                    "contador-por-preparar",
-
-                    "contador-por-confirmar"
-
-                ];
-
-                contadores.forEach(function (id) {
-
-                    const actual = document.getElementById(id);
-
-                    const nuevo = documentoNuevo.getElementById(id);
-
-                    if (actual && nuevo) {
-
-                        actual.textContent = nuevo.textContent;
-
-                    }
-
-                });
-
-            } catch (error) {
-
-                console.warn(
-
-                    "No se pudo actualizar el panel automáticamente.",
-
-                    error
-
-                );
-
-            } finally {
-
-                actualizando = false;
-
-            }
-
-        }
-
-        setInterval(actualizarSolicitudes, INTERVALO);
-
-        // Actualizar también al regresar a la pestaña.
-
-        document.addEventListener("visibilitychange", function () {
-
-            if (!document.hidden) {
-
-                actualizarSolicitudes();
-
-            }
-
-        });
-
-    });
-
-    </script>
-
+    <script src="{% static 'stockroom/js/panel_actualizacion.js' %}" defer></script>
 </body>
 
 </html>
