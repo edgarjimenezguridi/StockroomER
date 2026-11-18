@@ -276,7 +276,7 @@ class WarehouseStockEntryForm(forms.Form):
     stock = forms.ModelChoiceField(
         label="Artículo",
         queryset=QuantityStock.objects.none(),
-        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar o escanear código de artículo"}),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar o escanear código de artículo", "data-sr-lookup-type": "articulos_entrada"}),
     )
     quantity = forms.IntegerField(
         label="Cantidad recibida",
@@ -295,13 +295,16 @@ class WarehouseStockEntryForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # GET: no cargar el catálogo completo. POST: validar únicamente el ID
+        # enviado, siempre dentro del universo de artículos autorizados.
+        elegido = self.data.get(self.add_prefix("stock")) if self.is_bound else None
+        ids = [elegido] if elegido and str(elegido).isdigit() else []
         self.fields["stock"].queryset = (
             QuantityStock.objects.filter(
                 article__is_active=True,
                 article__tracking_mode=Article.TrackingMode.QUANTITY,
-            )
-            .select_related("article")
-            .order_by("article__name")
+                pk__in=ids,
+            ).select_related("article")
         )
 
 class WarehouseDamageResolutionForm(forms.Form):
@@ -365,7 +368,7 @@ class WarehouseStockCorrectionForm(forms.Form):
     entry = forms.ModelChoiceField(
         label="Entrada que vas a corregir",
         queryset=StockEntry.objects.none(),
-        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar entrada por código de artículo"}),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar entrada por código de artículo", "data-sr-lookup-type": "entradas_correccion"}),
     )
     quantity_delta = forms.IntegerField(
         label="Ajuste de cantidad",
@@ -381,13 +384,14 @@ class WarehouseStockCorrectionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        elegido = self.data.get(self.add_prefix("entry")) if self.is_bound else None
+        ids = [elegido] if elegido and str(elegido).isdigit() else []
         self.fields["entry"].queryset = (
             StockEntry.objects.filter(
                 stock__article__is_active=True,
                 stock__article__tracking_mode=Article.TrackingMode.QUANTITY,
-            )
-            .select_related("stock__article")
-            .order_by("-received_at", "-pk")
+                pk__in=ids,
+            ).select_related("stock__article")
         )
         self.fields["entry"].label_from_instance = self.entry_label
 

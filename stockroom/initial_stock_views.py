@@ -17,13 +17,13 @@ class InitialStockForm(forms.Form):
     employee = forms.ModelChoiceField(
         label="Trabajador", queryset=Employee.objects.filter(is_active=True).order_by("last_name", "first_name"),
         empty_label="Selecciona un trabajador",
-        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar trabajador por número o nombre"}),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Buscar trabajador por número o nombre", "data-sr-lookup-type": "trabajadores_stock"}),
     )
     article = forms.ModelChoiceField(
         label="Artículo", queryset=Article.objects.filter(
             is_active=True, return_mode=Article.ReturnMode.RETURNABLE
         ).order_by("name", "article_code"), empty_label="Selecciona una herramienta",
-        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código de artículo"}),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código de artículo", "data-sr-lookup-type": "articulos_stock"}),
     )
     quantity = forms.IntegerField(label="Cantidad", min_value=1, initial=1)
     tool = forms.ModelChoiceField(
@@ -31,8 +31,18 @@ class InitialStockForm(forms.Form):
         queryset=Tool.objects.filter(is_active=True, inventory_status=Tool.InventoryStatus.AVAILABLE)
         .select_related("article").order_by("tool_code"),
         empty_label="Sin pieza individual",
-        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código único de pieza"}),
+        widget=forms.Select(attrs={"data-sr-scan": "1", "data-sr-scan-label": "Escanear o buscar código único de pieza", "data-sr-lookup-type": "piezas_stock"}),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El GET no descarga catálogos enteros. Cada POST se valida mediante
+        # un queryset restringido a la opción elegida y las reglas del modelo.
+        for nombre in ("employee", "article", "tool"):
+            campo = self.fields[nombre]
+            elegido = self.data.get(self.add_prefix(nombre)) if self.is_bound else None
+            ids = [elegido] if elegido and str(elegido).isdigit() else []
+            campo.queryset = campo.queryset.filter(pk__in=ids)
 
     def clean(self):
         data = super().clean()
