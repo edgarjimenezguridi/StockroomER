@@ -1,0 +1,32 @@
+{% extends "stockroom/base.html" %}
+{% block title %}{{ titulo_consulta }} | Jefatura{% endblock %}
+{% block body_class %}pagina-jefe{% endblock %}
+{% block titulo_pagina %}{{ titulo_consulta }}{% endblock %}
+{% block descripcion %}Información actual del almacén · Solo consulta para jefatura{% endblock %}
+{% block extra_css %}
+<style>
+.consulta-jefe{max-width:1220px;margin:16px auto}.consulta-jefe-volver{display:inline-flex;align-items:center;padding:12px 17px;border:1px solid #cae3d0;background:#eaf5ec;color:#116d1c;border-radius:10px;text-decoration:none;font-weight:700;margin-bottom:18px}.consulta-jefe-volver:hover{background:#d9eddd}
+.consulta-jefe-tarjeta{border:1px solid #dce6df;border-radius:16px;padding:24px;background:white}.consulta-jefe-tarjeta h2{margin:0 0 8px}.consulta-jefe-ayuda{color:#526174;font-size:14px}.consulta-jefe-total{color:#08751e;font-weight:800;font-size:32px;margin:18px 0}.consulta-jefe-tabla{width:100%;border-collapse:collapse;min-width:660px}.consulta-jefe-tabla th{text-align:left;background:#eaf4eb;color:#15441c}.consulta-jefe-tabla td,.consulta-jefe-tabla th{padding:13px;border-bottom:1px solid #e5eae6;text-align:left}.consulta-jefe-scroll{overflow-x:auto}@media(max-width:650px){.consulta-jefe-tarjeta{padding:15px}}
+</style>
+{% endblock %}
+{% block contenido %}
+<div class="consulta-jefe">
+ <a href="{% url 'panel_jefe' %}" class="consulta-jefe-volver">← Regresar al panel directivo</a>
+ <section class="consulta-jefe-tarjeta">
+  <h2>{{ titulo_consulta }}</h2>
+  <p class="consulta-jefe-ayuda">Esta página es exclusiva de jefatura. Los registros son de solo lectura: las entregas, devoluciones y ajustes los realiza el almacenista.</p>
+  <div class="consulta-jefe-total">{{ total }}{% if seccion == 'adeudos' %} pieza{{ total|pluralize:'s' }} pendiente{{ total|pluralize:'s' }}{% elif seccion == 'reabastecimiento' %} artículo{{ total|pluralize:'s' }}{% else %} solicitud{{ total|pluralize:'es' }}{% endif %}</div>
+  <div class="consulta-jefe-scroll"><table class="consulta-jefe-tabla"><thead><tr>
+   {% if seccion == 'adeudos' %}<th>Trabajador</th><th>Artículo</th><th>Pendiente</th><th>Fecha de entrega</th>
+   {% elif seccion == 'reabastecimiento' %}<th>Artículo</th><th>Ubicación</th><th>Disponibles</th><th>Mínimo</th><th>Faltantes</th>
+   {% else %}<th>Comanda</th><th>Trabajador</th><th>Estado</th><th>Fecha de envío</th>{% endif %}
+  </tr></thead><tbody>
+  {% for fila in registros %}<tr>
+   {% if seccion == 'adeudos' %}<td>{{ fila.trabajador.employee_id }} — {{ fila.trabajador.first_name }} {{ fila.trabajador.last_name }}</td><td>{{ fila.articulo.article_code }} — {{ fila.articulo.name }}</td><td>{{ fila.pendiente }}</td><td>{{ fila.fecha|date:'d/m/Y H:i' }}</td>
+   {% elif seccion == 'reabastecimiento' %}<td>{{ fila.articulo.article_code }} — {{ fila.articulo.name }}</td><td>{{ fila.articulo.location|default:'Sin ubicación' }}</td><td>{{ fila.disponibles }}</td><td>{{ fila.minimo }}</td><td>{{ fila.faltantes }}</td>
+   {% else %}<td>#{{ fila.pk }}</td><td>{{ fila.employee.employee_id }} — {{ fila.employee.first_name }} {{ fila.employee.last_name }}</td><td>{{ fila.get_status_display }}</td><td>{{ fila.submitted_at|date:'d/m/Y H:i' }}</td>{% endif %}
+  </tr>{% empty %}<tr><td colspan="5">Sin registros pendientes en esta consulta.</td></tr>{% endfor %}
+  </tbody></table></div>
+ </section>
+</div>
+{% endblock %}

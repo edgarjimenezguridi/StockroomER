@@ -7,7 +7,7 @@
 .sr-alerts .sr-ok{background:#eef8f0;border-left:5px solid #169c21;padding:12px;border-radius:8px;color:#166534;margin:12px 0}
 .sr-alerts .sr-scroll{overflow-x:auto}.sr-alerts table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px}
 .sr-alerts th{text-align:left;background:#eaf4eb;color:#15441c}.sr-alerts td,.sr-alerts th{padding:10px;border-bottom:1px solid #e4ebea;vertical-align:top}
-.sr-alerts .sr-muted{color:#526174;font-size:13px}.sr-alerts a{color:#0f7a18;font-weight:bold}
+.sr-alerts .sr-muted{color:#526174;font-size:13px}.sr-alerts a{color:#0f7a18;font-weight:bold}.sr-alerts a.sr-link-btn{display:inline-flex;padding:10px 15px;border-radius:9px;background:#0f7a18;color:#fff;text-decoration:none}.sr-alerts a.sr-link-btn:hover{background:#095c11}
 </style>
 <section class="sr-alerts" aria-label="Estado de préstamos">
 {% if mode == 'worker' %}
@@ -36,7 +36,7 @@
   {% if overdue_rows %}<div class="sr-scroll"><table><thead><tr><th>Trabajador</th><th>Artículo</th><th>Pendiente</th><th>Fecha límite</th><th>Atraso</th></tr></thead><tbody>
   {% for row in overdue_rows %}<tr><td>{{ row.worker.employee_id }} — {{ row.worker.first_name }} {{ row.worker.last_name }}</td><td>{{ row.article.name|default:"Artículo anterior" }}</td><td>{{ row.quantity }}</td><td>{{ row.deadline|date:"d/m/Y H:i" }}</td><td>{{ row.late_days }} día(s)</td></tr>{% endfor %}
   </tbody></table></div>{% else %}<div class="sr-ok">No hay préstamos vencidos registrados.</div>{% endif %}
-  <p><a href="{% url 'adeudos_almacen' %}">Consultar adeudos completos</a></p>
+  <p><a class="sr-link-btn" href="{% if mode == 'boss' %}{% url 'consultas_operativas_jefe' 'adeudos' %}{% else %}{% url 'adeudos_almacen' %}{% endif %}">Consultar adeudos completos</a></p>
 {% endif %}
 </section>
 {% endif %}

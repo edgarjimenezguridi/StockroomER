@@ -229,7 +229,7 @@
 {% dashboard_ejecutivo %}
 
 
-<div class="jefe-nav"><a href="{% url 'panel_almacen' %}">Consultar almacén</a> · <a href="{% url 'admin:index' %}">Administración técnica</a></div>
+
 {% if messages %}{% for message in messages %}<div class="jefe-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
 
 
@@ -238,6 +238,13 @@
     <p class="jefe-muted">
         Situación actual de solicitudes, préstamos y daños.
     </p>
+
+    {# Consultas de jefatura siempre disponibles, aunque no existan alertas. #}
+    <nav class="jefe-accesos" aria-label="Consultas exclusivas de jefatura">
+        <a class="jefe-acceso" href="{% url 'consultas_operativas_jefe' 'adeudos' %}">Consultar adeudos y devoluciones</a>
+        <a class="jefe-acceso" href="{% url 'consultas_operativas_jefe' 'reabastecimiento' %}">Consultar reabastecimiento</a>
+        <a class="jefe-acceso" href="{% url 'consultas_operativas_jefe' 'solicitudes' %}">Consultar solicitudes</a>
+    </nav>
 
     <div class="jefe-resumen">
 
@@ -302,7 +309,7 @@
                         con entregas pendientes de seguimiento.
                     </p>
                 </div>
-                <a href="{% url 'adeudos_almacen' %}">
+                <a href="{% url 'consultas_operativas_jefe' 'adeudos' %}">
                     Consultar adeudos
                 </a>
             </article>
@@ -337,7 +344,7 @@
                         en preparación o pendientes de atención.
                     </p>
                 </div>
-                <a href="{% url 'panel_almacen' %}">
+                <a href="{% url 'consultas_operativas_jefe' 'solicitudes' %}">
                     Revisar solicitudes
                 </a>
             </article>
@@ -353,7 +360,7 @@
                         prestada{{ piezas_pendientes|pluralize:"s" }}.
                     </p>
                 </div>
-                <a href="{% url 'adeudos_almacen' %}">
+                <a href="{% url 'consultas_operativas_jefe' 'adeudos' %}">
                     Consultar devoluciones pendientes
                 </a>
             </article>
@@ -369,7 +376,7 @@
                     </p>
                 </div>
 
-                <a href="{% url 'reabastecimiento_almacen' %}">
+                <a href="{% url 'consultas_operativas_jefe' 'reabastecimiento' %}">
                     Revisar reabastecimiento
                 </a>
             </article>

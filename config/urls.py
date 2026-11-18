@@ -32,6 +32,7 @@ from stockroom.warehouse_views import (
     agregar_articulo_almacen,
 )
 from stockroom.boss_damage_views import danos_pendientes_jefe
+from stockroom.boss_operational_views import consultas_operativas_jefe
 from stockroom.classification_views import (
     administrar_clasificaciones_almacen,
     
@@ -97,6 +98,7 @@ from stockroom.boss_audit_views import auditoria_jefe
 from stockroom.boss_reports import reportes_jefe, descargar_reporte_jefe
 
 urlpatterns = [
+    path("jefe/consultas/<slug:seccion>/", consultas_operativas_jefe, name="consultas_operativas_jefe"),
     path("jefe/reportes/", reportes_jefe, name="reportes_jefe"),
     path("jefe/reportes/pdf/", descargar_reporte_jefe, name="descargar_reporte_jefe"),
     path("jefe/auditoria/", auditoria_jefe, name="auditoria_jefe"),
