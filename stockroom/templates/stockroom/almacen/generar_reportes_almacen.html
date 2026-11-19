@@ -293,11 +293,12 @@ document.addEventListener("DOMContentLoaded", function () {
         campo.hidden = !mostrarEmpleado;
         empleado.disabled = !mostrarEmpleado;
 
-        // Los reportes de inventario y reabastecimiento
+        // Inventario, reabastecimiento y libro de códigos
         // no necesitan un rango de fechas.
         const esInventario = [
             "inventario",
-            "reabastecimiento"
+            "reabastecimiento",
+            "libro_codigos"
         ].includes(tipo.value);
 
         seccionFechas.hidden = esInventario;

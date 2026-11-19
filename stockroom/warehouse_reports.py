@@ -70,6 +70,10 @@ REPORTES = {
     "titulo": "Inventario general",
     "permiso": "stockroom.view_article",
     },
+    "libro_codigos": {
+        "titulo": "Libro de códigos de barras (disponibles)",
+        "permiso": "stockroom.view_article",
+    },
     "reabastecimiento": {
     "titulo": "Plan de reabastecimiento",
     "permiso": "stockroom.view_article",
@@ -85,7 +89,7 @@ def puede_generar_reporte(usuario, tipo, configuracion):
             "stockroom.view_damageresolution"
         )
 
-    if tipo in ("inventario", "reabastecimiento"):
+    if tipo in ("inventario", "reabastecimiento", "libro_codigos"):
         return usuario.has_perms([
             "stockroom.view_quantitystock",
             "stockroom.view_tool",
@@ -663,6 +667,16 @@ def descargar_reporte_almacen(request):
             "No tienes permiso para generar este reporte."
         )
 
+
+    if tipo == "libro_codigos":
+        from .libro_codigos_pdf import generar_libro_codigos_pdf
+
+        return FileResponse(
+            generar_libro_codigos_pdf(),
+            as_attachment=True,
+            filename="StockroomER_Libro_Codigos_Barras.pdf",
+            content_type="application/pdf",
+        )
 
     desde_texto = request.GET.get("desde", "")
     hasta_texto = request.GET.get("hasta", "")
