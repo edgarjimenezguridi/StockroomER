@@ -360,12 +360,22 @@ def preparar_articulo_almacen(request, request_id, line_id):
                 request_id=request_id,
             )
 
+    # Códigos exactos para el lector: no depender del texto de las etiquetas.
+    # Solo se generan para las herramientas disponibles de este artículo.
+    codigos_piezas = {}
+    if "tools" in form.fields:
+        codigos_piezas = {
+            str(pieza.pk): pieza.tool_code
+            for pieza in form.fields["tools"].queryset
+        }
+
     return render(
         request,
         "stockroom/almacen/preparar_articulo_almacen.html",
         {
             "linea": linea,
             "form": form,
+            "codigos_piezas": codigos_piezas,
         },
     )
 

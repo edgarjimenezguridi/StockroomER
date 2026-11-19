@@ -1,5 +1,6 @@
 
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Historial de movimientos{% endblock %}
 
@@ -258,6 +259,7 @@ Consulta los movimientos registrados en el almacén.
         }
     }
 </style>
+<link rel="stylesheet" href="{% static 'stockroom/css/tablas_operativas_23r.css' %}">
 {% endblock %}
 
 {% block contenido %}

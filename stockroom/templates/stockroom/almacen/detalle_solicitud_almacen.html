@@ -1,5 +1,6 @@
 
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Solicitud #{{ solicitud.pk }}{% endblock %}
 
@@ -372,6 +373,7 @@ Consulta, prepara y confirma los materiales solicitados.
         }
     }
 </style>
+<link rel="stylesheet" href="{% static 'stockroom/css/tablas_consultas_23s.css' %}">
 {% endblock %}
 
 {% block contenido %}

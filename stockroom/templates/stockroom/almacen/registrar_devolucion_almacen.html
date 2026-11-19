@@ -66,6 +66,16 @@ Registra la devolución de herramientas y materiales del almacén.
         color: #b45309;
     }
 
+    .aviso-confirmacion-manual {
+        margin-bottom: 20px;
+        padding: 13px 16px;
+        border: 1px solid #cfe6d2;
+        border-radius: 10px;
+        background: #f2f8f3;
+        color: #166534;
+        line-height: 1.5;
+    }
+
     /* Formulario */
     .formulario-devolucion p {
         margin: 0 0 20px;
@@ -179,10 +189,13 @@ Registra la devolución de herramientas y materiales del almacén.
 
         <dl>
             <dt>Trabajador</dt>
-            <dd>{{ entrega.employee }}</dd>
+            <dd>{{ entrega.employee.employee_id }} — {{ entrega.employee }}</dd>
 
             <dt>Número de entrega</dt>
             <dd>#{{ entrega.pk }}</dd>
+
+            <dt>Fecha de entrega</dt>
+            <dd>{{ entrega.issued_at|date:"d/m/Y H:i" }}</dd>
 
             <dt>Artículo o pieza</dt>
             <dd>
@@ -201,6 +214,13 @@ Registra la devolución de herramientas y materiales del almacén.
             </dd>
         </dl>
     </section>
+
+    <div class="aviso-confirmacion-manual" role="note">
+        Revisa el trabajador, la herramienta y su estado físico.
+        <strong>Escanear solo localiza la entrega:</strong>
+        el inventario cambiará únicamente al presionar «Guardar devolución»
+        y superar las validaciones del sistema.
+    </div>
 
     <form method="post" class="formulario-devolucion">
         {% csrf_token %}
@@ -360,14 +380,36 @@ document.addEventListener("DOMContentLoaded", function () {
     operation.addEventListener("change", updateForm);
     condition.addEventListener("change", updateForm);
 
+    // El lector nunca confirma la devolución; solo el botón Guardar.
+    // Un doble clic no debe lanzar dos POST desde el mismo formulario.
+    let enviandoDevolucion = false;
     if (form) {
-        form.addEventListener("submit", function () {
+        form.addEventListener("submit", function (event) {
+            if (enviandoDevolucion) {
+                event.preventDefault();
+                return;
+            }
             if (replacementCode) {
                 replacementCode.value =
                     replacementCode.value.trim().toUpperCase();
             }
+            enviandoDevolucion = true;
+            submitButton.disabled = true;
+            submitButton.textContent = "Registrando devolución…";
+            submitButton.setAttribute("aria-busy", "true");
         });
     }
+
+    // Si el navegador restaura esta página desde su historial, permitir
+    // una nueva operación válida sin conservar el botón bloqueado.
+    window.addEventListener("pageshow", function (event) {
+        if (event.persisted) {
+            enviandoDevolucion = false;
+            submitButton.disabled = false;
+            submitButton.removeAttribute("aria-busy");
+            updateForm();
+        }
+    });
 
     updateForm();
 });

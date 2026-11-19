@@ -1,4 +1,5 @@
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Consulta de adeudos{% endblock %}
 
@@ -327,7 +328,23 @@ Consulta las herramientas y materiales pendientes de devolución.
     .escaneo-pieza .boton-empresa {
         cursor: pointer;
     }
+    .escaneo-pieza .escaneo-acciones {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .escaneo-pieza .limpiar-escaneo {
+        min-height: 48px;
+    }
+    .escaneo-pieza .estado-escaneo {
+        margin: 10px 0 0;
+        min-height: 1.5em;
+        font-size: 13px;
+        color: #166534;
+    }
 </style>
+<link rel="stylesheet" href="{% static 'stockroom/css/tablas_operativas_23r.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -393,8 +410,12 @@ Consulta las herramientas y materiales pendientes de devolución.
                 autofocus
                 required
             >
-            <button type="submit" class="boton-empresa">Buscar devolución</button>
+            <div class="escaneo-acciones">
+                <button type="submit" class="boton-empresa">Buscar devolución</button>
+                <button type="button" class="boton-empresa boton-empresa-secundario limpiar-escaneo" id="limpiar-escaneo-pieza">Limpiar</button>
+            </div>
         </form>
+        <p id="estado-escaneo-pieza" class="estado-escaneo" role="status" aria-live="polite">Listo para escanear. La devolución se confirma en la siguiente pantalla.</p>
     </section>
     {% endif %}
 
@@ -563,6 +584,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const formulario = document.getElementById("form-adeudos");
     const buscador = document.getElementById("buscar-adeudos");
     const error = document.getElementById("error-adeudos");
+
+    // El lector envía el código como un teclado. Buscar no registra devolución.
+    const scanInput = document.getElementById("codigo-escaneo-pieza");
+    const scanClear = document.getElementById("limpiar-escaneo-pieza");
+    const scanStatus = document.getElementById("estado-escaneo-pieza");
+
+    if (scanInput && scanClear && scanStatus) {
+        scanClear.addEventListener("click", function () {
+            scanInput.value = "";
+            scanStatus.textContent = "Listo para escanear. La devolución se confirma en la siguiente pantalla.";
+            scanInput.focus();
+        });
+        scanInput.addEventListener("input", function () {
+            scanStatus.textContent = scanInput.value.trim()
+                ? "Código capturado. Presiona Enter para consultar el adeudo."
+                : "Listo para escanear. La devolución se confirma en la siguiente pantalla.";
+        });
+    }
 
     let temporizador = null;
     let controlador = null;

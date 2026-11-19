@@ -166,6 +166,14 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
     .seleccion-preparacion li { padding: 8px 4px; border-bottom: 1px solid #edf1f5; }
     .seleccion-preparacion li:last-child { border-bottom: 0; }
     .seleccion-contador { font-weight: 700; color: #0f7a18; }
+    .seleccion-coincidencia { font-size: 13px; margin-top: 6px; font-weight: 600; }
+    .seleccion-coincidencia[data-estado="error"] { color: #a42323; }
+    .seleccion-coincidencia[data-estado="ok"] { color: #0f7a18; }
+    .limpiar-preparacion { margin-top: 12px; border: 1px solid #a7c8ae; border-radius: 9px;
+        background: white; color: #14692c; padding: 10px 15px; font: inherit;
+        font-weight: 700; cursor: pointer; }
+    .limpiar-preparacion:hover { background: #e8f5ea; }
+    .limpiar-preparacion:focus-visible { outline: 2px solid #169c21; outline-offset: 2px; }
 
     /* Botones */
     .acciones-preparacion {
@@ -284,11 +292,16 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
                 <p>Al escanear se marcará la pieza disponible correspondiente. No se guardará la preparación automáticamente.</p>
                 <p id="estado-escaneo-preparacion" class="escaneo-estado" role="status" aria-live="polite"></p>
                 <p id="contador-preparacion" class="seleccion-contador" aria-live="polite"></p>
+                <p id="coincidencia-preparacion" class="seleccion-coincidencia" aria-live="polite"></p>
+                <button type="button" id="limpiar-seleccion-preparacion" class="limpiar-preparacion">
+                    Limpiar selección de piezas
+                </button>
             </div>
             <div class="seleccion-preparacion" id="piezas-preparacion">
                 <strong>Piezas disponibles de este artículo</strong>
                 {{ form.tools.errors }}
                 {{ form.tools }}
+                {{ codigos_piezas|json_script:"codigos-piezas-preparacion" }}
             </div>
         {% endif %}
 
@@ -328,5 +341,5 @@ Selecciona las cantidades o piezas que se prepararán para el trabajador.
 
 </section>
 
-<script src="{% static 'stockroom/js/preparar_comanda_23o.js' %}?v=23o1" defer></script>
+<script src="{% static 'stockroom/js/preparar_comanda_23o.js' %}?v=23w1" defer></script>
 {% endblock %}

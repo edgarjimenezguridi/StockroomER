@@ -1,4 +1,5 @@
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Consultar piezas individuales{% endblock %}
 {% block body_class %}pagina-consultar-piezas{% endblock %}
@@ -91,6 +92,7 @@
         .acciones-piezas .boton-empresa { box-sizing: border-box; width: 100%; text-align: center; }
     }
 </style>
+<link rel="stylesheet" href="{% static 'stockroom/css/tablas_consultas_23s.css' %}">
 {% endblock %}
 
 {% block contenido %}

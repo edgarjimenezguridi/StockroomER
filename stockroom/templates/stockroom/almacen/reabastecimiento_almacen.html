@@ -1,5 +1,6 @@
 
 {% extends "stockroom/base.html" %}
+{% load static %}
 
 {% block title %}Plan de reabastecimiento{% endblock %}
 
@@ -330,6 +331,7 @@ Identifica los artículos que necesitan reabastecerse.
         }
     }
 </style>
+<link rel="stylesheet" href="{% static 'stockroom/css/tablas_operativas_23r.css' %}">
 {% endblock %}
 
 {% block contenido %}

@@ -1,0 +1,59 @@
+/* Fase 23R: formato consistente para las tablas de consulta del almacén.
+   Se aplica exclusivamente a las tres pantallas, sin tocar formularios o rutas. */
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #d7e5da;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 3px 12px rgba(15, 74, 27, .045);
+}
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 0;
+    color: #172335;
+}
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) thead th {
+    padding: 15px 17px;
+    background: #176c2c;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 750;
+    letter-spacing: .015em;
+    line-height: 1.35;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 0;
+}
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) tbody td {
+    padding: 14px 17px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e6eee8;
+    line-height: 1.5;
+}
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) tbody tr:nth-child(even) { background: #f7fbf8; }
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) tbody tr:hover { background: #ecf7ef; }
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) tbody tr:last-child td { border-bottom: 0; }
+:is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+:is(.tabla, .tabla-historial, .tabla-reabastecimiento) :is(a, button):focus-visible {
+    outline: 3px solid #17a34a;
+    outline-offset: 2px;
+}
+@media (max-width: 720px) {
+    :is(.pagina-adeudos, .pagina-historial, .pagina-reabastecimiento)
+    :is(.tabla, .tabla-historial, .tabla-reabastecimiento) :is(th, td) {
+        padding: 11px 12px;
+        font-size: 13px;
+    }
+}

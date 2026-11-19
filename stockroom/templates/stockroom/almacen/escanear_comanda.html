@@ -1,4 +1,3 @@
-
 {% extends "stockroom/base.html" %}
 
 {% block title %}Escanear comanda{% endblock %}
@@ -134,6 +133,18 @@ Escanea el código de barras de una comanda para consultar su solicitud.
         cursor: pointer;
     }
 
+    .acciones .boton-limpiar {
+        flex: 0 1 auto;
+        min-width: 108px;
+        border: 1px solid #b7c7bd;
+        background: #f3f7f4;
+        color: #166534;
+    }
+
+    .acciones .boton-limpiar:hover {
+        background: #e5f1e8;
+    }
+
     .boton-empresa:disabled {
         opacity: 0.65;
         cursor: wait;
@@ -188,6 +199,8 @@ Escanea el código de barras de una comanda para consultar su solicitud.
 
     {{ form.as_p }}
 
+    <p class="helptext" id="ayuda-codigo">Puedes escanear o escribir un folio como SOL-000001.</p>
+
     <div class="acciones">
         <button
             type="submit"
@@ -195,6 +208,10 @@ Escanea el código de barras de una comanda para consultar su solicitud.
             id="boton-abrir"
         >
             Abrir solicitud
+        </button>
+
+        <button type="button" class="boton-empresa boton-limpiar" id="limpiar-escaneo">
+            Limpiar
         </button>
 
         <a
@@ -223,49 +240,56 @@ Escanea el código de barras de una comanda para consultar su solicitud.
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const formulario = document.getElementById(
-        "formulario-escaneo"
-    );
-
+    const formulario = document.getElementById("formulario-escaneo");
     const campo = document.getElementById("id_code");
     const boton = document.getElementById("boton-abrir");
+    const limpiar = document.getElementById("limpiar-escaneo");
     const texto = document.getElementById("texto-lector");
 
-    if (!formulario || !campo || !boton || !texto) {
-        return;
-    }
+    if (!formulario || !campo || !boton || !limpiar || !texto) return;
 
     let enviando = false;
 
     function enfocarCampo() {
-        if (!enviando) {
-            campo.focus();
-        }
+        if (!enviando) campo.focus();
     }
 
-    // Preparar el campo al abrir la pantalla.
-    enfocarCampo();
+    function restablecerEnvio() {
+        enviando = false;
+        boton.disabled = false;
+        limpiar.disabled = false;
+    }
 
-    // Normalizar el código introducido.
-    campo.addEventListener("input", function () {
-        const valor = campo.value;
-        const normalizado = valor.toUpperCase();
-
-        if (valor !== normalizado) {
-            const posicion = campo.selectionStart;
-            campo.value = normalizado;
-
-            if (posicion !== null) {
-                campo.setSelectionRange(
-                    posicion,
-                    posicion
-                );
-            }
-        }
-
-        texto.textContent = campo.value
+    function actualizarEstado() {
+        texto.textContent = campo.value.trim()
             ? "Código recibido. Presiona Enter o escanea."
             : "Campo listo para escanear";
+    }
+
+    // Mantener el foco en el campo al entrar, incluso si Django devolvió errores.
+    campo.setAttribute("autocomplete", "off");
+    enfocarCampo();
+    actualizarEstado();
+
+    campo.addEventListener("input", function () {
+        const original = campo.value;
+        const normalizado = original.toUpperCase();
+        if (original !== normalizado) {
+            const inicio = campo.selectionStart;
+            const fin = campo.selectionEnd;
+            campo.value = normalizado;
+            if (inicio !== null && fin !== null) {
+                campo.setSelectionRange(inicio, fin);
+            }
+        }
+        actualizarEstado();
+    });
+
+    limpiar.addEventListener("click", function () {
+        if (enviando) return;
+        campo.value = "";
+        actualizarEstado();
+        enfocarCampo();
     });
 
     formulario.addEventListener("submit", function (event) {
@@ -273,18 +297,26 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
             return;
         }
-
         campo.value = campo.value.trim().toUpperCase();
-
         if (!campo.value) {
             event.preventDefault();
+            texto.textContent = "Escanea un código o escribe un folio.";
             enfocarCampo();
             return;
         }
-
         enviando = true;
         boton.disabled = true;
+        limpiar.disabled = true;
         texto.textContent = "Buscando comanda...";
+    });
+
+    // Al regresar con el historial del navegador, liberar botones y enfocar de nuevo.
+    window.addEventListener("pageshow", function (event) {
+        if (event.persisted) {
+            restablecerEnvio();
+            actualizarEstado();
+            enfocarCampo();
+        }
     });
 });
 </script>

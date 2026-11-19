@@ -1,0 +1,29 @@
+/* Fase 23S: formato consistente de consultas, sin alterar lógica ni controles. */
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) {
+    width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border: 1px solid #d7e5da; border-radius: 12px; background: #fff;
+    box-shadow: 0 3px 12px rgba(15,74,27,.045);
+}
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) table {
+    width: 100%; border-collapse: collapse; border-spacing: 0; color: #172335;
+}
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) thead th {
+    background: #176c2c; color: #fff; padding: 14px 16px; font-size: 13px;
+    line-height: 1.4; font-weight: 750; text-align: left; white-space: nowrap;
+    border-bottom: 0;
+}
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) tbody td {
+    padding: 13px 16px; border-bottom: 1px solid #e6eee8; vertical-align: middle;
+    line-height: 1.5;
+}
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) tbody tr:nth-child(even) { background: #f7fbf8; }
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) tbody tr:hover { background: #ecf7ef; }
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) tbody tr:last-child td { border-bottom: 0; }
+:is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) :is(a,button):focus-visible { outline: 3px solid #17a34a; outline-offset: 2px; }
+.pagina-stock-asignado .enlace-resguardo { transition: background .15s ease; }
+.pagina-stock-asignado .enlace-resguardo:hover { background: #0e731a; }
+.pagina-stock-asignado .enlace-resguardo.secundario:hover { background: #d8eddd; }
+.pagina-stock-asignado .tabla-resguardo .enlace-resguardo { margin: 0; white-space: nowrap; }
+@media(max-width:720px) {
+    :is(.pagina-consultar-piezas .tabla-piezas, .pagina-stock-asignado .tabla-resguardo, .pagina-detalle-solicitud .tabla-solicitud) :is(th,td) { padding: 11px 12px; font-size: 13px; }
+}
